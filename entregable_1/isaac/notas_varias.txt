@@ -1,0 +1,171 @@
+NOTAS DE EJECUCIÓN — SGS_IsaacAlvardo_Entregable#1.sql
+Sistema de Gestión de Supermercados (SGS) — Entregable #1
+=================================================================
+
+1. CONEXIÓN NECESARIA
+
+El script completo puede correrse con UNA sola conexión, siempre que
+tenga privilegios de DBA (necesarios para crear el usuario IALVARADO
+y las tablespaces). Todos los objetos están calificados explícitamente
+con el esquema (IALVARADO.SGS_...), así que no hace falta reconectarse
+como ese usuario en ningún momento del proceso.
+
+Usuario y contraseña que el script crea: IALVARADO / admin
+
+
+2. ENTORNO MULTITENANT (PDB)
+
+El script asume Oracle Database Free con arquitectura multitenant y
+el PDB por defecto FREEPDB1 (nombre estándar de la imagen oficial de
+Oracle Database Free). La primera línea del script:
+
+    ALTER SESSION SET CONTAINER = FREEPDB1;
+
+Para usar esto en un contenedor distinto, cambiar "FREEPDB1" por el
+nombre correspondiente antes de ejecutar.
+
+
+3. UBICACIÓN DE LOS DATAFILES (TABLESPACES)
+
+En vez de una ruta fija, el bloque que crea las tablespaces
+(SGS_DATA, SGS_IDX, SGS_AUD) detecta automáticamente en qué
+directorio vive el datafile del tablespace SYSTEM del PDB actual, y
+crea los nuevos datafiles en ese mismo directorio. Esto evita que el
+script falle por una ruta de carpetas que no exista en la máquina
+donde se ejecute.
+
+Esta detección automática requiere un bloque PL/SQL (DECLARE...
+BEGIN...END;) en la sección 1, en vez de una sentencia SQL simple.
+Cómo correrlo depende de la herramienta — ver punto 4.
+
+
+4. CÓMO CORRER EL SCRIPT SEGÚN LA HERRAMIENTA
+
+Oracle SQL Developer o SQL*Plus:
+  El script puede ejecutarse completo, de una sola vez, sin pasos
+  adicionales. En SQL Developer, abrir el archivo y usar "Run
+  Script" (F5). En SQL*Plus, correr @entregable1_script.sql desde
+  la terminal. Ambas herramientas interpretan correctamente la
+  barra "/" como cierre del bloque PL/SQL.
+
+DBeaver:
+  Si se selecciona el script completo y se corre con
+  "Execute SQL Script", DBeaver corta el bloque PL/SQL de la
+  sección 1 en los ";" internos y da error PLS-00201. Para
+  evitarlo:
+    a) Ejecutar aparte, con "Execute SQL Statement"
+       (Cmd/Ctrl+Enter), solo el bloque DECLARE...END; de la
+       sección 1 — sin incluir la barra "/" final (esa barra es
+       un separador de SQL*Plus, no de PL/SQL; si se incluye en
+       la selección, DBeaver la interpreta como una sentencia
+       aparte y marca error, aunque el bloque en sí ya se haya
+       ejecutado bien).
+    b) Una vez hecho esto, el resto del archivo (secciones 2 en
+       adelante) sí puede correrse de corrido con "Execute SQL
+       Script", ya que no contiene más bloques PL/SQL.
+
+
+5. ORDEN DE EJECUCIÓN
+
+El script ya está ordenado de forma que cada sección puede correrse
+en secuencia, de arriba hacia abajo, sin necesidad de saltar partes:
+
+  1. Tablespaces (bloque PL/SQL — ver punto 4)
+  2. Usuario y permisos
+  3-9. Tablas de negocio (7 grupos funcionales)
+  10. Índices secundarios
+  11. Comentarios de tablas y columnas
+  12. Vista de precio de venta
+  13. Datos de prueba (incluye COMMIT y reinicio de secuencias)
+
+
+6. SOBRE EL DIAGRAMA RELACIONAL (herramienta usada)
+
+El diagrama se generó con dbdiagram.io en vez del generador de
+diagramas ER integrado en DBeaver. Motivo: el diagrama de DBeaver no
+muestra los tipos de dato de cada columna ni distingue visualmente
+las llaves primarias de las foráneas, y su exportación a PDF salió
+con contenido cortado en los bordes de la página. dbdiagram.io sí
+muestra tipos de dato y marca PK/FK explícitamente, y su función de
+auto-organización (tablas ordenadas de izquierda a derecha según su
+cadena de dependencias) generó un layout más claro que agrupar
+manualmente por bloques funcionales.
+
+7. ARCHIVOS ENTREGADOS
+
+  - SGS_IsaacAlvardo_Entregable#1.sql               Script completo (esquema + datos)
+  - notas_varias.txt      		            Este documento
+  - Diagrama_Relacional_SGS_IsaacAlvarado.pdf       Modelo relacional (dbdiagram.io)
+  - doc_tecnica_dicc_datos_IsaacAlvarado.pdf.       Arquitectura, decisiones de diseño y diccionario de datos de las 32 tablas
+
+
+8. VERIFICACIÓN RÁPIDA DE LOS DATOS DE PRUEBA
+
+Para confirmar que las 32 tablas cargaron con al menos 5 registros
+cada una (requisito del enunciado), esta consulta las cuenta todas
+de una sola vez:
+
+SELECT 'SGS_ARTICULO_FACTURABLE' AS TABLA, COUNT(*) AS FILAS FROM SGS_ARTICULO_FACTURABLE
+UNION ALL
+SELECT 'SGS_CLIENTE' AS TABLA, COUNT(*) AS FILAS FROM SGS_CLIENTE
+UNION ALL
+SELECT 'SGS_CLIENTE_PERSONA' AS TABLA, COUNT(*) AS FILAS FROM SGS_CLIENTE_PERSONA
+UNION ALL
+SELECT 'SGS_CODIGO_BARRAS' AS TABLA, COUNT(*) AS FILAS FROM SGS_CODIGO_BARRAS
+UNION ALL
+SELECT 'SGS_DESCUENTO' AS TABLA, COUNT(*) AS FILAS FROM SGS_DESCUENTO
+UNION ALL
+SELECT 'SGS_DESCUENTO_FAMILIA' AS TABLA, COUNT(*) AS FILAS FROM SGS_DESCUENTO_FAMILIA
+UNION ALL
+SELECT 'SGS_DESCUENTO_PROVEEDOR' AS TABLA, COUNT(*) AS FILAS FROM SGS_DESCUENTO_PROVEEDOR
+UNION ALL
+SELECT 'SGS_DETALLE_FACTURA_PROVEEDOR' AS TABLA, COUNT(*) AS FILAS FROM SGS_DETALLE_FACTURA_PROVEEDOR
+UNION ALL
+SELECT 'SGS_DETALLE_FACTURA_VENTA' AS TABLA, COUNT(*) AS FILAS FROM SGS_DETALLE_FACTURA_VENTA
+UNION ALL
+SELECT 'SGS_DETALLE_NOTA_CREDITO_PROVEEDOR' AS TABLA, COUNT(*) AS FILAS FROM SGS_DETALLE_NOTA_CREDITO_PROVEEDOR
+UNION ALL
+SELECT 'SGS_DETALLE_NOTA_CREDITO_VENTA' AS TABLA, COUNT(*) AS FILAS FROM SGS_DETALLE_NOTA_CREDITO_VENTA
+UNION ALL
+SELECT 'SGS_EXISTENCIA' AS TABLA, COUNT(*) AS FILAS FROM SGS_EXISTENCIA
+UNION ALL
+SELECT 'SGS_FACTURA_PROVEEDOR' AS TABLA, COUNT(*) AS FILAS FROM SGS_FACTURA_PROVEEDOR
+UNION ALL
+SELECT 'SGS_FACTURA_VENTA' AS TABLA, COUNT(*) AS FILAS FROM SGS_FACTURA_VENTA
+UNION ALL
+SELECT 'SGS_FAMILIA_PRODUCTO' AS TABLA, COUNT(*) AS FILAS FROM SGS_FAMILIA_PRODUCTO
+UNION ALL
+SELECT 'SGS_HISTORICO_PRECIO' AS TABLA, COUNT(*) AS FILAS FROM SGS_HISTORICO_PRECIO
+UNION ALL
+SELECT 'SGS_NOTA_CREDITO_PROVEEDOR' AS TABLA, COUNT(*) AS FILAS FROM SGS_NOTA_CREDITO_PROVEEDOR
+UNION ALL
+SELECT 'SGS_NOTA_CREDITO_VENTA' AS TABLA, COUNT(*) AS FILAS FROM SGS_NOTA_CREDITO_VENTA
+UNION ALL
+SELECT 'SGS_PAGO_FACTURA_PROVEEDOR' AS TABLA, COUNT(*) AS FILAS FROM SGS_PAGO_FACTURA_PROVEEDOR
+UNION ALL
+SELECT 'SGS_PAGO_FACTURA_VENTA' AS TABLA, COUNT(*) AS FILAS FROM SGS_PAGO_FACTURA_VENTA
+UNION ALL
+SELECT 'SGS_PREMIO' AS TABLA, COUNT(*) AS FILAS FROM SGS_PREMIO
+UNION ALL
+SELECT 'SGS_PRODUCTO' AS TABLA, COUNT(*) AS FILAS FROM SGS_PRODUCTO
+UNION ALL
+SELECT 'SGS_PRODUCTO_SUCURSAL' AS TABLA, COUNT(*) AS FILAS FROM SGS_PRODUCTO_SUCURSAL
+UNION ALL
+SELECT 'SGS_PROMOCION' AS TABLA, COUNT(*) AS FILAS FROM SGS_PROMOCION
+UNION ALL
+SELECT 'SGS_PROMOCION_PREMIO' AS TABLA, COUNT(*) AS FILAS FROM SGS_PROMOCION_PREMIO
+UNION ALL
+SELECT 'SGS_PROMOCION_PRODUCTO' AS TABLA, COUNT(*) AS FILAS FROM SGS_PROMOCION_PRODUCTO
+UNION ALL
+SELECT 'SGS_PROVEEDOR' AS TABLA, COUNT(*) AS FILAS FROM SGS_PROVEEDOR
+UNION ALL
+SELECT 'SGS_SERVICIO' AS TABLA, COUNT(*) AS FILAS FROM SGS_SERVICIO
+UNION ALL
+SELECT 'SGS_SUCURSAL' AS TABLA, COUNT(*) AS FILAS FROM SGS_SUCURSAL
+UNION ALL
+SELECT 'SGS_TIPO_PAGO' AS TABLA, COUNT(*) AS FILAS FROM SGS_TIPO_PAGO
+UNION ALL
+SELECT 'SGS_TRASLADO_INVENTARIO' AS TABLA, COUNT(*) AS FILAS FROM SGS_TRASLADO_INVENTARIO
+UNION ALL
+SELECT 'SGS_USUARIO' AS TABLA, COUNT(*) AS FILAS FROM SGS_USUARIO
+ORDER BY 1;

@@ -1,0 +1,28 @@
+ORDEN CORRECTO DE EJECUCION
+
+1) 01_INFRAESTRUCTURA.sql
+   - Conexion: SYSTEM
+   - PDB: FREEPDB1
+   - Crea TS_DATOS, TS_INDICES, TS_AUDITORIA y CADENA_NEGOCIOS.
+
+2) Desconectarse de SYSTEM y conectarse como:
+   Usuario: CADENA_NEGOCIOS
+   Password: Cadena2026
+   Servicio: FREEPDB1
+
+3) 02_CONSTRUCCION_COMPLETA.sql
+   - Crea 41 secuencias.
+   - Crea 41 tablas.
+   - Crea restricciones.
+   - Crea indices.
+   - Agrega comentarios.
+   - Inserta 5 registros por cada tabla.
+   - Hace COMMIT.
+
+4) 03_VERIFICACION_FINAL.sql
+   - Debe confirmar:
+     * 41 tablas
+     * 41 secuencias
+     * 5 registros por tabla
+     * comments, constraints e indices
+     * tablespaces correctos
