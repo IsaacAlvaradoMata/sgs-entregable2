@@ -153,9 +153,9 @@ flowchart TD
 
 ### Por cerrar
 
-- [ ] Repositorio creado, ambos con acceso y README en la raíz.
+- [x] Repositorio creado, ambos con acceso y README en la raíz.
 - [ ] **Lista de parámetros confirmada** (nombres y valores iniciales). En especial los que usa Andrés: tiempo máximo entre redo (5 min), tamaño de redo (50 MB), frecuencia de traslado (10 min), días antes de borrar (3), hora del respaldo diario.
-- [ ] Cuenta de correo del proyecto creada (remitente de las notificaciones).
+- [x] Cuenta de correo del proyecto creada (remitente de las notificaciones).
 - [ ] Preguntas al profesor enviadas (ver [pendientes](#pendientes-de-confirmar-con-el-profesor)).
 
 **Terminado cuando…** todo lo anterior está anotado en `notas/decisiones.md`.
