@@ -28,8 +28,15 @@ Windows usa la virtualización para su propia seguridad, lo que hace más lentas
    ```
    Verificar con `bcdedit /enum {current}` → debe aparecer `hypervisorlaunchtype Off`.
 4. Reiniciar.
+5. Si `msinfo32` sigue indicando "Se detectó un hipervisor" o "Seguridad basada en virtualización: En ejecución", apagar la seguridad basada en virtualización (VBS) desde `cmd` como administrador y reiniciar:
+   ```
+   reg add "HKLM\SYSTEM\CurrentControlSet\Control\DeviceGuard" /v EnableVirtualizationBasedSecurity /t REG_DWORD /d 0 /f
+   reg add "HKLM\SYSTEM\CurrentControlSet\Control\DeviceGuard\Scenarios\HypervisorEnforcedCodeIntegrity" /v Enabled /t REG_DWORD /d 0 /f
+   reg add "HKLM\SYSTEM\CurrentControlSet\Control\Lsa" /v LsaCfgFlags /t REG_DWORD /d 0 /f
+   ```
+6. Verificar en `msinfo32`: "Seguridad basada en virtualización: **No habilitado**" y las cuatro líneas "Hyper-V - …" en **Sí**.
 
-> Nota: después de reiniciar, `msinfo32` sigue indicando "Se detectó un hipervisor" (posible directiva del equipo). VirtualBox funciona igual; se continuó así.
+> **Por qué es obligatorio:** con el hipervisor de Windows activo, VirtualBox corre sobre él y la VM se traba (`kernel:watchdog: BUG: soft lockup - CPU#0 stuck`), corta el SSH y llega a congelarse durante cargas pesadas como `dnf install`. Pasó en esta instalación y se resolvió con el paso 5.
 
 ## 3. VirtualBox
 
