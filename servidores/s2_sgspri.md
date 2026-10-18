@@ -2,7 +2,7 @@
 
 Pasos confirmados para preparar `SGSPRI` e instalar Oracle Database 21c. Las capturas están en [`capturas/s2_sgspri/`](capturas/s2_sgspri/).
 
-Estado: **Linux preparado para Oracle (preinstall, usuario `oracle`, kernel, hosts, SELinux, firewall y directorios).** Software de Oracle 21c instalado. Falta: listener y base de datos.
+Estado: **Linux preparado para Oracle (preinstall, usuario `oracle`, kernel, hosts, SELinux, firewall y directorios).** Software de Oracle 21c instalado. Listener en el puerto 1521. Falta: base de datos.
 
 Todos los comandos se ejecutan como `root` por SSH desde la HP (`ssh root@192.168.56.101`).
 
@@ -105,3 +105,34 @@ ls /opt/oracle/product/21c/dbhome_1   # bin, lib, network, rdbms, ...
 ```
 
 Termina con `Oracle home installed successfully and ready to be configured`. **No** se usa el script `/etc/init.d/oracledb_ORCLCDB-21c configure` que sugiere, porque crea una base con nombres de ejemplo (`ORCLCDB`/`ORCLPDB1`); la base del proyecto se crea aparte con los nombres acordados.
+
+## 8. Variables de entorno del usuario `oracle`
+
+Como `root`: `su - oracle`. Luego, como `oracle`:
+
+```
+cat >> ~/.bash_profile <<'EOF'
+
+# Oracle 21c - SGS
+export ORACLE_BASE=/opt/oracle
+export ORACLE_HOME=/opt/oracle/product/21c/dbhome_1
+export ORACLE_SID=SGSPRI
+export PATH=$ORACLE_HOME/bin:$PATH
+export LD_LIBRARY_PATH=$ORACLE_HOME/lib
+export NLS_LANG=AMERICAN_AMERICA.AL32UTF8
+EOF
+source ~/.bash_profile
+echo $ORACLE_HOME   # /opt/oracle/product/21c/dbhome_1
+```
+
+## 9. Listener
+
+```
+netca -silent -responsefile $ORACLE_HOME/assistants/netca/netca.rsp
+# Oracle Net Services configuration successful. The exit code is 0
+lsnrctl status
+# (HOST=sgspri.localdomain)(PORT=1521) ... The command completed successfully
+```
+
+- El RPM instala un Oracle home de solo lectura: los archivos de red (`listener.ora`, `tnsnames.ora`) quedan en `/opt/oracle/homes/OraDBHome21cEE/network/admin`.
+- "The listener supports no services" es normal hasta crear la base de datos.
