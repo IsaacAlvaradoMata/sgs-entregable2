@@ -94,4 +94,22 @@ No se integra: `BODEGA` (se mantiene `SUC_ES_CENTRAL`), `EMPRESA` (cubierto por 
 
 ## Carril S — Servidores
 
-*(Se completa a medida que avanza Andrés.)*
+### S1 — VMs y red
+
+**Infraestructura de las VMs** · 2026-10-17
+
+| Elemento | Valor |
+|---|---|
+| Hipervisor | VirtualBox 7.2 en la HP (Windows 11 Pro, 16 GB RAM) |
+| Sistema operativo | Oracle Linux 8.10, instalación "Server" (sin interfaz gráfica) |
+| Recursos por VM | 5 GB RAM, 2 CPU, disco 80 GB VDI dinámico |
+| Particiones | `/boot` 1 GiB, `swap` 5 GiB, `/` 74 GiB (sin `/home`) |
+| Red interna (Data Guard) | Solo-anfitrión `192.168.56.0/24`, sin DHCP; la HP es `192.168.56.1` |
+| Internet | Adaptador NAT en cada VM |
+
+| Servidor | Hostname | IP red interna | Estado |
+|---|---|---|---|
+| `SGSPRI` | `sgspri.localdomain` | `192.168.56.101` | Linux instalado, SSH desde la HP ✅ |
+| `SGSSTB` | `sgsstb.localdomain` | `192.168.56.102` | Pendiente |
+
+Pasos detallados en [`servidores/s1_sgspri.md`](../servidores/s1_sgspri.md).
