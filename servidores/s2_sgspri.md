@@ -2,7 +2,7 @@
 
 Pasos confirmados para preparar `SGSPRI` e instalar Oracle Database 21c. Las capturas están en [`capturas/s2_sgspri/`](capturas/s2_sgspri/).
 
-Estado: **Linux preparado para Oracle (preinstall, usuario `oracle`, kernel, hosts, SELinux, firewall y directorios).** Falta: software de Oracle y base de datos.
+Estado: **Linux preparado para Oracle (preinstall, usuario `oracle`, kernel, hosts, SELinux, firewall y directorios).** Software de Oracle 21c instalado. Falta: listener y base de datos.
 
 Todos los comandos se ejecutan como `root` por SSH desde la HP (`ssh root@192.168.56.101`).
 
@@ -77,3 +77,31 @@ mkdir -p /u01/app/oracle/product/21.0.0/dbhome_1 /u01/app/oraInventory
 chown -R oracle:oinstall /u01
 chmod -R 775 /u01
 ```
+
+## 7. Software de Oracle Database 21c (RPM)
+
+Se usa el RPM oficial `oracle-database-ee-21c-1.0-1.ol8.x86_64.rpm` (2,6 GB), descargado de https://www.oracle.com/database/technologies/oracle21c-linux-downloads.html con una cuenta Oracle gratuita. Es el mismo Oracle 21c Enterprise Edition que el ZIP, pero se instala con `dnf`.
+
+Con el RPM las rutas son fijas:
+
+| Variable | Ruta |
+|---|---|
+| `ORACLE_BASE` | `/opt/oracle` |
+| `ORACLE_HOME` | `/opt/oracle/product/21c/dbhome_1` |
+
+> Las carpetas `/u01` del paso 6 quedaron sin uso porque se instaló con RPM y no con ZIP.
+
+Copiar el RPM desde la HP (PowerShell de Windows, sin SSH):
+
+```
+scp "$env:USERPROFILE\Downloads\oracle-database-ee-21c-1.0-1.ol8.x86_64.rpm" root@192.168.56.101:/tmp/
+```
+
+Instalar en `SGSPRI` como `root` (descomprime unos 7 GB y tarda varios minutos):
+
+```
+dnf -y localinstall /tmp/oracle-database-ee-21c-1.0-1.ol8.x86_64.rpm
+ls /opt/oracle/product/21c/dbhome_1   # bin, lib, network, rdbms, ...
+```
+
+Termina con `Oracle home installed successfully and ready to be configured`. **No** se usa el script `/etc/init.d/oracledb_ORCLCDB-21c configure` que sugiere, porque crea una base con nombres de ejemplo (`ORCLCDB`/`ORCLPDB1`); la base del proyecto se crea aparte con los nombres acordados.
