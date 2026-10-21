@@ -4,13 +4,7 @@ Qué falta y quién lo tiene. Se actualiza al cerrar cada sesión de trabajo.
 
 ## Carril S — Servidores (Andrés)
 
-**Último avance (2026-10-21):** `SGSSTB` creada como clon de `SGSPRI` y con identidad propia (`sgsstb.localdomain`, `192.168.56.102`, `ORACLE_SID=SGSSTB`, listener). Detalle en [`servidores/s1_sgsstb.md`](../servidores/s1_sgsstb.md).
-
-### Siguiente paso: probar las dos VMs encendidas juntas
-
-- Encender `SGSPRI` (sigue en `.101`) junto con `SGSSTB` (`.102`).
-- `ping sgsstb` desde `SGSPRI` y `ping sgspri` desde `SGSSTB`.
-- Internet en `SGSSTB` (`ping -c 3 google.com`).
+**Último avance (2026-10-21):** S1 completo salvo Tailscale. Las dos VMs se ven por nombre por la red interna. `SGSSTB` creada como clon de `SGSPRI` y con identidad propia (`sgsstb.localdomain`, `192.168.56.102`, `ORACLE_SID=SGSSTB`, listener). Detalle en [`servidores/s1_sgsstb.md`](../servidores/s1_sgsstb.md).
 
 ### Después
 

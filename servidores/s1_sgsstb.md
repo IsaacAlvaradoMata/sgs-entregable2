@@ -41,3 +41,17 @@ ip addr show enp0s8                        # inet 192.168.56.102/24 (MAC distint
 grep ORACLE_SID /home/oracle/.bash_profile # export ORACLE_SID=SGSSTB
 cat /opt/oracle/homes/OraDBHome21cEE/network/admin/listener.ora   # HOST = sgsstb.localdomain
 ```
+
+## 4. Las dos VMs encendidas juntas
+
+Con `SGSPRI` (`.101`) y `SGSSTB` (`.102`) encendidas, cada una llega a la otra **por nombre** por la red interna:
+
+```
+# En SGSPRI
+ping -c 3 sgsstb    # 192.168.56.102, 0% packet loss
+
+# En SGSSTB
+ping -c 3 sgspri    # 192.168.56.101, 0% packet loss
+```
+
+> Si `ssh` responde `Connection timed out` justo después de encender una VM, es que todavía está arrancando; se reintenta en unos segundos.
