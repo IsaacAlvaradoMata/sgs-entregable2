@@ -110,6 +110,6 @@ No se integra: `BODEGA` (se mantiene `SUC_ES_CENTRAL`), `EMPRESA` (cubierto por 
 | Servidor | Hostname | IP red interna | Estado |
 |---|---|---|---|
 | `SGSPRI` | `sgspri.localdomain` | `192.168.56.101` | Linux instalado, SSH desde la HP ✅ |
-| `SGSSTB` | `sgsstb.localdomain` | `192.168.56.102` | Pendiente |
+| `SGSSTB` | `sgsstb.localdomain` | `192.168.56.102` | Clon de `SGSPRI` con identidad propia, solo software Oracle ✅ |
 
 Pasos detallados en [`servidores/s1_sgspri.md`](../servidores/s1_sgspri.md).

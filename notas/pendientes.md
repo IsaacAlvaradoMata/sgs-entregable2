@@ -4,23 +4,13 @@ Qué falta y quién lo tiene. Se actualiza al cerrar cada sesión de trabajo.
 
 ## Carril S — Servidores (Andrés)
 
-**Último avance (2026-10-17):** `SGSPRI` lista hasta el software de Oracle 21c y el listener, **sin base de datos creada**. Detalle en [`servidores/s1_sgspri.md`](../servidores/s1_sgspri.md) y [`servidores/s2_sgspri.md`](../servidores/s2_sgspri.md).
+**Último avance (2026-10-21):** `SGSSTB` creada como clon de `SGSPRI` y con identidad propia (`sgsstb.localdomain`, `192.168.56.102`, `ORACLE_SID=SGSSTB`, listener). Detalle en [`servidores/s1_sgsstb.md`](../servidores/s1_sgsstb.md).
 
-### Siguiente paso: clonar SGSPRI → SGSSTB
+### Siguiente paso: probar las dos VMs encendidas juntas
 
-Se clona **antes** de crear la base, para que la standby quede solo con el software (como pide S2) y con rutas idénticas.
-
-1. Apagar `SGSPRI` limpiamente (`shutdown -h now` como `root`).
-2. VirtualBox → clic derecho en `SGSPRI` → Clonar:
-   - Nombre `SGSSTB`.
-   - **Generar nuevas direcciones MAC para todos los adaptadores de red.**
-   - Clonación **completa**.
-3. Encender **solo `SGSSTB`** y ajustar lo que quedó con datos de `SGSPRI`:
-   - Hostname → `sgsstb.localdomain` (`hostnamectl set-hostname`).
-   - IP de `enp0s8` → `192.168.56.102/24` (`nmcli`).
-   - `ORACLE_SID=SGSSTB` en `~/.bash_profile` del usuario `oracle`.
-   - Listener: `listener.ora` (en `/opt/oracle/homes/OraDBHome21cEE/network/admin`) apunta a `sgspri.localdomain`; cambiarlo a `sgsstb.localdomain`.
-4. Encender las dos y probar que se ven (`ping sgspri` / `ping sgsstb`).
+- Encender `SGSPRI` (sigue en `.101`) junto con `SGSSTB` (`.102`).
+- `ping sgsstb` desde `SGSPRI` y `ping sgspri` desde `SGSSTB`.
+- Internet en `SGSSTB` (`ping -c 3 google.com`).
 
 ### Después
 
