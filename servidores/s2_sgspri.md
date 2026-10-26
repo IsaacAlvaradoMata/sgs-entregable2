@@ -184,3 +184,5 @@ SHOW PDBS
 
 ALTER PLUGGABLE DATABASE SGSPDB SAVE STATE;   -- la PDB se abre sola al arrancar la base
 ```
+
+Después de crear la base, `lsnrctl status` ya anuncia los servicios con `status READY`: `SGSPRI`, `SGSPRIXDB` y `sgspdb` (este último es el que usa Isaac para conectarse a la PDB).
