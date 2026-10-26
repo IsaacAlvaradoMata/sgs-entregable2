@@ -118,6 +118,13 @@ bd/
 
 - **Vos no podés ejecutar contra el Oracle de Isaac.** Tu sesión no llega a su Docker. Escribís y ordenás los scripts; Isaac los ejecuta y te pega los resultados o errores.
 - Solo se sube al repo lo probado. Nunca contraseñas reales.
+- Flujo por paso: analizás la decisión y la describís con la cita del enunciado → Isaac confirma → la anotás en `docs/decisiones.md` → le das el script de ese paso → Isaac lo prueba en Docker → si funciona, se marca `- [x]` en `guia.md` y se hace commit.
+
+### Evidencias (para el PDF de evidencias)
+- Solo de pasos que **ya funcionan**. Nunca de errores, pruebas fallidas ni capturas que Isaac manda para preguntar.
+- Solo de **información concreta que hay que demostrar** (estados, tamaños, privilegios, datos resultantes). Nunca de un mensaje de ejecución exitosa: eso no aporta nada.
+- Se toman justo después de cada consulta o subpaso, no todas al final. En cada paso le indicás a Isaac qué consulta correr y qué tiene que mostrar la captura.
+- Isaac adjunta la captura; vos la guardás en `docs/evidencias/capturas/` con el nombre `<etapa>_<script>_<número>_<qué-muestra>.png` (ej. `B0_01_01_tablespaces.png`) y la registrás en `docs/evidencias/evidencias.md` (qué demuestra cada una). Ese `.md` es la base para armar el documento final.
 
 ### Compatibilidad con 21c (Docker es 23ai, producción es 21c)
 Prohibido: `IF NOT EXISTS` en DDL, `BOOLEAN` en columnas, `SELECT` sin `FROM DUAL`, `INSERT` multi-fila, `GROUP BY` por alias, `GRANT ... ON SCHEMA`, `DB_DEVELOPER_ROLE`. Tampoco `CONNECT`, `RESOURCE` ni `DBA`: privilegios explícitos.

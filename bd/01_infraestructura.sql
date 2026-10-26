@@ -61,14 +61,28 @@ GRANT CREATE TRIGGER           TO SGS_ADMIN;
 GRANT CREATE JOB               TO SGS_ADMIN;
 
 -- 5. Verificacion
-SELECT tablespace_name, status, contents
-  FROM dba_tablespaces
- WHERE tablespace_name LIKE 'SGS%'
- ORDER BY tablespace_name;
+-- Tablespaces en linea con su tamano inicial y su MAXSIZE
+SELECT t.tablespace_name,
+       t.status,
+       d.bytes / 1024 / 1024    AS tamano_mb,
+       d.autoextensible,
+       d.maxbytes / 1024 / 1024 AS maxsize_mb
+  FROM dba_tablespaces t
+  JOIN dba_data_files d ON d.tablespace_name = t.tablespace_name
+ WHERE t.tablespace_name LIKE 'SGS%'
+ ORDER BY t.tablespace_name;
 
-SELECT username, account_status, default_tablespace, temporary_tablespace
-  FROM dba_users
- WHERE username = 'SGS_ADMIN';
+-- Usuario abierto, tablespaces por defecto y cuotas (-1 = ilimitada)
+SELECT u.username,
+       u.account_status,
+       u.default_tablespace,
+       u.temporary_tablespace,
+       q.tablespace_name AS tablespace_cuota,
+       DECODE(q.max_bytes, -1, 'ILIMITADA', TO_CHAR(q.max_bytes / 1024 / 1024) || ' MB') AS cuota
+  FROM dba_users u
+  JOIN dba_ts_quotas q ON q.username = u.username
+ WHERE u.username = 'SGS_ADMIN'
+ ORDER BY q.tablespace_name;
 
 SELECT privilege
   FROM dba_sys_privs
