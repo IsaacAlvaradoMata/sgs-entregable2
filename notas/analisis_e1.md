@@ -76,3 +76,18 @@ Opcionales, sin decidir: cliente genérico de contado (`CLIENTE.ES_GENERICO`) y 
 | Nacionalidad y residencia normalizadas | Tabla de países |
 
 Vistas materializadas, seguridad, jobs y monitoreo no cambian el modelo base; se implementan en B3 a B8.
+
+## 4. Lo que el enunciado del E1 sigue exigiendo
+
+Revisado el 2026-10-26 sobre `entregable_1/Enunciado Entregable #1 - Proyecto.pdf`. El E2 dice que "se calificará nuevamente el modelo relacional", así que estos requisitos siguen vigentes:
+
+| Requisito del E1 | Efecto en el modelo del E2 |
+|---|---|
+| "la aplicación sea multisucursal y multiusuario" (RF1) | Origen de `SGS_USUARIO` (usuarios del sistema). Se mantiene; la seguridad del E2 (usuarios, roles y perfiles de Oracle) se agrega encima |
+| "en caso de no contar con un cliente registrado en la factura deberá tener uno por defecto" (RF14) | Cliente por defecto obligatorio. En el E1 era la fila "Consumidor Final" (id 1); hay que identificarlo de forma explícita (bloque 2) |
+| "Las cédulas de los extranjeros pueden variar de tipo y tamaño" | La cédula solo se valida a 9 dígitos para clientes `NACIONAL` (decisión 5) |
+| "Toda tabla necesitará de una secuencia" | Cada tabla nueva lleva su `SEQ_` |
+| "Deberán tener 5 registros mínimo por tabla" | Datos de prueba: mínimo 5 filas por tabla, también en las nuevas |
+| "normalizada en 5FN" | Las redundancias (saldo del encabezado de cuenta) se justifican como desnormalización controlada |
+| Tablespaces: tablas, índices y auditoría | Ya cubierto por `01_infraestructura.sql` |
+| Script con usuario, tablespaces, tablas, restricciones, índices, secuencias, vistas y comentarios | Estructura de `01` + `02` |
