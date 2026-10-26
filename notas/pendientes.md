@@ -14,7 +14,10 @@ Qué falta y quién lo tiene. Se actualiza al cerrar cada sesión de trabajo.
 - [ ] Antes de la defensa: cambiar las contraseñas de `SYS`, `SYSTEM` y `PDBADMIN` por unas fuertes.
 - [ ] Tailscale en ambas VMs (sin exit node) para que el Mac de Isaac llegue a `SGSPDB`.
 - [x] S3: Data Guard (`SGSSTB` como standby física de `SGSPRI`).
-- [ ] Procedimiento probado de arranque y apagado de los dos servidores (orden y comandos).
+- [ ] **Siguiente sesión: empezar probando el arranque** (el apagado del 2026-10-26 funcionó en `SGSSTB`; `SGSPRI` ya estaba abajo). Si todo responde, documentarlo en `servidores/` como procedimiento probado:
+  - `SGSPRI` (como `oracle`): `lsnrctl start` → `sqlplus / as sysdba` → `STARTUP;` (la PDB abre sola por `SAVE STATE`).
+  - `SGSSTB` (como `oracle`): `lsnrctl start` → `sqlplus / as sysdba` → `STARTUP;` → `ALTER PLUGGABLE DATABASE SGSPDB OPEN READ ONLY;` → `ALTER DATABASE RECOVER MANAGED STANDBY DATABASE DISCONNECT FROM SESSION;` → verificar `READ ONLY WITH APPLY`.
+  - Apagado: primero `SGSSTB` (`RECOVER MANAGED STANDBY DATABASE CANCEL;` + `SHUTDOWN IMMEDIATE;`), después `SGSPRI` (`SHUTDOWN IMMEDIATE;`), luego `shutdown -h now` como `root`. Los comandos de SQL*Plus se ejecutan desde `CDB$ROOT` (sesión nueva o `SHOW CON_NAME`).
 - [ ] S4: administración parametrizada del standby (necesita la tabla de parámetros de Isaac, I2).
 - [ ] S5: respaldos con RMAN.
 - [ ] S6: switchover, failover y reincorporación (broker de Data Guard).
