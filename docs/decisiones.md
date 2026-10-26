@@ -155,6 +155,12 @@ Bitácora general de encabezado y detalle (audit trail genérico) en lugar de un
 - Las ventas consumen los lotes por FEFO (primero los que vencen antes). La factura de venta no lleva lote: el lote consumido queda en el movimiento, y de ahí se sabe a qué lote regresa una devolución.
 - La tabla de movimientos cubre el ítem "Movimientos de inventario" de la guía y respalda el área de bitácora del mismo nombre.
 
+**Bloque 2 del modelo (personas)** · 2026-10-26
+- El límite de crédito sale de `SGS_CLIENTE` y `SGS_PROVEEDOR` y vive en el encabezado de su cuenta (decisión 2). Cada cliente tiene su encabezado, con límite 0 si no tiene crédito.
+- Cliente por defecto: indicador `CLI_ES_DEFECTO` con índice único funcional (`UX_CLI_UNICO_DEFECTO`), mismo patrón que la bodega central.
+- Enlace al padrón por id (`CLP_ID_PADRON → PAD_ID`), único por persona; se busca por cédula al registrar. El id se conserva entre recargas porque el `MERGE` es por cédula.
+- `SEQ_PADRON` con `CACHE 1000` (única excepción a `NOCACHE`) por la carga masiva.
+
 **Usuarios del sistema vs. usuarios de base de datos** · 2026-10-26
 
 Son dos mundos separados; ninguna tabla los mezcla.
