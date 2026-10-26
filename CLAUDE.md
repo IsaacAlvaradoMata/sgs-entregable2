@@ -169,10 +169,7 @@ Prohibido: `IF NOT EXISTS` en DDL, `BOOLEAN` en columnas, `SELECT` sin `FROM DUA
 
 **No se integra**: `BODEGA` (se mantiene `SUC_ES_CENTRAL`), `EMPRESA`, `PRECIO_PRODUCTO` (el historial lo cubre `SGS_HISTORICO_PRECIO`), cliente único (se mantiene cliente/cliente_persona), `CLIENTE_DIRECCION`, cantidades de promoción en `PROMOCION_PRODUCTO`.
 
-**Decisión 2 de B1 — EN CURSO, falta que Isaac confirme.** Dónde vive el saldo de clientes y proveedores:
-- (A) Solo calculado, como en el E1: choca con la letra del enunciado.
-- (B) Saldo por factura: normalizado, pero no hay "saldo del cliente".
-- (C) **Recomendada**: encabezado por cliente/proveedor con saldo total + detalle por factura. Calza literal con el enunciado ("aumentar el saldo del cliente" + "agregar al detalle"), permite `SELECT ... FOR UPDATE` sobre el encabezado (requisito de concurrencia) y sostiene los límites de crédito y los avisos de 85% y 70%. La redundancia se defiende como desnormalización controlada mantenida por triggers. La CxC por factura de Andrés pasa a ser el detalle.
+**Decisión 2 de B1 (confirmada 2026-10-25)** — opción C: encabezado por cliente/proveedor con límite y saldo total (fila que se bloquea con `FOR UPDATE`) + detalle por factura a crédito con monto original y saldo. Abonos en `SGS_PAGO_FACTURA_*`. Saldos mantenidos solo por triggers (desnormalización controlada). Detalle en `docs/decisiones.md`.
 
 **Decisiones pendientes de B1:**
 3. Códigos de atributos de dominio corto (estados, sexo, estado civil, tipo de persona).

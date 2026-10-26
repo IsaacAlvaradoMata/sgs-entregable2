@@ -93,6 +93,14 @@ Ampliación · 2026-10-25 (tras revisar los scripts del E1, ver [`notas/analisis
 
 No se integra: `BODEGA` (se mantiene `SUC_ES_CENTRAL`), `EMPRESA` (cubierto por tipo de negocio), `PRECIO_PRODUCTO` (el E2 pide historial de costo, ya cubierto), `CLIENTE` único (se mantiene la separación cliente / cliente persona), `CLIENTE_DIRECCION` (dos direcciones fijas), cantidades de promoción en `PROMOCION_PRODUCTO` (el E2 las ubica en la tabla de promociones).
 
+**Decisión 2 — Dónde vive el saldo de clientes y proveedores** · 2026-10-25
+
+Opción C: encabezado de cuenta por cliente y por proveedor + detalle por factura.
+- **Encabezado** (uno por cliente / proveedor): límite de crédito y saldo total. Es la fila que se bloquea con `SELECT ... FOR UPDATE NOWAIT/WAIT` y contra la que se validan el límite y los avisos del 85 % y 70 %.
+- **Detalle** (uno por factura a crédito pendiente): monto original y saldo de esa factura. Equivale a la CxC / CxP por factura de `CADENA_NEGOCIOS`.
+- **Abonos**: en `SGS_PAGO_FACTURA_*`, ligados a la factura; el último pago de un cliente sale de ahí (morosidad).
+- El saldo del encabezado y del detalle **solo lo mantienen los triggers**; nunca se edita a mano. La redundancia es una desnormalización controlada para cumplir literalmente el enunciado ("aumentar el saldo del cliente" + "agregar esta factura al detalle") y para la concurrencia.
+
 **Forma de trabajo** · 2026-10-13
 - Desarrollo en Docker (`FREEPDB1`); oficial en `SGSPRI` (`SGSPDB`).
 - El script es lo oficial: nada se cambia solo en la base.
