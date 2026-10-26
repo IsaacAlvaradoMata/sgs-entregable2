@@ -4,12 +4,14 @@ Qué falta y quién lo tiene. Se actualiza al cerrar cada sesión de trabajo.
 
 ## Carril S — Servidores (Andrés)
 
-**Último avance (2026-10-21):** S1 completo salvo Tailscale. Las dos VMs se ven por nombre por la red interna. `SGSSTB` creada como clon de `SGSPRI` y con identidad propia (`sgsstb.localdomain`, `192.168.56.102`, `ORACLE_SID=SGSSTB`, listener). Detalle en [`servidores/s1_sgsstb.md`](../servidores/s1_sgsstb.md).
+**Último avance (2026-10-26):** base de datos creada en `SGSPRI` (`DB_NAME=SGS`, `DB_UNIQUE_NAME=SGSPRI`, ARCHIVELOG, PDB `SGSPDB`); detalle en [`servidores/s2_sgspri.md`](../servidores/s2_sgspri.md). Antes: S1 completo salvo Tailscale. Las dos VMs se ven por nombre por la red interna. `SGSSTB` creada como clon de `SGSPRI` y con identidad propia (`sgsstb.localdomain`, `192.168.56.102`, `ORACLE_SID=SGSSTB`, listener). Detalle en [`servidores/s1_sgsstb.md`](../servidores/s1_sgsstb.md).
 
 ### Después
 
-- [ ] Crear la base en `SGSPRI` con `dbca` (CDB con `DB_NAME=SGS`, `DB_UNIQUE_NAME=SGSPRI`, PDB `SGSPDB`, archivelog y FRA en `/opt/oracle/fast_recovery_area`). El comando quedó preparado en la conversación (Paso 21 original).
-- [ ] Anotar en `docs/decisiones.md` la decisión `DB_NAME = SGS` (igual en ambos servidores, requisito de Data Guard).
+- [x] Crear la base en `SGSPRI` con `dbca`.
+- [x] Anotar en `docs/decisiones.md` la decisión `DB_NAME = SGS`.
+- [ ] Avisar a Isaac que `SGSPDB` ya existe en `SGSPRI` (punto I1).
+- [ ] Antes de la defensa: cambiar las contraseñas de `SYS`, `SYSTEM` y `PDBADMIN` por unas fuertes.
 - [ ] Tailscale en ambas VMs (sin exit node) para que el Mac de Isaac llegue a `SGSPDB`.
 - [ ] S3: Data Guard (`SGSSTB` como standby física de `SGSPRI`).
 

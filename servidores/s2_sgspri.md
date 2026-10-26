@@ -2,7 +2,7 @@
 
 Pasos confirmados para preparar `SGSPRI` e instalar Oracle Database 21c. Las capturas están en [`capturas/s2_sgspri/`](capturas/s2_sgspri/).
 
-Estado: **Linux preparado para Oracle (preinstall, usuario `oracle`, kernel, hosts, SELinux, firewall y directorios).** Software de Oracle 21c instalado. Listener en el puerto 1521. Falta: base de datos.
+Estado: **Linux preparado para Oracle (preinstall, usuario `oracle`, kernel, hosts, SELinux, firewall y directorios).** Software de Oracle 21c instalado. Listener en el puerto 1521. Base `SGS` (`SGSPRI`) creada en ARCHIVELOG con la PDB `SGSPDB`.
 
 Todos los comandos se ejecutan como `root` por SSH desde la HP (`ssh root@192.168.56.101`).
 
@@ -136,3 +136,51 @@ lsnrctl status
 
 - El RPM instala un Oracle home de solo lectura: los archivos de red (`listener.ora`, `tnsnames.ora`) quedan en `/opt/oracle/homes/OraDBHome21cEE/network/admin`.
 - "The listener supports no services" es normal hasta crear la base de datos.
+
+## 10. Base de datos (CDB `SGS` / `SGSPRI` con PDB `SGSPDB`)
+
+Data Guard exige el **mismo `DB_NAME`** en la principal y la standby y un **`DB_UNIQUE_NAME` distinto**:
+
+| Parámetro | `SGSPRI` | `SGSSTB` |
+|---|---|---|
+| `DB_NAME` | `SGS` | `SGS` |
+| `DB_UNIQUE_NAME` / SID | `SGSPRI` | `SGSSTB` |
+| PDB | `SGSPDB` | (llega por Data Guard) |
+
+Como `oracle`, dentro de `tmux` (el `dbca` sigue corriendo aunque se corte el SSH; se retoma con `tmux attach -t dbca`):
+
+```
+dnf install -y tmux      # como root, una sola vez
+su - oracle
+tmux new -s dbca
+lsnrctl start            # el listener no arranca solo al encender la VM
+mkdir -p /opt/oracle/fast_recovery_area
+
+dbca -silent -createDatabase \
+  -templateName General_Purpose.dbc \
+  -gdbName SGS -sid SGSPRI \
+  -createAsContainerDatabase true -numberOfPDBs 1 -pdbName SGSPDB \
+  -characterSet AL32UTF8 -nationalCharacterSet AL16UTF16 \
+  -databaseType MULTIPURPOSE -memoryMgmtType AUTO_SGA -totalMemory 2048 \
+  -storageType FS -datafileDestination /opt/oracle/oradata \
+  -enableArchive true \
+  -recoveryAreaDestination /opt/oracle/fast_recovery_area -recoveryAreaSize 20480 \
+  -emConfiguration NONE \
+  -initParams db_unique_name=SGSPRI
+```
+
+- Pide las contraseñas de `SYS`, `SYSTEM` y `PDBADMIN` (no se guardan en el repo). Los avisos `[DBT-06208]` solo indican que no cumplen la recomendación de Oracle (8+ caracteres con mayúscula, minúscula y número); no detienen la creación.
+- Tardó unos 6 minutos y terminó con `100% complete` / `Database creation complete`.
+- Al final muestra "Global Database Name: SGSPRI" porque usa el nombre único; el nombre interno es `SGS`.
+
+Verificación (`sqlplus / as sysdba`):
+
+```
+SELECT name, db_unique_name, log_mode, open_mode FROM v$database;
+-- SGS   SGSPRI   ARCHIVELOG   READ WRITE
+
+SHOW PDBS
+-- SGSPDB   READ WRITE
+
+ALTER PLUGGABLE DATABASE SGSPDB SAVE STATE;   -- la PDB se abre sola al arrancar la base
+```

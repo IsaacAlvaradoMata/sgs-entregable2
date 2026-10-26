@@ -113,3 +113,24 @@ No se integra: `BODEGA` (se mantiene `SUC_ES_CENTRAL`), `EMPRESA` (cubierto por 
 | `SGSSTB` | `sgsstb.localdomain` | `192.168.56.102` | Clon de `SGSPRI` con identidad propia, solo software Oracle ✅ |
 
 Pasos detallados en [`servidores/s1_sgspri.md`](../servidores/s1_sgspri.md).
+
+### S2 — Oracle y SGSPRI
+
+**Nombres de la base para Data Guard** · 2026-10-26
+
+| Parámetro | `SGSPRI` | `SGSSTB` |
+|---|---|---|
+| `DB_NAME` | `SGS` (igual en ambos, requisito de Data Guard) | `SGS` |
+| `DB_UNIQUE_NAME` / SID | `SGSPRI` | `SGSSTB` |
+| PDB | `SGSPDB` | (llega por Data Guard) |
+
+**Instalación de Oracle** · 2026-10-17
+
+| Elemento | Valor |
+|---|---|
+| Software | Oracle Database 21c EE desde el RPM oficial |
+| `ORACLE_BASE` | `/opt/oracle` |
+| `ORACLE_HOME` | `/opt/oracle/product/21c/dbhome_1` |
+| Datafiles | `/opt/oracle/oradata` |
+| Fast Recovery Area | `/opt/oracle/fast_recovery_area` (20 GB) |
+| Modo | ARCHIVELOG |
