@@ -179,7 +179,7 @@ Prohibido: `IF NOT EXISTS` en DDL, `BOOLEAN` en columnas, `SELECT` sin `FROM DUA
 
 **Decisión 4 de B1 (confirmada 2026-10-26)** — bitácora genérica: `SGS_BITACORA` (encabezado: área, tabla, operación, registro, usuario BD/SO, equipo, fecha, `ES_CRITICA`) + `SGS_BITACORA_DETALLE` (columna, valor anterior/nuevo en VARCHAR2(250)) + `SGS_BITACORA_ERROR` aparte. Todo en `SGS_AUD`. Qué es crítico se define en B4.
 
-**Decisión 5 de B1 (confirmada 2026-10-26)** — `SGS_PADRON` + `SGS_DISTRITO_ELECTORAL`; FK opcional desde `SGS_CLIENTE_PERSONA` (solo clientes `NACIONAL`, validado por trigger); cédula nacional de 9 dígitos; el registro de cliente nacional se autocompleta desde el padrón; la carga usa `MERGE`, nunca vacía la tabla. Formato del archivo se resuelve en B5.
+**Decisión 5 de B1 (confirmada 2026-10-26)** — `SGS_PADRON` + `SGS_DISTRITO_ELECTORAL`; FK opcional desde `SGS_CLIENTE_PERSONA` (solo clientes `NACIONAL`, validado por trigger); cédula nacional de 9 dígitos; el registro de cliente nacional autocompleta nombre y apellidos desde el padrón (el sexo se digita: el TSE no lo trae; se quitaron PAD_SEXO y PAD_JUNTA); la carga usa `MERGE`, nunca vacía la tabla. Formato del archivo se resuelve en B5.
 
 **Decisión 6 de B1 (confirmada 2026-10-26)** — `SGS_LOTE` (nace de la línea de factura de proveedor) + `SGS_EXISTENCIA` (lote × sucursal) + traslado encabezado/detalle por lote + `SGS_MOVIMIENTO_INVENTARIO` (cada entrada/salida por lote con su documento). Ventas por FEFO; la factura no lleva lote, el movimiento sí.
 
