@@ -87,8 +87,8 @@ HP de Andrés (Windows 11)                  Mac de Isaac (Apple Silicon)
 Van en una tabla de parámetros (`SGS_` en la tabla, **sin prefijo** en los códigos porque son filas de datos). 🔴 obligatorio por enunciado · 🔒 cifrado.
 
 - **Correo**: `CORREO_REMITENTE` 🔴 · `CORREO_CLAVE` 🔴🔒 · `CORREO_SERVIDOR` (smtp.gmail.com) · `CORREO_PUERTO` (587)
-- **Negocio**: `PCT_AVISO_CLIENTE` (85) · `PCT_AVISO_COORDINADOR` (85) · `PCT_AVISO_GERENTE_CXP` (70) · `DIAS_MOROSIDAD` (30) · `DIAS_PROXIMO_VENCER` (7) · `MESES_ANTIGUEDAD_BODEGA` (6) · `PREMIO_CANTIDAD_CLIENTES` (10) · `PREMIO_MONTO_ORDEN` (100000) 🔴 · `PREMIO_FRECUENCIA_MESES` (6) 🔴
-- **Monitoreo**: `PCT_MAX_TABLESPACE` (85)
+- **Negocio**: `PCT_AVISO_CLIENTE` (0.85) · `PCT_AVISO_COORDINADOR` (0.85) · `PCT_AVISO_GERENTE_CXP` (0.70) · `DIAS_MOROSIDAD` (30) · `DIAS_PROXIMO_VENCER` (7) · `MESES_ANTIGUEDAD_BODEGA` (6) · `PREMIO_CANTIDAD_CLIENTES` (10) · `PREMIO_MONTO_ORDEN` (100000) 🔴 · `PREMIO_FRECUENCIA_MESES` (6) 🔴
+- **Monitoreo**: `PCT_MAX_TABLESPACE` (0.85)
 - **Standby (Andrés)**: `STB_MINUTOS_ARCHIVO` (5) 🔴 · `STB_MB_ARCHIVO` (50) 🔴 · `STB_MINUTOS_TRASLADO` (10) 🔴 · `STB_DIAS_BORRADO` (3) 🔴 · `RESP_HORA_DIARIO` (**pendiente**)
 - **Claves de roles** (se definen en B7): `CLAVE_ROL_GERENTE`, `CLAVE_ROL_JEFE_DEPTO`, `CLAVE_ROL_JEFE_PROVEEDURIA`, `CLAVE_ROL_DIGITADOR` 🔴🔒
 
@@ -126,6 +126,9 @@ bd/
 - Solo de **información concreta que hay que demostrar** (estados, tamaños, privilegios, datos resultantes). Nunca de un mensaje de ejecución exitosa: eso no aporta nada.
 - Se toman justo después de cada consulta o subpaso, no todas al final. En cada paso le indicás a Isaac qué consulta correr y qué tiene que mostrar la captura.
 - Isaac adjunta la captura; vos la guardás en `docs/evidencias/capturas/` con el nombre `<etapa>_<script>_<número>_<qué-muestra>.png` (ej. `B0_01_01_tablespaces.png`) y la registrás en `docs/evidencias/evidencias.md` (qué demuestra cada una). Ese `.md` es la base para armar el documento final.
+
+### Porcentajes
+Siempre como **fracción** (`0.15` = 15 %), `NUMBER(5,4)` + `CHECK BETWEEN 0 AND 1`, en tablas, parámetros y datos de prueba. En correos y reportes se muestran como `85 %`.
 
 ### Compatibilidad con 21c (Docker es 23ai, producción es 21c)
 Prohibido: `IF NOT EXISTS` en DDL, `BOOLEAN` en columnas, `SELECT` sin `FROM DUAL`, `INSERT` multi-fila, `GROUP BY` por alias, `GRANT ... ON SCHEMA`, `DB_DEVELOPER_ROLE`. Tampoco `CONNECT`, `RESOURCE` ni `DBA`: privilegios explícitos.

@@ -20,6 +20,8 @@ Registro de acuerdos tomados. Antes de usar un nombre, valor o criterio nuevo, s
 
 Los parámetros se guardan como **filas** dentro de la tabla de parámetros (no llevan prefijo `SGS_`; la tabla sí). Los valores se guardan en `VARCHAR2(250)` (sin CLOB). 🔴 = obligatorio por el enunciado · 🟢 = recomendado · 🔒 = cifrado con `DBMS_CRYPTO`.
 
+**Porcentajes** (2026-10-26): todos los porcentajes del modelo y de los parámetros se guardan como **fracción** (`0.15` = 15 %), en `NUMBER(5,4)` con `CHECK BETWEEN 0 AND 1`. Se mantiene la convención del E1, que el profesor no corrigió. Los textos dirigidos a personas (correos, reportes) los muestran como porcentaje (`85 %`).
+
 **Destinatarios de notificaciones:** no van como parámetros. Se guardan en una **tabla de destinatarios** aparte (tipo: gerente, coordinador, DBA; uno o varios correos por tipo), porque el enunciado habla de "correo(s)". Su diseño se cierra en B1.
 
 ### Correo
@@ -35,9 +37,9 @@ Los parámetros se guardan como **filas** dentro de la tabla de parámetros (no 
 
 | Código | Valor inicial | Tipo | Lo usa |
 |---|---|---|---|
-| `PCT_AVISO_CLIENTE` | 85 | 🟢 | Isaac |
-| `PCT_AVISO_COORDINADOR` | 85 | 🟢 | Isaac |
-| `PCT_AVISO_GERENTE_CXP` | 70 | 🟢 | Isaac |
+| `PCT_AVISO_CLIENTE` | 0.85 | 🟢 | Isaac |
+| `PCT_AVISO_COORDINADOR` | 0.85 | 🟢 | Isaac |
+| `PCT_AVISO_GERENTE_CXP` | 0.70 | 🟢 | Isaac |
 | `DIAS_MOROSIDAD` | 30 | 🟢 | Isaac |
 | `DIAS_PROXIMO_VENCER` | 7 | 🟢 | Isaac |
 | `MESES_ANTIGUEDAD_BODEGA` | 6 | 🟢 | Isaac |
@@ -49,7 +51,7 @@ Los parámetros se guardan como **filas** dentro de la tabla de parámetros (no 
 
 | Código | Valor inicial | Tipo | Lo usa |
 |---|---|---|---|
-| `PCT_MAX_TABLESPACE` | 85 | 🟢 | Isaac |
+| `PCT_MAX_TABLESPACE` | 0.85 | 🟢 | Isaac |
 
 ### Standby y respaldos
 
