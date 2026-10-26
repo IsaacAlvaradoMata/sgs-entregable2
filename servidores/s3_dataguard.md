@@ -157,3 +157,29 @@ tnsping SGSPRI     # desde SGSSTB
 ```
 
 > Si `tnsping` dice "Used EZCONNECT adapter", falta el `tnsnames.ora` en ese servidor.
+
+## 7. Preparar SGSSTB para recibir la copia
+
+**Archivo de contraseñas** (desde `SGSPRI`, como `oracle`). Las dos bases deben tener el mismo; en el destino se renombra con el SID de la standby:
+
+```
+scp /opt/oracle/dbs/orapwSGSPRI oracle@sgsstb:/opt/oracle/dbs/orapwSGSSTB
+```
+
+**En `SGSSTB`** (como `oracle`): carpetas, archivo de parámetros mínimo y arranque en `NOMOUNT`:
+
+```
+mkdir -p /opt/oracle/oradata/SGSSTB/pdbseed /opt/oracle/oradata/SGSSTB/SGSPDB
+mkdir -p /opt/oracle/fast_recovery_area /opt/oracle/admin/SGSSTB/adump
+echo "*.db_name='SGS'" > /opt/oracle/dbs/initSGSSTB.ora
+
+sqlplus / as sysdba
+STARTUP NOMOUNT PFILE='/opt/oracle/dbs/initSGSSTB.ora';   -- ORACLE instance started.
+```
+
+**Prueba desde `SGSPRI`** (confirma red, listener estático y archivo de contraseñas):
+
+```
+sqlplus sys@SGSSTB as sysdba
+SELECT status FROM v$instance;   -- STARTED
+```
