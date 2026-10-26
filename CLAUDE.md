@@ -195,3 +195,4 @@ Después de cerrar las 6 decisiones se escribe `bd/02_modelo.sql`, tabla por tab
 3. Decile en pocas líneas dónde estamos y cuál es el siguiente paso concreto.
 4. Cada decisión que Isaac confirme, anotala en `docs/decisiones.md`. Al cerrar una etapa, marcá su estado en la matriz de trazabilidad de `guia.md` y actualizá la sección 8 de este archivo.
 5. Hacé commits pequeños y con mensajes claros en español, solo con lo que Isaac confirmó que funciona.
+6. **Nunca te pongás como colaborador** en commits ni PRs: sin línea `Co-Authored-By` ni "Generated with Claude Code". El autor es solo Isaac.

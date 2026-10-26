@@ -1,15 +1,6 @@
-/* ================================================================
-   00_reinicio_desarrollo.sql
-   SGS - Entregable #2 - Administracion de Bases de Datos (EIF-402)
-
-   SOLO PARA EL AMBIENTE DE DESARROLLO (Docker). NO se ejecuta en SGSPRI.
-   Elimina el esquema del proyecto y sus tablespaces para volver a
-   ejecutar todos los scripts desde cero.
-
-   Ejecutar conectado a la PDB de desarrollo (FREEPDB1) como SYSTEM.
-   Antes de ejecutar: cerrar cualquier conexion abierta como SGS_ADMIN
-   o IALVARADO (si no, Oracle no permite eliminar el usuario).
-   ================================================================ */
+-- 00_reinicio_desarrollo.sql: elimina el esquema y los tablespaces del proyecto para volver a ejecutar todo desde cero.
+-- Solo desarrollo (Docker, PDB FREEPDB1) como SYSTEM. NO se ejecuta en SGSPRI.
+-- Antes de ejecutar: cerrar las conexiones abiertas como SGS_ADMIN o IALVARADO.
 
 -- 1. Validar que la sesion esta en una PDB y no en el CDB raiz
 DECLARE
