@@ -158,6 +158,7 @@ Prohibido: `IF NOT EXISTS` en DDL, `BOOLEAN` en columnas, `SELECT` sin `FROM DUA
 - Descuento con días desde ingreso / días para vencer y validación por tipo de criterio.
 - Tipo de pago en abonos a proveedor.
 - Porcentaje de impuesto por producto.
+- Ampliación (2026-10-25): estado `'A'/'I'` en catálogos, montos `NUMBER(14,2)`, número de factura y desglose en factura de proveedor, traslado por lote (se cierra en decisión 6), abonos con el mecanismo único del E1 (`SGS_PAGO_FACTURA_*`). Análisis completo en `notas/analisis_e1.md`.
 
 **No se integra**: `BODEGA` (se mantiene `SUC_ES_CENTRAL`), `EMPRESA`, `PRECIO_PRODUCTO` (el historial lo cubre `SGS_HISTORICO_PRECIO`), cliente único (se mantiene cliente/cliente_persona), `CLIENTE_DIRECCION`, cantidades de promoción en `PROMOCION_PRODUCTO`.
 

@@ -84,6 +84,13 @@ Se integra (traducido a la convención SGS):
 - Tipo de pago en los abonos a proveedor.
 - Porcentaje de impuesto por producto (opcional elegido).
 
+Ampliación · 2026-10-25 (tras revisar los scripts del E1, ver [`notas/analisis_e1.md`](../notas/analisis_e1.md)):
+- Estado activo/inactivo (`VARCHAR2(1)` `'A'/'I'` con CHECK) en los catálogos que no lo tienen: proveedor, producto, familia, tipo de pago, promoción y descuento.
+- Montos en `NUMBER(14,2)` en lugar de `NUMBER(10,2)`.
+- Número de factura del proveedor (único por proveedor) y desglose de subtotal, descuento e impuesto en la factura de proveedor.
+- Traslado por lote en lugar de por producto; su forma final se cierra con la decisión 6 (modelado de lotes).
+- Los abonos se manejan con el mecanismo único del E1 (`SGS_PAGO_FACTURA_*`, pago inmediato o abono parcial); no se separa pago y abono como en `CADENA_NEGOCIOS`.
+
 No se integra: `BODEGA` (se mantiene `SUC_ES_CENTRAL`), `EMPRESA` (cubierto por tipo de negocio), `PRECIO_PRODUCTO` (el E2 pide historial de costo, ya cubierto), `CLIENTE` único (se mantiene la separación cliente / cliente persona), `CLIENTE_DIRECCION` (dos direcciones fijas), cantidades de promoción en `PROMOCION_PRODUCTO` (el E2 las ubica en la tabla de promociones).
 
 **Forma de trabajo** · 2026-10-13
