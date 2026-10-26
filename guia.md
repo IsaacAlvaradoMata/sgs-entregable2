@@ -204,9 +204,9 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 
 *a) Correcciones del profesor al E1*
 - [x] Tabla de países; nacionalidad y residencia del cliente pasan a referenciarla.
-- [ ] Ningún `CLOB`: pasar a `VARCHAR2(250)`.
-- [ ] Todos los estados como `VARCHAR2(1)` con `CHECK` de valores permitidos.
-- [ ] Género como `VARCHAR2(1)` con `CHECK`; mismo criterio para otros atributos codificados.
+- [x] Ningún `CLOB`: pasar a `VARCHAR2(250)`.
+- [x] Todos los estados como `VARCHAR2(1)` con `CHECK` de valores permitidos.
+- [x] Género como `VARCHAR2(1)` con `CHECK`; mismo criterio para otros atributos codificados.
 - [x] Usuario dueño `SGS_ADMIN` con privilegios explícitos (sin `CONNECT`, `RESOURCE` ni `DBA`).
 
 *b) Integración de lo fuerte del esquema de Andrés*
@@ -216,16 +216,16 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 - [x] Descuento con días desde ingreso / días para vencer y su validación por tipo de criterio.
 
 *c) Estructuras nuevas que pide el E2*
-- [ ] Tabla de parámetros (incluye espacio para claves cifradas de roles y correo).
-- [ ] Configuración de correo y destinatarios de notificaciones (gerente, coordinador, DBA).
-- [ ] Bitácora de errores.
-- [ ] Bitácoras de auditoría de las 7 áreas (según la estrategia decidida).
+- [x] Tabla de parámetros (incluye espacio para claves cifradas de roles y correo).
+- [x] Configuración de correo y destinatarios de notificaciones (gerente, coordinador, DBA).
+- [x] Bitácora de errores.
+- [x] Bitácoras de auditoría de las 7 áreas (según la estrategia decidida).
 - [x] Movimientos de inventario.
 - [x] Tipos de promoción y acciones otorgadas por factura.
 - [x] Detalle de productos incluidos en un descuento.
 - [x] Padrón nacional y su enlace con clientes.
-- [ ] Cierre diario (encabezado) y su detalle por cajero.
-- [ ] Órdenes de compra para clientes premiados.
+- [x] Cierre diario (encabezado) y su detalle por cajero.
+- [x] Órdenes de compra para clientes premiados.
 
 *d) Lo que acompaña al modelo*
 - [ ] Tablespaces, secuencias, índices (incluidos los que necesitarán las consultas de los requerimientos), comentarios y datos de prueba.
