@@ -203,7 +203,7 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 **Implementaciones:**
 
 *a) Correcciones del profesor al E1*
-- [ ] Tabla de países; nacionalidad y residencia del cliente pasan a referenciarla.
+- [x] Tabla de países; nacionalidad y residencia del cliente pasan a referenciarla.
 - [ ] Ningún `CLOB`: pasar a `VARCHAR2(250)`.
 - [ ] Todos los estados como `VARCHAR2(1)` con `CHECK` de valores permitidos.
 - [ ] Género como `VARCHAR2(1)` con `CHECK`; mismo criterio para otros atributos codificados.
@@ -223,7 +223,7 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 - [ ] Movimientos de inventario.
 - [ ] Tipos de promoción y acciones otorgadas por factura.
 - [ ] Detalle de productos incluidos en un descuento.
-- [ ] Padrón nacional y su enlace con clientes.
+- [x] Padrón nacional y su enlace con clientes.
 - [ ] Cierre diario (encabezado) y su detalle por cajero.
 - [ ] Órdenes de compra para clientes premiados.
 
