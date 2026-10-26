@@ -2,7 +2,7 @@
 
 Pasos confirmados para convertir `SGSSTB` en standby física de `SGSPRI`. Capturas en [`capturas/s3_dataguard/`](capturas/s3_dataguard/).
 
-Estado: **`SGSPRI` preparada (force logging, flashback, redo de 50 MB y standby redo logs).** Parámetros de Data Guard y red de Oracle configurados. Falta: duplicar la base y arrancar la aplicación de cambios.
+Estado: **Data Guard funcionando.** `SGSSTB` es standby física de `SGSPRI`, abierta en solo lectura con aplicación en tiempo real (Active Data Guard). Probado con un dato insertado en `SGSPRI` que aparece en `SGSSTB`.
 
 Comandos como `oracle` en `SGSPRI`, dentro de `sqlplus / as sysdba`, salvo que se indique otra cosa.
 
@@ -242,3 +242,30 @@ SELECT dest_id, status, error FROM v$archive_dest WHERE dest_id = 2;   -- 2  VAL
 SELECT name, role, action FROM v$dataguard_process ORDER BY name;
 -- MRP0 (managed recovery), PR00 APPLYING_LOG y procesos rfs (reciben el redo de SGSPRI)
 ```
+
+## 10. Prueba: un dato insertado en SGSPRI aparece en SGSSTB
+
+**En `SGSPRI`:**
+
+```
+ALTER SESSION SET CONTAINER = SGSPDB;
+CREATE TABLE system.prueba_dg (id NUMBER, texto VARCHAR2(50), fecha DATE);
+INSERT INTO system.prueba_dg VALUES (1, 'Hola desde SGSPRI', SYSDATE);
+COMMIT;
+ALTER SESSION SET CONTAINER = CDB$ROOT;
+ALTER SYSTEM SWITCH LOGFILE;
+```
+
+**En `SGSSTB`**, segundos después:
+
+```
+ALTER SESSION SET CONTAINER = SGSPDB;
+SELECT * FROM system.prueba_dg;          -- aparece la fila insertada en SGSPRI
+
+INSERT INTO system.prueba_dg VALUES (2, 'Desde la standby', SYSDATE);
+-- ORA-16000: database or pluggable database open for read-only access
+```
+
+El dato viaja de la principal a la standby y la standby no acepta escrituras. **S3 queda completo.**
+
+> En la prueba la fila se insertó dos veces por error; por eso aparece duplicada en las capturas.

@@ -110,7 +110,7 @@ No se integra: `BODEGA` (se mantiene `SUC_ES_CENTRAL`), `EMPRESA` (cubierto por 
 | Servidor | Hostname | IP red interna | Estado |
 |---|---|---|---|
 | `SGSPRI` | `sgspri.localdomain` | `192.168.56.101` | Linux instalado, SSH desde la HP ✅ |
-| `SGSSTB` | `sgsstb.localdomain` | `192.168.56.102` | Clon de `SGSPRI` con identidad propia, solo software Oracle ✅ |
+| `SGSSTB` | `sgsstb.localdomain` | `192.168.56.102` | Standby física de `SGSPRI` (Data Guard) ✅ |
 
 Pasos detallados en [`servidores/s1_sgspri.md`](../servidores/s1_sgspri.md).
 
@@ -134,3 +134,17 @@ Pasos detallados en [`servidores/s1_sgspri.md`](../servidores/s1_sgspri.md).
 | Datafiles | `/opt/oracle/oradata` |
 | Fast Recovery Area | `/opt/oracle/fast_recovery_area` (20 GB) |
 | Modo | ARCHIVELOG |
+
+### S3 — Standby
+
+**Configuración de Data Guard** · 2026-10-26
+
+| Elemento | Valor |
+|---|---|
+| Tipo de standby | Física, abierta en solo lectura con aplicación en tiempo real (Active Data Guard) |
+| Transporte de redo | `ASYNC` por la red interna (`SERVICE=SGSSTB` / `SERVICE=SGSPRI`) |
+| Tamaño de redo y standby redo | 50 MB (requisito "cada 50 MB"); 3 grupos de redo y 4 de standby redo |
+| Creación de la standby | `RMAN DUPLICATE ... FOR STANDBY FROM ACTIVE DATABASE` |
+| Rutas de datafiles en `SGSSTB` | `/opt/oracle/oradata/SGSSTB/` (`db_file_name_convert`) |
+| Force logging / Flashback | Activados en ambos |
+
