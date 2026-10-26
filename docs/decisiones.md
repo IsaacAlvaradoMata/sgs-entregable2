@@ -135,6 +135,17 @@ Bitácora general de encabezado y detalle (audit trail genérico) en lugar de un
 - `SGS_HISTORICO_PRECIO` se mantiene como historial tipado del negocio; el cambio de costo queda también en la bitácora como auditoría.
 - Pendiente para B4: definir qué operaciones se marcan como críticas, tabla por tabla.
 
+**Decisión 5 — Enlace padrón ↔ clientes** · 2026-10-26
+
+- Tablas nuevas: **`SGS_PADRON`** (una fila por persona: cédula, nombre, apellidos, sexo, distrito electoral) y **`SGS_DISTRITO_ELECTORAL`** (catálogo `Distelec`: provincia, cantón, distrito).
+- El padrón trae ciudadanos costarricenses mayores de edad (nacidos en Costa Rica y naturalizados). En el modelo, `NACIONAL` = cliente con cédula costarricense; `EXTRANJERO` = DIMEX o pasaporte (no está en el padrón); las empresas tampoco están.
+- **FK opcional** desde `SGS_CLIENTE_PERSONA` hacia `SGS_PADRON` (columna nueva, nula para extranjeros). Un trigger impide el enlace si el cliente no es `NACIONAL`.
+- `CLI_CEDULA` de un cliente `NACIONAL` debe tener 9 dígitos sin guiones (CHECK), igual que el padrón.
+- Al registrar un cliente nacional, el procedimiento de registro busca la cédula en el padrón y llena nombre, apellidos y sexo (`1/2` → `M/F`). A los extranjeros se les digita todo.
+- La carga del padrón hace `MERGE` (inserta nuevos, actualiza existentes); nunca vacía la tabla, para no romper la FK de los clientes.
+- Padrón en `SGS_DATA`. El formato del archivo (TXT del TSE o CSV del laboratorio) solo afecta el procedimiento de carga (B5), no el modelo.
+- Consecuencias: los clientes nacionales de prueba deben usar cédulas que existan en el padrón cargado; el padrón se carga antes que los clientes.
+
 **Forma de trabajo** · 2026-10-13
 - Desarrollo en Docker (`FREEPDB1`); oficial en `SGSPRI` (`SGSPDB`).
 - El script es lo oficial: nada se cambia solo en la base.
