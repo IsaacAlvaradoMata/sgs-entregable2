@@ -2,7 +2,7 @@
 
 Pasos confirmados para convertir `SGSSTB` en standby física de `SGSPRI`. Capturas en [`capturas/s3_dataguard/`](capturas/s3_dataguard/).
 
-Estado: **`SGSPRI` preparada (force logging, flashback, redo de 50 MB y standby redo logs).** Parámetros de Data Guard configurados. Falta: red de Oracle, duplicar la base y arrancar la aplicación de cambios.
+Estado: **`SGSPRI` preparada (force logging, flashback, redo de 50 MB y standby redo logs).** Parámetros de Data Guard y red de Oracle configurados. Falta: duplicar la base y arrancar la aplicación de cambios.
 
 Comandos como `oracle` en `SGSPRI`, dentro de `sqlplus / as sysdba`, salvo que se indique otra cosa.
 
@@ -94,3 +94,66 @@ SELECT name, value FROM v$parameter
  WHERE name IN ('log_archive_config','log_archive_dest_1','log_archive_dest_2',
                 'log_archive_dest_state_2','fal_server','standby_file_management');
 ```
+
+## 6. Red de Oracle en los dos servidores
+
+Archivos en `/opt/oracle/homes/OraDBHome21cEE/network/admin/` (Oracle home de solo lectura del RPM).
+
+**`tnsnames.ora`, igual en `SGSPRI` y `SGSSTB`:**
+
+```
+cat > /opt/oracle/homes/OraDBHome21cEE/network/admin/tnsnames.ora <<'EOF'
+SGSPRI =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = sgspri.localdomain)(PORT = 1521))
+    (CONNECT_DATA = (SERVER = DEDICATED)(SERVICE_NAME = SGSPRI)(UR = A))
+  )
+
+SGSSTB =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = sgsstb.localdomain)(PORT = 1521))
+    (CONNECT_DATA = (SERVER = DEDICATED)(SERVICE_NAME = SGSSTB)(UR = A))
+  )
+
+SGSPDB =
+  (DESCRIPTION =
+    (ADDRESS = (PROTOCOL = TCP)(HOST = sgspri.localdomain)(PORT = 1521))
+    (CONNECT_DATA = (SERVER = DEDICATED)(SERVICE_NAME = sgspdb))
+  )
+EOF
+```
+
+`(UR = A)` permite conectarse a una instancia en `NOMOUNT` (necesario para duplicar la standby).
+
+**Registro estático en `listener.ora`** (en `SGSSTB` es igual cambiando `SGSPRI` por `SGSSTB`). Permite conectarse a la instancia aunque la base esté apagada; `*_DGMGRL` lo usa el broker en el switchover:
+
+```
+cat >> /opt/oracle/homes/OraDBHome21cEE/network/admin/listener.ora <<'EOF'
+
+SID_LIST_LISTENER =
+  (SID_LIST =
+    (SID_DESC =
+      (GLOBAL_DBNAME = SGSPRI)
+      (ORACLE_HOME = /opt/oracle/product/21c/dbhome_1)
+      (SID_NAME = SGSPRI)
+    )
+    (SID_DESC =
+      (GLOBAL_DBNAME = SGSPRI_DGMGRL)
+      (ORACLE_HOME = /opt/oracle/product/21c/dbhome_1)
+      (SID_NAME = SGSPRI)
+    )
+  )
+EOF
+lsnrctl reload     # en SGSSTB: lsnrctl start
+```
+
+En `SGSSTB`, los servicios estáticos aparecen con `status UNKNOWN` mientras la base está apagada; es lo esperado.
+
+Verificación (debe decir **Used TNSNAMES adapter** y **OK**):
+
+```
+tnsping SGSSTB     # desde SGSPRI
+tnsping SGSPRI     # desde SGSSTB
+```
+
+> Si `tnsping` dice "Used EZCONNECT adapter", falta el `tnsnames.ora` en ese servidor.
