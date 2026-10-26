@@ -166,6 +166,14 @@ Bitácora general de encabezado y detalle (audit trail genérico) en lugar de un
 - Enlace al padrón por id (`CLP_ID_PADRON → PAD_ID`), único por persona; se busca por cédula al registrar. El id se conserva entre recargas porque el `MERGE` es por cédula.
 - `SEQ_PADRON` con `CACHE 1000` (única excepción a `NOCACHE`) por la carga masiva.
 
+**Tablas de monitoreo** · 2026-10-26
+
+Revisión de B2 a B8 contra el enunciado: todo tiene dónde guardarse salvo el "crecimiento de la base de datos" del paquete de monitoreo, que requiere mediciones en el tiempo.
+- **`SGS_MONITOREO`** (una fila por revisión diaria): tamaño total de la base, sesiones totales y activas, objetos inválidos e índices dañados.
+- **`SGS_MONITOREO_TABLESPACE`** (detalle): espacio usado y máximo de cada tablespace en cada revisión. El porcentaje de uso no se guarda: se calcula (usado / máximo).
+- Ambas en `SGS_AUD`, como registros históricos.
+- No se agrega registro de notificaciones enviadas (el enunciado no lo pide). Pendiente: preguntar a Andrés si sus procesos de standby y RMAN necesitan alguna tabla.
+
 **Datos de prueba en dos partes** · 2026-10-26
 - **B1:** datos de catálogos que no dependen de triggers (países, sucursales, tipos de negocio, familias, tipos de pago, distritos, proveedores, clientes, productos, tipos de promoción, premios, descuentos).
 - **Después de B3:** operaciones (compras, ventas, pagos, devoluciones, traslados) cargadas **a través de los packages**, para que saldos, existencias, movimientos, bitácoras e histórico de precios los llenen los triggers y queden consistentes. Esa carga sirve además como prueba de los packages.

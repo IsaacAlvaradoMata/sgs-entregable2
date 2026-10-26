@@ -4,4 +4,7 @@ Qué falta y quién lo tiene. Se actualiza al avanzar; el detalle de cada etapa 
 
 | Pendiente | Responsable | Estado |
 |---|---|---|
-| `bd/02_modelo.sql` | Isaac | Pendiente |
+| `bd/02_modelo.sql`: estructura y datos de catálogos | Isaac | Hecho (2026-10-26) |
+| Preguntar a Andrés si sus procesos de standby y RMAN necesitan alguna tabla (registro de traslados, respaldos) | Isaac | Pendiente |
+| Datos de prueba de operaciones (compras, ventas, pagos, devoluciones, traslados) | Isaac | Después de B3 |
+| Diagrama relacional y diccionario de datos (se generan del script al cerrar el modelo) | Isaac | Pendiente |

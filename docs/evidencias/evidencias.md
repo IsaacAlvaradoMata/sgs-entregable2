@@ -68,6 +68,8 @@ La consulta no devuelve filas: `SGS_ADMIN` no tiene roles, en particular `CONNEC
 
 Ambiente: Docker, PDB `FREEPDB1`, conectado como `SGS_ADMIN`. Ejecución completa desde cero (`00` → `01` → `02`) el 2026-10-26.
 
+> **Pendiente:** las capturas 1 a 4 se retoman al cerrar el modelo. Después de tomarlas se agregaron `SGS_MONITOREO` y `SGS_MONITOREO_TABLESPACE` (57 tablas). Las capturas 5 y 6 siguen vigentes.
+
 ### 1. Resumen de objetos del esquema
 
 ```sql
