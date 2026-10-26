@@ -151,3 +151,32 @@ SELECT pro_codigo, suc_nombre, pro_precio_costo, ps_pct_utilidad, pct_descuento,
 ![Precio de venta](capturas/B1_02_06_precio_venta.png)
 
 El precio de venta se calcula a partir del costo, la utilidad de la sucursal, el mayor descuento vigente (topado al descuento máximo de la sucursal) y el impuesto del artículo. Ejemplo: el detergente (`LIM-001`) cuesta ₡1.700; con 30 % de utilidad son ₡2.210; el 15 % de descuento de su familia deja ₡1.878,50; con 13 % de impuesto el precio de venta es ₡2.122,71.
+
+## B2 — Base interna (`bd/03_base_interna.sql`)
+
+Ambiente: Docker, PDB `FREEPDB1`, conectado como `SGS_ADMIN`.
+
+### 1. Registro de errores (`SGS_PKG_ERRORES`)
+
+Prueba: un bloque provoca una división entre cero, la captura con `SGS_PKG_ERRORES.registrar` y la vuelve a lanzar con `RAISE` (el bloque termina con el error esperado `ORA-01476`).
+
+```sql
+DECLARE
+    v_resultado NUMBER;
+BEGIN
+    v_resultado := 1 / 0;
+EXCEPTION
+    WHEN OTHERS THEN
+        ROLLBACK;
+        SGS_PKG_ERRORES.registrar('PRUEBA_B2.division_entre_cero');
+        RAISE;
+END;
+
+SELECT ber_id, ber_programa, ber_codigo, ber_mensaje, ber_traza, ber_usuario_bd, ber_fecha
+  FROM SGS_BITACORA_ERROR
+ ORDER BY ber_id;
+```
+
+![Bitácora de errores](capturas/B2_03_01_bitacora_error.png)
+
+El error quedó registrado con el programa que falló, su código y mensaje, la línea donde ocurrió (traza), la cuenta de Oracle y la fecha. Se registra en una transacción autónoma, por eso queda guardado aunque el bloque que falló haga `ROLLBACK`.
