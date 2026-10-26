@@ -101,6 +101,29 @@ Opción C: encabezado de cuenta por cliente y por proveedor + detalle por factur
 - **Abonos**: en `SGS_PAGO_FACTURA_*`, ligados a la factura; el último pago de un cliente sale de ahí (morosidad).
 - El saldo del encabezado y del detalle **solo lo mantienen los triggers**; nunca se edita a mano. La redundancia es una desnormalización controlada para cumplir literalmente el enunciado ("aumentar el saldo del cliente" + "agregar esta factura al detalle") y para la concurrencia.
 
+**Decisión 3 — Códigos de atributos de dominio corto** · 2026-10-25
+
+Regla (sigue la corrección del profesor: estados y género en `VARCHAR2(1)` con CHECK, sin `CHAR`):
+
+| Tipo de atributo | Formato |
+|---|---|
+| Estados de registros y documentos | `VARCHAR2(1)` + CHECK |
+| Indicadores sí/no | `VARCHAR2(1)` `'S'/'N'` + CHECK |
+| Datos personales cortos | `VARCHAR2(1)` + CHECK |
+| Tipos que guían la lógica (`CLI_TIPO_PERSONA`, `DSC_TIPO_CRITERIO`, etc.) | Palabra corta en `VARCHAR2` + CHECK |
+
+Códigos:
+
+| Atributo | Códigos |
+|---|---|
+| Estado de catálogos y usuarios | `A` activo · `I` inactivo |
+| Estado de factura (venta y proveedor) | `P` pendiente · `C` cancelada · `N` anulada |
+| Sexo | `M` masculino · `F` femenino |
+| Estado civil | `S` soltero · `C` casado · `D` divorciado · `V` viudo · `U` unión libre |
+
+- Contado/crédito se mantiene como indicador `'S'/'N'` (`FV_ES_CREDITO` del E1) y se agrega el equivalente en la factura de proveedor; no se usa el campo `CONTADO/CREDITO` de `CADENA_NEGOCIOS`.
+- El detalle de cuenta por cobrar / pagar **no lleva estado propio**: el estado vive en la factura; un abono parcial se identifica comparando el saldo del detalle con su monto original.
+
 **Forma de trabajo** · 2026-10-13
 - Desarrollo en Docker (`FREEPDB1`); oficial en `SGSPRI` (`SGSPDB`).
 - El script es lo oficial: nada se cambia solo en la base.

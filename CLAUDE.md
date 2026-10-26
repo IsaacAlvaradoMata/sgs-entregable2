@@ -171,8 +171,10 @@ Prohibido: `IF NOT EXISTS` en DDL, `BOOLEAN` en columnas, `SELECT` sin `FROM DUA
 
 **Decisión 2 de B1 (confirmada 2026-10-25)** — opción C: encabezado por cliente/proveedor con límite y saldo total (fila que se bloquea con `FOR UPDATE`) + detalle por factura a crédito con monto original y saldo. Abonos en `SGS_PAGO_FACTURA_*`. Saldos mantenidos solo por triggers (desnormalización controlada). Detalle en `docs/decisiones.md`.
 
+**Decisión 3 de B1 (confirmada 2026-10-25)** — estados, indicadores y datos personales cortos en `VARCHAR2(1)` + CHECK; tipos que guían lógica como palabra corta. Estado registro `A/I`; factura `P/C/N`; sexo `M/F`; estado civil `S/C/D/V/U`. Contado/crédito como `ES_CREDITO S/N`. El detalle de cuenta no lleva estado (vive en la factura).
+
+
 **Decisiones pendientes de B1:**
-3. Códigos de atributos de dominio corto (estados, sexo, estado civil, tipo de persona).
 4. Bitácoras: una general con valor anterior/nuevo vs. una tabla de auditoría por área.
 5. Enlace padrón ↔ clientes (relación opcional: extranjeros y empresas no están en el padrón).
 6. Modelado de lotes.
