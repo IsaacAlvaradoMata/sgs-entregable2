@@ -124,6 +124,17 @@ Códigos:
 - Contado/crédito se mantiene como indicador `'S'/'N'` (`FV_ES_CREDITO` del E1) y se agrega el equivalente en la factura de proveedor; no se usa el campo `CONTADO/CREDITO` de `CADENA_NEGOCIOS`.
 - El detalle de cuenta por cobrar / pagar **no lleva estado propio**: el estado vive en la factura; un abono parcial se identifica comparando el saldo del detalle con su monto original.
 
+**Decisión 4 — Estrategia de bitácoras** · 2026-10-26
+
+Bitácora general de encabezado y detalle (audit trail genérico) en lugar de una tabla de auditoría por área.
+- **`SGS_BITACORA`** (encabezado, una fila por operación): área (una de las 7 del enunciado, con CHECK), tabla, operación (`I/U/D`), id del registro, usuario de base de datos, usuario del sistema operativo y equipo, fecha (`TIMESTAMP`) e indicador `ES_CRITICA` `'S'/'N'`.
+- **`SGS_BITACORA_DETALLE`** (una fila por columna modificada): columna, valor anterior y valor nuevo en `VARCHAR2(250)`, sin CLOB.
+- **`SGS_BITACORA_ERROR`** aparte: package o procedimiento, código y mensaje de error, usuario y fecha. La usa el manejo de excepciones de todos los packages.
+- Las tres en `SGS_AUD`.
+- Cambios respecto al E1: se elimina el CLOB de `BIT_DETALLE`, la FK a `SGS_USUARIO` (los triggers ven al usuario de base de datos) y las acciones `LOGIN/LOGOUT` (el monitoreo de sesiones va en B8).
+- `SGS_HISTORICO_PRECIO` se mantiene como historial tipado del negocio; el cambio de costo queda también en la bitácora como auditoría.
+- Pendiente para B4: definir qué operaciones se marcan como críticas, tabla por tabla.
+
 **Forma de trabajo** · 2026-10-13
 - Desarrollo en Docker (`FREEPDB1`); oficial en `SGSPRI` (`SGSPDB`).
 - El script es lo oficial: nada se cambia solo en la base.

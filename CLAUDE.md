@@ -173,9 +173,9 @@ Prohibido: `IF NOT EXISTS` en DDL, `BOOLEAN` en columnas, `SELECT` sin `FROM DUA
 
 **Decisión 3 de B1 (confirmada 2026-10-25)** — estados, indicadores y datos personales cortos en `VARCHAR2(1)` + CHECK; tipos que guían lógica como palabra corta. Estado registro `A/I`; factura `P/C/N`; sexo `M/F`; estado civil `S/C/D/V/U`. Contado/crédito como `ES_CREDITO S/N`. El detalle de cuenta no lleva estado (vive en la factura).
 
+**Decisión 4 de B1 (confirmada 2026-10-26)** — bitácora genérica: `SGS_BITACORA` (encabezado: área, tabla, operación, registro, usuario BD/SO, equipo, fecha, `ES_CRITICA`) + `SGS_BITACORA_DETALLE` (columna, valor anterior/nuevo en VARCHAR2(250)) + `SGS_BITACORA_ERROR` aparte. Todo en `SGS_AUD`. Qué es crítico se define en B4.
 
 **Decisiones pendientes de B1:**
-4. Bitácoras: una general con valor anterior/nuevo vs. una tabla de auditoría por área.
 5. Enlace padrón ↔ clientes (relación opcional: extranjeros y empresas no están en el padrón).
 6. Modelado de lotes.
 
