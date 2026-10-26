@@ -11,7 +11,7 @@ Este archivo es tu contexto completo. Vas a continuar el trabajo de un asistente
 - **Paso a paso**: un tema a la vez. No le entregues scripts completos de una etapa por adelantado; ya lo corrigió antes por eso. Para el modelo (`02_modelo.sql`) se trabaja por **bloques funcionales** de tablas relacionadas (acordado 2026-10-26): resumís el diseño del bloque y qué cambia respecto al E1 → Isaac confirma → le das el bloque completo → lo corre con `Option + X` → una consulta de verificación por bloque → commit. Si una sentencia falla, se corrige solo esa.
 - Cuando hay que corregir algo, entregá el **script corregido completo**, no fragmentos sueltos.
 - En SQL usá **comentarios simples en línea**, no encabezados largos en bloque.
-- Antes de diseñar, citá **textualmente** lo que pide el enunciado.
+- Antes de diseñar, citá **textualmente** lo que pide el enunciado. **La fuente de verdad es el enunciado del E2** (y el del E1 en lo que sigue vigente para el modelo). Los laboratorios (`docs/ABD_L#3...`) solo sirven como patrón cuando el enunciado no define algo.
 - Guardá el avance en archivos (por ejemplo `docs/decisiones.md`), no solo en la conversación.
 - En todo lo que va dirigido al profesor (manuales, comentarios de scripts), escribí como si **Isaac** le explicara al profesor. No le expliqués conceptos básicos al profe ni le citás los números de requisito del enunciado.
 - En guías y manuales documentá **solo pasos confirmados que funcionan**. Nada de intentos fallidos.
@@ -122,7 +122,7 @@ bd/
 - Flujo por paso: analizás la decisión y la describís con la cita del enunciado → Isaac confirma → la anotás en `docs/decisiones.md` → le das el script de ese paso → Isaac lo prueba en Docker → si funciona, se marca `- [x]` en `guia.md` y se hace commit.
 
 ### Evidencias (para el PDF de evidencias)
-- Solo de pasos que **ya funcionan**. Nunca de errores, pruebas fallidas ni capturas que Isaac manda para preguntar.
+- Solo de pasos que **ya funcionan**. Nunca de errores de nuestros scripts, pruebas fallidas ni capturas que Isaac manda para preguntar. **Excepción:** los errores **esperados** que demuestran que una restricción funciona sí son evidencia (ej. un rol sin permiso que intenta borrar y Oracle lo rechaza, una cuenta bloqueada por el perfil), como pide el laboratorio #3.
 - Solo de **información concreta que hay que demostrar** (estados, tamaños, privilegios, datos resultantes). Nunca de un mensaje de ejecución exitosa: eso no aporta nada.
 - Se toman justo después de cada consulta o subpaso, no todas al final. En cada paso le indicás a Isaac qué consulta correr y qué tiene que mostrar la captura.
 - Isaac adjunta la captura; vos la guardás en `docs/evidencias/capturas/` con el nombre `<etapa>_<script>_<número>_<qué-muestra>.png` (ej. `B0_01_01_tablespaces.png`) y la registrás en `docs/evidencias/evidencias.md` (qué demuestra cada una). Ese `.md` es la base para armar el documento final.

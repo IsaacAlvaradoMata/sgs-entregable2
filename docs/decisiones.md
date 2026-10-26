@@ -155,6 +155,13 @@ Bitácora general de encabezado y detalle (audit trail genérico) en lugar de un
 - Las ventas consumen los lotes por FEFO (primero los que vencen antes). La factura de venta no lleva lote: el lote consumido queda en el movimiento, y de ahí se sabe a qué lote regresa una devolución.
 - La tabla de movimientos cubre el ítem "Movimientos de inventario" de la guía y respalda el área de bitácora del mismo nombre.
 
+**Usuarios del sistema vs. usuarios de base de datos** · 2026-10-26
+
+Son dos mundos separados; ninguna tabla los mezcla.
+- **Usuarios del sistema (`SGS_USUARIO`)**: personas del negocio (cajeros, gerentes); vienen del requisito "multiusuario" del E1. No se conectan a Oracle. El cajero de una factura (`FV_ID_USUARIO`) y el del cierre diario son **datos del negocio**, como el cliente. Se mantiene la contraseña: hash SHA-256 con `DBMS_CRYPTO.HASH` y una sal por usuario (`USU_SAL`); estado `A/I`.
+- **Usuarios de base de datos (Oracle)**: `SGS_ADMIN` y las cuentas con los roles Gerente, Jefe Departamento, Jefe Proveeduría y Digitador, con sus perfiles (E2, seguridad). No son filas de ninguna tabla. La bitácora registra la cuenta de Oracle que hizo el cambio; no lleva columna de usuario del sistema.
+- Si las cuentas de Oracle son por función o por persona se decide en B7, releyendo el enunciado del E2 (fuente de verdad). Si el enunciado no lo define, se sigue el patrón del laboratorio #3 (una cuenta por función, como `AGRO_OPER`, con su rol y su perfil).
+
 **Forma de trabajo** · 2026-10-13
 - Desarrollo en Docker (`FREEPDB1`); oficial en `SGSPRI` (`SGSPDB`).
 - El script es lo oficial: nada se cambia solo en la base.
