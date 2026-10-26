@@ -118,6 +118,7 @@ bd/
 
 - **Vos no podés ejecutar contra el Oracle de Isaac.** Tu sesión no llega a su Docker. Escribís y ordenás los scripts; Isaac los ejecuta y te pega los resultados o errores.
 - Solo se sube al repo lo probado. Nunca contraseñas reales.
+- Las claves de todos los ambientes van en `notas/claves.md`, que está en `.gitignore` (el repo es público): vive solo en el Mac de Isaac. Cada clave nueva se anota ahí.
 - Flujo por paso: analizás la decisión y la describís con la cita del enunciado → Isaac confirma → la anotás en `docs/decisiones.md` → le das el script de ese paso → Isaac lo prueba en Docker → si funciona, se marca `- [x]` en `guia.md` y se hace commit.
 
 ### Evidencias (para el PDF de evidencias)
