@@ -13,7 +13,7 @@ Registro de acuerdos tomados. Antes de usar un nombre, valor o criterio nuevo, s
 | 2026-10-13 | Prefijo de objetos | `SGS_` |
 | 2026-10-13 | Arquitectura | 2 VMs (Oracle Linux + Oracle 21c EE) en la HP de Andrés; Mac de Isaac como cliente con DBeaver. Validado con el profesor. |
 | 2026-10-13 | Red | Principal ↔ standby por red interna de las VMs. Tailscale solo para que el Mac llegue a las VMs, **sin exit node**. |
-| 2026-10-13 | Documentación de trabajo | Vive en este repositorio (guía en `docs/guia.md`). |
+| 2026-10-13 | Documentación de trabajo | Vive en este repositorio (guía en `guia.md`, en la raíz). |
 | 2026-10-13 | Cuenta remitente de notificaciones | `sgs.notificaciones.una@gmail.com` (la contraseña NO se guarda en el repo) |
 
 ## Parámetros

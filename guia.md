@@ -4,7 +4,7 @@ Guía de trabajo para Isaac y Andrés. Ordena **qué se hace, en qué orden y po
 
 > **Qué NO es esta guía:** no explica *cómo* se implementa cada cosa (código, comandos). Eso se define al llegar a cada etapa, con lo que realmente se necesite en ese momento.
 >
-> **Es una guía viva:** cuando se tome una decisión o algo cambie, se actualiza aquí y se anota en [`notas/decisiones.md`](../notas/decisiones.md).
+> **Es una guía viva:** cuando se tome una decisión o algo cambie, se actualiza aquí y se anota en [`docs/decisiones.md`](docs/decisiones.md).
 
 ---
 
@@ -158,7 +158,7 @@ flowchart TD
 - [x] Cuenta de correo del proyecto creada (remitente de las notificaciones).
 - [ ] Preguntas al profesor enviadas (ver [pendientes](#pendientes-de-confirmar-con-el-profesor)).
 
-**Terminado cuando…** todo lo anterior está anotado en `notas/decisiones.md`.
+**Terminado cuando…** todo lo anterior está anotado en `docs/decisiones.md`.
 
 ---
 
