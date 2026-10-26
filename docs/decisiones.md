@@ -146,6 +146,15 @@ Bitácora general de encabezado y detalle (audit trail genérico) en lugar de un
 - Padrón en `SGS_DATA`. El formato del archivo (TXT del TSE o CSV del laboratorio) solo afecta el procedimiento de carga (B5), no el modelo.
 - Consecuencias: los clientes nacionales de prueba deben usar cédulas que existan en el padrón cargado; el padrón se carga antes que los clientes.
 
+**Decisión 6 — Modelado de lotes** · 2026-10-26
+
+- **`SGS_LOTE`**: cada ingreso de un producto, nacido de una línea de factura de proveedor. Producto, fecha de ingreso, fecha de vencimiento (nula si no vence) y costo.
+- **`SGS_EXISTENCIA`**: cantidad por lote y sucursal (la bodega central es la sucursal con `SUC_ES_CENTRAL = 'S'`). Una fila por lote y sucursal.
+- **Traslado** con encabezado (origen, destino, fecha, usuario) y detalle por lote; reemplaza a `SGS_TRASLADO_INVENTARIO` por producto.
+- **`SGS_MOVIMIENTO_INVENTARIO`**: una fila por cada entrada o salida de un lote en una sucursal, con tipo (compra, venta, devolución de cliente, devolución a proveedor, traslado) y la línea del documento que la causó.
+- Las ventas consumen los lotes por FEFO (primero los que vencen antes). La factura de venta no lleva lote: el lote consumido queda en el movimiento, y de ahí se sabe a qué lote regresa una devolución.
+- La tabla de movimientos cubre el ítem "Movimientos de inventario" de la guía y respalda el área de bitácora del mismo nombre.
+
 **Forma de trabajo** · 2026-10-13
 - Desarrollo en Docker (`FREEPDB1`); oficial en `SGSPRI` (`SGSPDB`).
 - El script es lo oficial: nada se cambia solo en la base.

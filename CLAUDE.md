@@ -177,10 +177,9 @@ Prohibido: `IF NOT EXISTS` en DDL, `BOOLEAN` en columnas, `SELECT` sin `FROM DUA
 
 **Decisión 5 de B1 (confirmada 2026-10-26)** — `SGS_PADRON` + `SGS_DISTRITO_ELECTORAL`; FK opcional desde `SGS_CLIENTE_PERSONA` (solo clientes `NACIONAL`, validado por trigger); cédula nacional de 9 dígitos; el registro de cliente nacional se autocompleta desde el padrón; la carga usa `MERGE`, nunca vacía la tabla. Formato del archivo se resuelve en B5.
 
-**Decisiones pendientes de B1:**
-6. Modelado de lotes.
+**Decisión 6 de B1 (confirmada 2026-10-26)** — `SGS_LOTE` (nace de la línea de factura de proveedor) + `SGS_EXISTENCIA` (lote × sucursal) + traslado encabezado/detalle por lote + `SGS_MOVIMIENTO_INVENTARIO` (cada entrada/salida por lote con su documento). Ventas por FEFO; la factura no lleva lote, el movimiento sí.
 
-Después de cerrar las 6 decisiones se escribe `bd/02_modelo.sql`, tabla por tabla, con Isaac probando en Docker.
+**Las 6 decisiones de B1 están cerradas.** Siguiente paso: escribir `bd/02_modelo.sql` tabla por tabla, con Isaac probando en Docker.
 
 **Pendiente de Isaac:** crear la conexión DBeaver "Docker - SGS_ADMIN (FREEPDB1)". No borrar "free (SYSDBA)".
 

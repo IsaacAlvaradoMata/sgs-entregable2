@@ -198,6 +198,8 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 - Cómo se enlaza el padrón con los clientes (relación opcional: extranjeros y empresas no están en el padrón).
 - Cómo se modelan los lotes (separados de la existencia y ligados a la compra).
 
+✅ Las 6 definiciones quedaron cerradas el 2026-10-26 (decisiones 1 a 6 de B1 en [`docs/decisiones.md`](docs/decisiones.md)).
+
 **Implementaciones:**
 
 *a) Correcciones del profesor al E1*
@@ -205,7 +207,7 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 - [ ] Ningún `CLOB`: pasar a `VARCHAR2(250)`.
 - [ ] Todos los estados como `VARCHAR2(1)` con `CHECK` de valores permitidos.
 - [ ] Género como `VARCHAR2(1)` con `CHECK`; mismo criterio para otros atributos codificados.
-- [ ] Usuario dueño `SGS_ADMIN` con privilegios explícitos (sin `CONNECT`, `RESOURCE` ni `DBA`).
+- [x] Usuario dueño `SGS_ADMIN` con privilegios explícitos (sin `CONNECT`, `RESOURCE` ni `DBA`).
 
 *b) Integración de lo fuerte del esquema de Andrés*
 - [ ] Cuentas por cobrar y por pagar con sus abonos y estado.
