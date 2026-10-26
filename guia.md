@@ -212,7 +212,7 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 *b) Integración de lo fuerte del esquema de Andrés*
 - [x] Cuentas por cobrar y por pagar con sus abonos y estado.
 - [x] Condición (contado/crédito) y estado en las facturas de venta y de proveedor.
-- [ ] Lote separado de la existencia, ligado al detalle de compra y con fecha de vencimiento.
+- [x] Lote separado de la existencia, ligado al detalle de compra y con fecha de vencimiento.
 - [ ] Descuento con días desde ingreso / días para vencer y su validación por tipo de criterio.
 
 *c) Estructuras nuevas que pide el E2*
@@ -220,7 +220,7 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 - [ ] Configuración de correo y destinatarios de notificaciones (gerente, coordinador, DBA).
 - [ ] Bitácora de errores.
 - [ ] Bitácoras de auditoría de las 7 áreas (según la estrategia decidida).
-- [ ] Movimientos de inventario.
+- [x] Movimientos de inventario.
 - [ ] Tipos de promoción y acciones otorgadas por factura.
 - [ ] Detalle de productos incluidos en un descuento.
 - [x] Padrón nacional y su enlace con clientes.

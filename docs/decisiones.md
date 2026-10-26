@@ -156,6 +156,7 @@ Bitácora general de encabezado y detalle (audit trail genérico) en lugar de un
 - **`SGS_MOVIMIENTO_INVENTARIO`**: una fila por cada entrada o salida de un lote en una sucursal, con tipo (compra, venta, devolución de cliente, devolución a proveedor, traslado) y la línea del documento que la causó.
 - Las ventas consumen los lotes por FEFO (primero los que vencen antes). La factura de venta no lleva lote: el lote consumido queda en el movimiento, y de ahí se sabe a qué lote regresa una devolución.
 - La tabla de movimientos cubre el ítem "Movimientos de inventario" de la guía y respalda el área de bitácora del mismo nombre.
+- Ajuste al escribir el bloque 7 (2026-10-26): el lote **no guarda producto ni costo**; se leen de la línea de compra de origen (FK obligatoria y única), para no repetir datos (5FN). El movimiento tiene una FK opcional por tipo de documento y un CHECK que exige exactamente la que corresponde a su tipo.
 
 **Bloque 2 del modelo (personas)** · 2026-10-26
 - El límite de crédito sale de `SGS_CLIENTE` y `SGS_PROVEEDOR` y vive en el encabezado de su cuenta (decisión 2). Cada cliente tiene su encabezado, con límite 0 si no tiene crédito.
