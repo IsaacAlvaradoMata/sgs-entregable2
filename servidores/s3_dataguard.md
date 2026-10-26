@@ -214,3 +214,31 @@ DUPLICATE TARGET DATABASE FOR STANDBY FROM ACTIVE DATABASE
 - `DORECOVER`: aplica los últimos archivos de archivado.
 
 Tardó unos 4 minutos y terminó con `Finished Duplicate Db`.
+
+## 9. Arrancar la sincronización
+
+**En `SGSSTB`** (`sqlplus / as sysdba`):
+
+```
+SELECT name, db_unique_name, database_role, open_mode FROM v$database;
+-- SGS   SGSSTB   PHYSICAL STANDBY   MOUNTED
+
+ALTER DATABASE OPEN READ ONLY;                     -- Active Data Guard: se puede consultar mientras aplica
+ALTER PLUGGABLE DATABASE SGSPDB OPEN READ ONLY;
+ALTER DATABASE RECOVER MANAGED STANDBY DATABASE DISCONNECT FROM SESSION;   -- arranca el MRP
+```
+
+**En `SGSPRI`**:
+
+```
+ALTER SYSTEM SET log_archive_dest_state_2='ENABLE' SCOPE=BOTH;
+ALTER SYSTEM SWITCH LOGFILE;
+SELECT dest_id, status, error FROM v$archive_dest WHERE dest_id = 2;   -- 2  VALID  (sin error)
+```
+
+**Verificación en `SGSSTB`**:
+
+```
+SELECT name, role, action FROM v$dataguard_process ORDER BY name;
+-- MRP0 (managed recovery), PR00 APPLYING_LOG y procesos rfs (reciben el redo de SGSPRI)
+```
