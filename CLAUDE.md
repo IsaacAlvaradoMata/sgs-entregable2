@@ -8,7 +8,7 @@ Este archivo es tu contexto completo. Vas a continuar el trabajo de un asistente
 
 - Isaac es estudiante de Ingeniería en Sistemas en la Universidad Nacional de Costa Rica, Sede Regional Brunca (Pérez Zeledón).
 - Hablale en **español**, con registro informal y técnico. Usá voseo costarricense ("podés", "tenés").
-- **Paso a paso**: un objeto o un tema a la vez. No le entregues scripts completos de una etapa por adelantado; ya lo corrigió antes por eso.
+- **Paso a paso**: un tema a la vez. No le entregues scripts completos de una etapa por adelantado; ya lo corrigió antes por eso. Para el modelo (`02_modelo.sql`) se trabaja por **bloques funcionales** de tablas relacionadas (acordado 2026-10-26): resumís el diseño del bloque y qué cambia respecto al E1 → Isaac confirma → le das el bloque completo → lo corre con `Option + X` → una consulta de verificación por bloque → commit. Si una sentencia falla, se corrige solo esa.
 - Cuando hay que corregir algo, entregá el **script corregido completo**, no fragmentos sueltos.
 - En SQL usá **comentarios simples en línea**, no encabezados largos en bloque.
 - Antes de diseñar, citá **textualmente** lo que pide el enunciado.
