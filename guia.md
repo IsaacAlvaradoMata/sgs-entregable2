@@ -213,7 +213,7 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 - [x] Cuentas por cobrar y por pagar con sus abonos y estado.
 - [x] Condición (contado/crédito) y estado en las facturas de venta y de proveedor.
 - [x] Lote separado de la existencia, ligado al detalle de compra y con fecha de vencimiento.
-- [ ] Descuento con días desde ingreso / días para vencer y su validación por tipo de criterio.
+- [x] Descuento con días desde ingreso / días para vencer y su validación por tipo de criterio.
 
 *c) Estructuras nuevas que pide el E2*
 - [ ] Tabla de parámetros (incluye espacio para claves cifradas de roles y correo).
@@ -221,8 +221,8 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 - [ ] Bitácora de errores.
 - [ ] Bitácoras de auditoría de las 7 áreas (según la estrategia decidida).
 - [x] Movimientos de inventario.
-- [ ] Tipos de promoción y acciones otorgadas por factura.
-- [ ] Detalle de productos incluidos en un descuento.
+- [x] Tipos de promoción y acciones otorgadas por factura.
+- [x] Detalle de productos incluidos en un descuento.
 - [x] Padrón nacional y su enlace con clientes.
 - [ ] Cierre diario (encabezado) y su detalle por cajero.
 - [ ] Órdenes de compra para clientes premiados.
