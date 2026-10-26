@@ -164,6 +164,12 @@ Bitácora general de encabezado y detalle (audit trail genérico) en lugar de un
 - Enlace al padrón por id (`CLP_ID_PADRON → PAD_ID`), único por persona; se busca por cédula al registrar. El id se conserva entre recargas porque el `MERGE` es por cédula.
 - `SEQ_PADRON` con `CACHE 1000` (única excepción a `NOCACHE`) por la carga masiva.
 
+**Datos de prueba en dos partes** · 2026-10-26
+- **B1:** datos de catálogos que no dependen de triggers (países, sucursales, tipos de negocio, familias, tipos de pago, distritos, proveedores, clientes, productos, tipos de promoción, premios, descuentos).
+- **Después de B3:** operaciones (compras, ventas, pagos, devoluciones, traslados) cargadas **a través de los packages**, para que saldos, existencias, movimientos, bitácoras e histórico de precios los llenen los triggers y queden consistentes. Esa carga sirve además como prueba de los packages.
+- Meta del E1: mínimo 5 filas por tabla, con casos que demuestren los requisitos (clientes cerca del 85 %, lotes por vencer y antiguos, morosos).
+
+
 **Usuarios del sistema vs. usuarios de base de datos** · 2026-10-26
 
 Son dos mundos separados; ninguna tabla los mezcla.
