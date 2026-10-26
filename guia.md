@@ -210,8 +210,8 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 - [x] Usuario dueño `SGS_ADMIN` con privilegios explícitos (sin `CONNECT`, `RESOURCE` ni `DBA`).
 
 *b) Integración de lo fuerte del esquema de Andrés*
-- [ ] Cuentas por cobrar y por pagar con sus abonos y estado.
-- [ ] Condición (contado/crédito) y estado en las facturas de venta y de proveedor.
+- [x] Cuentas por cobrar y por pagar con sus abonos y estado.
+- [x] Condición (contado/crédito) y estado en las facturas de venta y de proveedor.
 - [ ] Lote separado de la existencia, ligado al detalle de compra y con fecha de vencimiento.
 - [ ] Descuento con días desde ingreso / días para vencer y su validación por tipo de criterio.
 
