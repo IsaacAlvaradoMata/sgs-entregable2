@@ -1582,3 +1582,67 @@ COMMENT ON COLUMN SGS_ORDEN_COMPRA.OCO_ID_PREMIACION IS 'Premiacion que emitio l
 COMMENT ON COLUMN SGS_ORDEN_COMPRA.OCO_ID_CLIENTE IS 'Cliente premiado';
 COMMENT ON COLUMN SGS_ORDEN_COMPRA.OCO_POSICION IS 'Lugar del cliente en el ranking de compras';
 COMMENT ON COLUMN SGS_ORDEN_COMPRA.OCO_MONTO_COMPRADO IS 'Monto que el cliente compro en el periodo';
+
+-- 11. Vistas
+
+-- Precio de venta por producto y sucursal: costo + utilidad - descuento (topado al maximo) + impuesto
+-- Si aplican varios descuentos vigentes se toma el mayor, no la suma
+CREATE OR REPLACE VIEW SGS_VW_PRECIO_VENTA AS
+SELECT b.PRO_ID,
+       b.PRO_CODIGO,
+       b.ART_NOMBRE,
+       b.SUC_ID,
+       b.SUC_NOMBRE,
+       b.PRO_PRECIO_COSTO,
+       b.PS_PCT_UTILIDAD,
+       b.PCT_DESCUENTO,
+       b.ART_PCT_IMPUESTO,
+       ROUND(b.PRO_PRECIO_COSTO * (1 + b.PS_PCT_UTILIDAD) * (1 - b.PCT_DESCUENTO), 2) AS PRECIO_SIN_IMPUESTO,
+       ROUND(b.PRO_PRECIO_COSTO * (1 + b.PS_PCT_UTILIDAD) * (1 - b.PCT_DESCUENTO)
+             * b.ART_PCT_IMPUESTO, 2) AS MONTO_IMPUESTO,
+       ROUND(b.PRO_PRECIO_COSTO * (1 + b.PS_PCT_UTILIDAD) * (1 - b.PCT_DESCUENTO)
+             * (1 + b.ART_PCT_IMPUESTO), 2) AS PRECIO_VENTA
+  FROM (SELECT p.PRO_ID,
+               p.PRO_CODIGO,
+               a.ART_NOMBRE,
+               s.SUC_ID,
+               s.SUC_NOMBRE,
+               p.PRO_PRECIO_COSTO,
+               ps.PS_PCT_UTILIDAD,
+               LEAST(NVL(d.PCT_MAYOR, 0), ps.PS_PCT_DESCUENTO_MAXIMO) AS PCT_DESCUENTO,
+               a.ART_PCT_IMPUESTO
+          FROM SGS_PRODUCTO p
+          JOIN SGS_ARTICULO_FACTURABLE a ON a.ART_ID = p.PRO_ID_ARTICULO
+          JOIN SGS_PRODUCTO_SUCURSAL ps ON ps.PS_ID_PRODUCTO = p.PRO_ID
+          JOIN SGS_SUCURSAL s ON s.SUC_ID = ps.PS_ID_SUCURSAL
+          -- Mayor descuento vigente del producto por familia, proveedor o detalle (ingreso / vencimiento)
+          LEFT JOIN (SELECT x.PRO_ID, MAX(x.PCT) AS PCT_MAYOR
+                       FROM (SELECT pr.PRO_ID, ds.DSC_PORCENTAJE AS PCT
+                               FROM SGS_PRODUCTO pr
+                               JOIN SGS_DESCUENTO_FAMILIA df ON df.DSF_ID_FAMILIA = pr.PRO_ID_FAMILIA
+                               JOIN SGS_DESCUENTO ds ON ds.DSC_ID = df.DSF_ID_DESCUENTO
+                              WHERE ds.DSC_TIPO_CRITERIO = 'FAMILIA'
+                                AND ds.DSC_ESTADO = 'A'
+                                AND ds.DSC_FECHA_INICIO <= SYSDATE
+                                AND (ds.DSC_FECHA_FIN IS NULL OR ds.DSC_FECHA_FIN >= TRUNC(SYSDATE))
+                             UNION ALL
+                             SELECT pr.PRO_ID, ds.DSC_PORCENTAJE
+                               FROM SGS_PRODUCTO pr
+                               JOIN SGS_DESCUENTO_PROVEEDOR dp ON dp.DSP_ID_PROVEEDOR = pr.PRO_ID_PROVEEDOR
+                               JOIN SGS_DESCUENTO ds ON ds.DSC_ID = dp.DSP_ID_DESCUENTO
+                              WHERE ds.DSC_TIPO_CRITERIO = 'PROVEEDOR'
+                                AND ds.DSC_ESTADO = 'A'
+                                AND ds.DSC_FECHA_INICIO <= SYSDATE
+                                AND (ds.DSC_FECHA_FIN IS NULL OR ds.DSC_FECHA_FIN >= TRUNC(SYSDATE))
+                             UNION ALL
+                             SELECT dd.DDE_ID_PRODUCTO, ds.DSC_PORCENTAJE
+                               FROM SGS_DESCUENTO_DETALLE dd
+                               JOIN SGS_DESCUENTO ds ON ds.DSC_ID = dd.DDE_ID_DESCUENTO
+                              WHERE ds.DSC_TIPO_CRITERIO IN ('INGRESO', 'VENCIMIENTO')
+                                AND ds.DSC_ESTADO = 'A'
+                                AND ds.DSC_FECHA_INICIO <= SYSDATE
+                                AND (ds.DSC_FECHA_FIN IS NULL OR ds.DSC_FECHA_FIN >= TRUNC(SYSDATE))) x
+                      GROUP BY x.PRO_ID) d ON d.PRO_ID = p.PRO_ID
+         WHERE a.ART_ESTADO = 'A') b;
+
+COMMENT ON TABLE SGS_VW_PRECIO_VENTA IS 'Precio de venta calculado por producto y sucursal (costo, utilidad, descuento e impuesto)';
