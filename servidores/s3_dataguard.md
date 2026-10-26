@@ -183,3 +183,34 @@ STARTUP NOMOUNT PFILE='/opt/oracle/dbs/initSGSSTB.ora';   -- ORACLE instance sta
 sqlplus sys@SGSSTB as sysdba
 SELECT status FROM v$instance;   -- STARTED
 ```
+
+## 8. Duplicar la base a SGSSTB con RMAN
+
+Desde `SGSPRI`, como `oracle` y dentro de `tmux` (si se corta el SSH, el duplicado sigue). Pide dos veces la contraseña de SYS (target y auxiliary):
+
+```
+rman target sys@SGSPRI auxiliary sys@SGSSTB
+```
+
+```
+DUPLICATE TARGET DATABASE FOR STANDBY FROM ACTIVE DATABASE
+  DORECOVER
+  SPFILE
+    SET db_unique_name='SGSSTB'
+    SET control_files='/opt/oracle/oradata/SGSSTB/control01.ctl','/opt/oracle/oradata/SGSSTB/control02.ctl'
+    SET db_file_name_convert='/opt/oracle/oradata/SGSPRI/','/opt/oracle/oradata/SGSSTB/'
+    SET log_file_name_convert='/opt/oracle/oradata/SGSPRI/','/opt/oracle/oradata/SGSSTB/'
+    SET log_archive_dest_1='LOCATION=USE_DB_RECOVERY_FILE_DEST VALID_FOR=(ALL_LOGFILES,ALL_ROLES) DB_UNIQUE_NAME=SGSSTB'
+    SET log_archive_dest_2='SERVICE=SGSPRI ASYNC VALID_FOR=(ONLINE_LOGFILES,PRIMARY_ROLE) DB_UNIQUE_NAME=SGSPRI'
+    SET log_archive_dest_state_2='ENABLE'
+    SET fal_server='SGSPRI'
+    SET audit_file_dest='/opt/oracle/admin/SGSSTB/adump'
+    SET dispatchers='(PROTOCOL=TCP) (SERVICE=SGSSTBXDB)'
+  NOFILENAMECHECK;
+```
+
+- `FOR STANDBY FROM ACTIVE DATABASE`: copia en vivo por la red, sin respaldo previo.
+- `SPFILE ... SET`: copia los parámetros de `SGSPRI` cambiando lo que debe ser distinto en la standby (nombre único, rutas, destinos invertidos para el switchover).
+- `DORECOVER`: aplica los últimos archivos de archivado.
+
+Tardó unos 4 minutos y terminó con `Finished Duplicate Db`.
