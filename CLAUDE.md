@@ -190,7 +190,8 @@ Prohibido: `IF NOT EXISTS` en DDL, `BOOLEAN` en columnas, `SELECT` sin `FROM DUA
 **Avance al 2026-10-26** (detalle en `guia.md`, `docs/decisiones.md` y `docs/evidencias/evidencias.md`):
 - **B1 (modelo):** `bd/02_modelo.sql` con 57 tablas por bloques funcionales, vista de precio de venta y datos de catálogos (mínimo 5 filas). Probado desde cero (`00` → `01` → `02`). Pendientes: datos de operaciones (después de B3, con los packages), diagrama y diccionario (se generan del script al cerrar el modelo), retomar las capturas 1 a 4 de B1 (el modelo pasó de 55 a 57 tablas).
 - **B2 (base interna) completa:** `bd/03_base_interna.sql` con `SGS_PKG_ERRORES`, `SGS_PKG_PARAMETROS`, `SGS_PKG_CIFRADO` (cuerpo con `DBMS_DDL.CREATE_WRAPPED`, llave como `<LLAVE_CIFRADO>` en el repo) y `SGS_PKG_CORREO` (Gmail por el puerto 465 en desarrollo, wallet en `/opt/oracle/oradata/wallet_sgs`, ver `servidores/configuracion/wallet_correo.md`). Correo de prueba recibido.
-- **Siguiente:** B3 (reglas de negocio).
+- **B3 (reglas de negocio) completa:** `bd/04_reglas_negocio.sql` (triggers de cuentas, inventario, historial y validaciones; packages de clientes, compras, inventario y ventas, con SAVEPOINT, FOR UPDATE NOWAIT/WAIT y bitácora de errores) y `bd/10_datos_operaciones.sql` (datos de operaciones con los packages + simulación de fechas para B6).
+- **Siguiente:** B4 (bitácoras de auditoría).
 - Conexiones DBeaver: `Docker - SGS_ADMIN (FREEPDB1)`, SYSTEM y `free (SYSDBA)` (entra como SYS a `FREEPDB1`). Bloques PL/SQL con `Cmd + Enter`; varias sentencias con `Option + X`.
 - El Docker está en hora UTC (6 h adelante); en los servidores se configura `America/Costa_Rica` (pendiente de Andrés).
 

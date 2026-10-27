@@ -625,3 +625,11 @@ La bitácora registra el error original de Oracle de cada caso: con `NOWAIT` el 
 ![Bloqueo liberado](capturas/B3_04_29_concurrencia_liberada.png)
 
 Cuando la sesión A termina (`ROLLBACK`), el mismo abono en la sesión B pasa de inmediato: el saldo baja a ₡10.567 y la clienta tiene 2 abonos.
+
+## Datos de operaciones (`bd/10_datos_operaciones.sql`)
+
+Las compras, pagos, devoluciones, traslados y ventas de prueba se cargan **con los packages**, igual que una operación real, para que los triggers mantengan saldos, existencias, movimientos e historial. La sección C del script "envejece" algunos registros de prueba (un pago de hace 45 días, un lote con 7 meses en bodega, un lote vencido) para poder demostrar los procesos automáticos.
+
+![Datos de operaciones](capturas/B3_10_01_datos_operaciones.png)
+
+Todas las tablas de operaciones tienen 5 o más registros (requisito del E1), y quedan listos los casos que disparan los procesos y notificaciones: una clienta al 86 % de su crédito, un proveedor al 71 %, un cliente moroso, un lote por vencer en la semana, un lote vencido con existencia y un lote con más de 6 meses en bodega.
