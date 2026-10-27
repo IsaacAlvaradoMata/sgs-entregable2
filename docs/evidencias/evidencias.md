@@ -204,3 +204,42 @@ SELECT des_tipo, des_nombre, des_email, des_estado
 ![Destinatarios](capturas/B2_03_03_destinatarios.png)
 
 Cada tipo de destinatario (coordinador, DBA, gerente) tiene su correo. En desarrollo son alias de la cuenta del proyecto; antes de la defensa se cambian por el correo externo que indique el profesor.
+
+### 4. Cuerpo del package de cifrado ofuscado (`SGS_PKG_CIFRADO`)
+
+```sql
+SELECT line, text
+  FROM user_source
+ WHERE name = 'SGS_PKG_CIFRADO' AND type = 'PACKAGE BODY'
+ ORDER BY line
+ FETCH FIRST 5 ROWS ONLY;
+```
+
+![Package de cifrado ofuscado](capturas/B2_03_04_cifrado_wrapped.png)
+
+El cuerpo del package se instaló con `DBMS_DDL.CREATE_WRAPPED`: Oracle guarda el código ofuscado (`wrapped`), por lo que la llave de cifrado AES-256 que contiene no se puede leer consultando el código fuente. La llave no está en ninguna tabla.
+
+### 5. Clave del correo cifrada en la tabla de parámetros
+
+```sql
+SELECT par_codigo, par_es_cifrado, par_valor
+  FROM SGS_PARAMETRO
+ WHERE par_es_cifrado = 'S';
+```
+
+![Parámetro cifrado](capturas/B2_03_05_parametro_cifrado.png)
+
+La contraseña de aplicación del correo se guarda cifrada con `DBMS_CRYPTO` (AES-256, CBC, vector inicial aleatorio). En la tabla solo queda el valor cifrado en hexadecimal; el package de correo la descifra con `SGS_PKG_CIFRADO.obtener_parametro` al momento de enviar.
+
+### 6. Validación de contraseñas de los usuarios del sistema
+
+```sql
+SELECT SGS_PKG_CIFRADO.validar_usuario('lmora', 'Gerente2026') AS clave_correcta,
+       SGS_PKG_CIFRADO.validar_usuario('lmora', 'otraClave')   AS clave_incorrecta,
+       SGS_PKG_CIFRADO.validar_usuario('noexiste', 'x')        AS usuario_inexistente
+  FROM DUAL;
+```
+
+![Validación de usuarios](capturas/B2_03_06_validar_usuario.png)
+
+Las contraseñas de los usuarios del sistema se guardan como hash SHA-256 con sal. La validación acepta la clave correcta y rechaza una clave incorrecta y un usuario inexistente.

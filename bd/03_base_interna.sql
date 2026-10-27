@@ -1,8 +1,11 @@
 -- 03_base_interna.sql: packages internos que usan todos los procesos (errores, parametros, cifrado y correo).
--- Se ejecuta como SGS_ADMIN en la PDB del ambiente (desarrollo: FREEPDB1, oficial: SGSPDB en SGSPRI).
--- Requiere haber ejecutado 02_modelo.sql.
+-- Seccion 0 como SYS (SYSDBA); el resto como SGS_ADMIN. Ambas en la PDB del ambiente (desarrollo: FREEPDB1, oficial: SGSPDB).
+-- Requiere haber ejecutado 02_modelo.sql. Antes de la seccion de cifrado: reemplazar <LLAVE_CIFRADO> por la llave real.
 
--- 1. Validar que la sesion es del dueno del esquema
+-- 0. EJECUTAR COMO SYS (SYSDBA), en la PDB: privilegios sobre paquetes del sistema que usan los packages
+GRANT EXECUTE ON SYS.DBMS_CRYPTO TO SGS_ADMIN;
+
+-- 1. A partir de aqui, conectado como SGS_ADMIN: validar que la sesion es del dueno del esquema
 DECLARE
     v_usuario VARCHAR2(128) := SYS_CONTEXT('USERENV', 'SESSION_USER');
 BEGIN
@@ -162,3 +165,123 @@ INSERT INTO SGS_DESTINATARIO (DES_ID, DES_TIPO, DES_NOMBRE, DES_EMAIL)
 VALUES (SEQ_DESTINATARIO.NEXTVAL, 'DBA', 'Administracion de base de datos', 'sgs.notificaciones.una+dba@gmail.com');
 
 COMMIT;
+
+-- 6. Cifrado: AES-256 para parametros sensibles y SHA-256 para las contrasenas de los usuarios del sistema
+-- Errores propios: -20020 no existe el parametro cifrado, -20021 el parametro existe sin cifrar, -20022 no se pudo descifrar
+CREATE OR REPLACE PACKAGE SGS_PKG_CIFRADO AS
+    PROCEDURE guardar_parametro (p_codigo IN VARCHAR2, p_valor IN VARCHAR2, p_descripcion IN VARCHAR2 DEFAULT NULL);
+    FUNCTION obtener_parametro (p_codigo IN VARCHAR2) RETURN VARCHAR2;
+    FUNCTION hash_clave (p_sal IN VARCHAR2, p_clave IN VARCHAR2) RETURN VARCHAR2;
+    -- Devuelve 'S' si la clave del usuario del sistema es correcta y esta activo; 'N' en otro caso
+    FUNCTION validar_usuario (p_username IN VARCHAR2, p_clave IN VARCHAR2) RETURN VARCHAR2;
+END;
+/
+
+-- El cuerpo se instala ofuscado (wrap) porque contiene la llave; en el repo la llave va como marcador
+BEGIN
+    DBMS_DDL.CREATE_WRAPPED(q'[
+CREATE OR REPLACE PACKAGE BODY SGS_PKG_CIFRADO AS
+
+    -- Llave AES de 256 bits (64 caracteres hexadecimales)
+    c_llave CONSTANT RAW(32) := HEXTORAW('<LLAVE_CIFRADO>');
+    c_tipo  CONSTANT PLS_INTEGER := DBMS_CRYPTO.ENCRYPT_AES256 + DBMS_CRYPTO.CHAIN_CBC + DBMS_CRYPTO.PAD_PKCS5;
+
+    -- Vector inicial aleatorio de 16 bytes al inicio del resultado: el mismo valor cifrado dos veces da textos distintos
+    FUNCTION cifrar (p_valor IN VARCHAR2) RETURN VARCHAR2 IS
+        v_iv RAW(16) := DBMS_CRYPTO.RANDOMBYTES(16);
+    BEGIN
+        RETURN RAWTOHEX(UTL_RAW.CONCAT(v_iv,
+               DBMS_CRYPTO.ENCRYPT(src => UTL_I18N.STRING_TO_RAW(p_valor, 'AL32UTF8'),
+                                   typ => c_tipo, key => c_llave, iv => v_iv)));
+    END;
+
+    FUNCTION descifrar (p_hex IN VARCHAR2) RETURN VARCHAR2 IS
+        v_raw RAW(2000) := HEXTORAW(p_hex);
+    BEGIN
+        RETURN UTL_I18N.RAW_TO_CHAR(
+               DBMS_CRYPTO.DECRYPT(src => UTL_RAW.SUBSTR(v_raw, 17),
+                                   typ => c_tipo, key => c_llave, iv => UTL_RAW.SUBSTR(v_raw, 1, 16)), 'AL32UTF8');
+    END;
+
+    -- Crea o reemplaza un parametro cifrado; bloquea la fila con NOWAIT si ya existe
+    PROCEDURE guardar_parametro (p_codigo IN VARCHAR2, p_valor IN VARCHAR2, p_descripcion IN VARCHAR2 DEFAULT NULL) IS
+        v_cifrado SGS_PARAMETRO.PAR_ES_CIFRADO%TYPE;
+        -- Las funciones privadas no se pueden usar dentro de SQL: el valor se cifra antes
+        v_valor   SGS_PARAMETRO.PAR_VALOR%TYPE := cifrar(p_valor);
+    BEGIN
+        BEGIN
+            SELECT PAR_ES_CIFRADO
+              INTO v_cifrado
+              FROM SGS_PARAMETRO
+             WHERE PAR_CODIGO = UPPER(p_codigo)
+               FOR UPDATE NOWAIT;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                v_cifrado := NULL;
+        END;
+
+        IF v_cifrado IS NULL THEN
+            INSERT INTO SGS_PARAMETRO (PAR_ID, PAR_CODIGO, PAR_VALOR, PAR_DESCRIPCION, PAR_ES_CIFRADO)
+            VALUES (SEQ_PARAMETRO.NEXTVAL, UPPER(p_codigo), v_valor, p_descripcion, 'S');
+        ELSIF v_cifrado = 'S' THEN
+            UPDATE SGS_PARAMETRO
+               SET PAR_VALOR = v_valor,
+                   PAR_DESCRIPCION = NVL(p_descripcion, PAR_DESCRIPCION)
+             WHERE PAR_CODIGO = UPPER(p_codigo);
+        ELSE
+            RAISE_APPLICATION_ERROR(-20021, 'El parametro ' || p_codigo || ' existe sin cifrar');
+        END IF;
+        COMMIT;
+    EXCEPTION
+        WHEN OTHERS THEN
+            ROLLBACK;
+            SGS_PKG_ERRORES.registrar('SGS_PKG_CIFRADO.guardar_parametro');
+            RAISE;
+    END;
+
+    FUNCTION obtener_parametro (p_codigo IN VARCHAR2) RETURN VARCHAR2 IS
+        v_valor SGS_PARAMETRO.PAR_VALOR%TYPE;
+    BEGIN
+        SELECT PAR_VALOR
+          INTO v_valor
+          FROM SGS_PARAMETRO
+         WHERE PAR_CODIGO = UPPER(p_codigo)
+           AND PAR_ES_CIFRADO = 'S';
+        RETURN descifrar(v_valor);
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            SGS_PKG_ERRORES.registrar('SGS_PKG_CIFRADO.obtener_parametro');
+            RAISE_APPLICATION_ERROR(-20020, 'No existe el parametro cifrado ' || p_codigo);
+        WHEN OTHERS THEN
+            SGS_PKG_ERRORES.registrar('SGS_PKG_CIFRADO.obtener_parametro');
+            RAISE_APPLICATION_ERROR(-20022, 'No se pudo descifrar el parametro ' || p_codigo);
+    END;
+
+    -- SHA-256 de (sal || clave) en hexadecimal; da el mismo resultado que STANDARD_HASH en SQL
+    FUNCTION hash_clave (p_sal IN VARCHAR2, p_clave IN VARCHAR2) RETURN VARCHAR2 IS
+    BEGIN
+        RETURN RAWTOHEX(DBMS_CRYPTO.HASH(UTL_I18N.STRING_TO_RAW(p_sal || p_clave, 'AL32UTF8'), DBMS_CRYPTO.HASH_SH256));
+    END;
+
+    FUNCTION validar_usuario (p_username IN VARCHAR2, p_clave IN VARCHAR2) RETURN VARCHAR2 IS
+        v_hash SGS_USUARIO.USU_PASSWORD_HASH%TYPE;
+        v_sal  SGS_USUARIO.USU_SAL%TYPE;
+    BEGIN
+        SELECT USU_PASSWORD_HASH, USU_SAL
+          INTO v_hash, v_sal
+          FROM SGS_USUARIO
+         WHERE USU_USERNAME = LOWER(p_username)
+           AND USU_ESTADO = 'A';
+        IF hash_clave(v_sal, p_clave) = v_hash THEN
+            RETURN 'S';
+        END IF;
+        RETURN 'N';
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RETURN 'N';
+    END;
+
+END;
+]');
+END;
+/
