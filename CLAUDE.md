@@ -106,9 +106,9 @@ Los **destinatarios de notificaciones** van en una tabla aparte (tipo gerente/co
 bd/
 ├── 00_reinicio_desarrollo.sql   ← solo Docker  ✅
 ├── 01_infraestructura.sql       ← tablespaces y SGS_ADMIN  ✅
-├── 02_modelo.sql                ← B1 (siguiente)
-├── 03_base_interna.sql          ← B2
-├── 04_reglas_negocio.sql        ← B3
+├── 02_modelo.sql                ← B1  ✅
+├── 03_base_interna.sql          ← B2  ✅
+├── 04_reglas_negocio.sql        ← B3  ✅
 ├── 05_bitacoras.sql             ← B4
 ├── 06_padron.sql                ← B5
 ├── 07_procesos.sql              ← B6
