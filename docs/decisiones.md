@@ -195,6 +195,16 @@ Son dos mundos separados; ninguna tabla los mezcla.
 - Un script consolidado por etapa, probado desde cero antes de subirlo e integrarlo.
 - El esquema del E1 (`IALVARADO`) se elimina del Docker; queda respaldado en `SGS_IsaacAlvarado.sql`.
 
+
+### B3 — Reglas de negocio
+
+**Definiciones de B3** · 2026-10-26
+
+1. **Arquitectura híbrida.** Packages para las operaciones (`registrar_venta`, `registrar_compra`, `registrar_pago`, devoluciones, traslados): validan, bloquean con `FOR UPDATE NOWAIT/WAIT`, eligen lotes, usan `SAVEPOINT`/`COMMIT`/`ROLLBACK` y dan mensajes claros. Triggers para lo que el enunciado llama "automático" (saldos, estado de facturas, existencias, historial de precios, cuenta de cada cliente y proveedor) y para validaciones que cruzan tablas; funcionan aunque se inserte directo sin el package. Reglas: cada trigger solo modifica tablas distintas a la suya (sin tabla mutante) y el package no repite lo que hace un trigger.
+2. **Notas de crédito.** Si la factura es a crédito y tiene saldo, la nota rebaja el saldo de la factura y de la cuenta (hasta 0); si llega a 0, la factura pasa a cancelada. Si es de contado o ya está cancelada, la nota es dinero devuelto y no toca saldos. En todos los casos la mercadería regresa al lote del que salió. Igual para proveedores.
+3. **Lote en una venta (FEFO).** Primero los lotes que vencen antes; los que no vencen, por orden de ingreso. Solo de la sucursal donde se vende. Si no alcanza, la venta se rechaza completa.
+4. **Costo diferente.** Cuenta tanto una compra con costo distinto (el package actualiza el costo del producto) como un cambio directo; el historial lo genera un trigger sobre el costo del producto.
+
 ## Carril S — Servidores
 
 *(Se completa a medida que avanza Andrés.)*

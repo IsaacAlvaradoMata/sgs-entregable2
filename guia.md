@@ -286,6 +286,8 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 - Criterio para elegir de qué lote se descuenta en una venta (por ejemplo, el que vence primero).
 - Qué cuenta como "producto con precio de costo diferente" (compra con costo distinto, cambio directo, o ambos).
 
+✅ Las 4 definiciones (incluida la arquitectura packages + triggers) quedaron cerradas el 2026-10-26; ver `docs/decisiones.md`.
+
 **Implementaciones:**
 - [ ] Factura de venta pendiente → sube el saldo del cliente y entra a cuentas por cobrar.
 - [ ] Factura de proveedor pendiente → sube el saldo adeudado y entra a cuentas por pagar.
