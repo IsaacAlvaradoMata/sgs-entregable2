@@ -109,7 +109,7 @@ bd/
 ├── 02_modelo.sql                ← B1  ✅
 ├── 03_base_interna.sql          ← B2  ✅
 ├── 04_reglas_negocio.sql        ← B3  ✅
-├── 05_bitacoras.sql             ← B4
+├── 05_bitacoras.sql             ← B4  ✅
 ├── 06_padron.sql                ← B5
 ├── 07_procesos.sql              ← B6
 ├── 08_seguridad.sql             ← B7
@@ -141,6 +141,8 @@ Prohibido: `IF NOT EXISTS` en DDL, `BOOLEAN` en columnas, `SELECT` sin `FROM DUA
 - Una sola sentencia: cursor encima → `Cmd + Enter`.
 - Con `/` al final de un trigger usando `Cmd+Enter` queda `INVALID`. `END nombre;` dentro de un procedimiento puede cortar el parseo: usar `END;`.
 - **Varios triggers juntos con `Option + X` (probado 2026-10-27):** funciona si cada trigger va **sin la `/`**, **sin comentarios ni líneas en blanco dentro**, y separados entre sí por una línea en blanco. Con `/` y comentarios entre ellos falló (ORA-00900, el primero quedó INVALID). Los archivos del repo conservan las `/` (las necesitan SQL*Plus y SQL Developer); a Isaac se le pasan los bloques en el formato de DBeaver, listos para copiar.
+- **Un bloque anónimo (`DECLARE … END;`) no va en un archivo de `bd/dbeaver/` (probado 2026-10-27):** DBeaver no lo separa del `CREATE` siguiente con la línea en blanco y da PLS-00103 ("Encountered the symbol CREATE"). Los archivos de DBeaver empiezan después de la validación de sesión; los bloques anónimos se corren aparte con `Cmd + Enter`.
+- **Especificación y cuerpo de un package juntos con `Option + X` fallan (probado 2026-10-27, paso 4.1):** DBeaver metió el `CREATE PACKAGE BODY` dentro de la especificación (PLS-00103 en la línea del CREATE). Los packages van en su propio archivo `<paso>_package.sql` y se corren seleccionando la especificación → `Cmd + Enter`, y luego el cuerpo → `Cmd + Enter`. `Option + X` queda solo para triggers y sentencias SQL.
 
 ### Errores conocidos
 - `SQLERRM` no va directo en un `INSERT VALUES` (ORA-00984): asignarlo antes a una variable.
@@ -191,7 +193,8 @@ Prohibido: `IF NOT EXISTS` en DDL, `BOOLEAN` en columnas, `SELECT` sin `FROM DUA
 - **B1 (modelo):** `bd/02_modelo.sql` con 57 tablas por bloques funcionales, vista de precio de venta y datos de catálogos (mínimo 5 filas). Probado desde cero (`00` → `01` → `02`). Pendientes: datos de operaciones (después de B3, con los packages), diagrama y diccionario (se generan del script al cerrar el modelo), retomar las capturas 1 a 4 de B1 (el modelo pasó de 55 a 57 tablas).
 - **B2 (base interna) completa:** `bd/03_base_interna.sql` con `SGS_PKG_ERRORES`, `SGS_PKG_PARAMETROS`, `SGS_PKG_CIFRADO` (cuerpo con `DBMS_DDL.CREATE_WRAPPED`, llave como `<LLAVE_CIFRADO>` en el repo) y `SGS_PKG_CORREO` (Gmail por el puerto 465 en desarrollo, wallet en `/opt/oracle/oradata/wallet_sgs`, ver `servidores/configuracion/wallet_correo.md`). Correo de prueba recibido.
 - **B3 (reglas de negocio) completa:** `bd/04_reglas_negocio.sql` (triggers de cuentas, inventario, historial y validaciones; packages de clientes, compras, inventario y ventas, con SAVEPOINT, FOR UPDATE NOWAIT/WAIT y bitácora de errores) y `bd/10_datos_operaciones.sql` (datos de operaciones con los packages + simulación de fechas para B6).
-- **Siguiente:** B4 (bitácoras de auditoría).
+- **B4 (bitácoras) completa:** `bd/05_bitacoras.sql` (`SGS_PKG_BITACORA`, 33 triggers `TRG_AUD_*` generados de las columnas del modelo, vistas `SGS_VW_BITACORA` y `SGS_VW_BITACORA_CRITICA`); críticas definidas en `docs/decisiones.md`. Probado: rastro en las 7 áreas, críticas bien marcadas y el `ROLLBACK` deshace el rastro.
+- **Siguiente:** B5 (carga del padrón).
 - Conexiones DBeaver: `Docker - SGS_ADMIN (FREEPDB1)`, SYSTEM y `free (SYSDBA)` (entra como SYS a `FREEPDB1`). Bloques PL/SQL con `Cmd + Enter`; varias sentencias con `Option + X`.
 - El Docker está en hora UTC (6 h adelante); en los servidores se configura `America/Costa_Rica` (pendiente de Andrés).
 

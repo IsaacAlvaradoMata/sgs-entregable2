@@ -318,9 +318,9 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 **Depende de:** B2
 
 **Implementaciones:**
-- [ ] Triggers de auditoría para: facturación, cambio de precios, movimientos de inventario, clientes, proveedores, promociones, descuentos.
-- [ ] Cada registro guarda quién, cuándo, qué operación y valores anterior/nuevo.
-- [ ] Auditoría de operaciones críticas (pagos, anulaciones, cambios de límites, etc.).
+- [x] Triggers de auditoría para: facturación, cambio de precios, movimientos de inventario, clientes, proveedores, promociones, descuentos.
+- [x] Cada registro guarda quién, cuándo, qué operación y valores anterior/nuevo.
+- [x] Auditoría de operaciones críticas (pagos, anulaciones, cambios de límites, etc.).
 
 **Cuidados:** las bitácoras van en el tablespace de auditoría; no deben bloquear la operación si el registro falla.
 
@@ -665,7 +665,7 @@ Estado: ⬜ pendiente · 🟨 en progreso · ✅ listo
 | F10 | Tipos de promoción y acciones automáticas | B1 + B3 | Admin. automática de promociones (4 %) | ⬜ |
 | F11 | Descuentos planeados semanales | B6 | Admin. de descuentos programados (3 %) | ⬜ |
 | F12 | Top 10 clientes y orden de compra | B6 | Clientes premiados (4 %) | ⬜ |
-| F13 | Bitácoras de las 7 áreas | B4 | Bitácora de cambios (4 %) | ⬜ |
+| F13 | Bitácoras de las 7 áreas | B4 | Bitácora de cambios (4 %) | ✅ |
 | F14 | Notificaciones parametrizadas, clave cifrada | B2 | Notificaciones / cifrado | ⬜ |
 | F15 | Correo directo desde Oracle, sin VPN | B2 + I3 | Notificaciones | ⬜ |
 
@@ -708,7 +708,7 @@ Estado: ⬜ pendiente · 🟨 en progreso · ✅ listo
 | RB1 | Arquitectura en packages | Transversal | Arquitectura (8 %) | ⬜ |
 | RB2 | Commit, rollback, savepoint | Transversal | Manejo transaccional (2,5 %) | ⬜ |
 | RB3 | Manejo de excepciones | Transversal | Excepciones (2,5 %), bitácora de errores (3 %) | ⬜ |
-| RB4 | Auditoría con triggers | B4 | Triggers (2,5 %), auditoría (5 % / 3 %) | ⬜ |
+| RB4 | Auditoría con triggers | B4 | Triggers (2,5 %), auditoría (5 % / 3 %) | ✅ |
 | RB5 | Todo con `DBMS_SCHEDULER` | Transversal | Automatizaciones (5 %), procesos programados (5 %) | ⬜ |
 | RB6 | Password profile, roles mínimos, privilegios | B7 | Seguridad (5 %) | ⬜ |
 | RB7 | `DBMS_CRYPTO` | B2 | Seguridad / contraseñas | ⬜ |

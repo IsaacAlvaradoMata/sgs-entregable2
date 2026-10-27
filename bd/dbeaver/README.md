@@ -9,3 +9,7 @@ Se generan con:
 ```bash
 awk -f bd/dbeaver/convertir.awk <seccion del script oficial> > bd/dbeaver/<paso>.sql
 ```
+
+Los bloques anónimos (`DECLARE … END;`, como la validación de sesión al inicio de cada script) no van en estos archivos: DBeaver no los separa del `CREATE` siguiente con la línea en blanco y da PLS-00103. Se corren aparte con `Cmd + Enter`.
+
+Los packages van en un archivo aparte (`<paso>_package.sql`): la especificación y el cuerpo se seleccionan y se corren cada uno con `Cmd + Enter`. Juntos con `Option + X`, DBeaver mete el cuerpo dentro de la especificación (PLS-00103).

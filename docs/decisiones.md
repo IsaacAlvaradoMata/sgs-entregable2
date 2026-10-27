@@ -205,6 +205,16 @@ Son dos mundos separados; ninguna tabla los mezcla.
 3. **Lote en una venta (FEFO).** Primero los lotes que vencen antes; los que no vencen, por orden de ingreso. Solo de la sucursal donde se vende. Si no alcanza, la venta se rechaza completa.
 4. **Costo diferente.** Cuenta tanto una compra con costo distinto (el package actualiza el costo del producto) como un cambio directo; el historial lo genera un trigger sobre el costo del producto.
 
+### B4 — Bitácoras de auditoría
+
+**Definiciones de B4** · 2026-10-27
+
+1. **Tablas auditadas (33, un trigger `TRG_AUD_<prefijo>` por tabla).** FACTURACION: facturas, detalles, pagos, notas de crédito y sus detalles, de venta y de proveedor. PRECIOS: producto, producto por sucursal, artículo facturable y servicio. INVENTARIO: movimientos, existencias, lotes, traslados y su detalle. CLIENTES: cliente, cliente persona y cuenta por cobrar. PROVEEDORES: proveedor y cuenta por pagar. PROMOCIONES: promoción, sus productos, premios, premios por promoción y acciones otorgadas. DESCUENTOS: descuento y sus enlaces a familia, proveedor y producto. No se auditan `DETALLE_CUENTA_*` (las calcula un trigger a partir de facturas y pagos, que ya se auditan), `HISTORICO_PRECIO` (ya es historial), padrón, catálogos ni las bitácoras.
+2. **Mecanismo.** `SGS_PKG_BITACORA` acumula las columnas que cambiaron (`columna`) y guarda encabezado y detalle (`guardar`). Inserción: valores nuevos; actualización: solo lo que cambió; borrado: valores anteriores; una actualización sin cambios no deja rastro. Los triggers se generan a partir de las columnas de `02_modelo.sql`.
+3. **Misma transacción, sin bloquear.** El registro no es autónomo: si la operación hace `ROLLBACK` (o `ROLLBACK TO` un savepoint), su rastro también se deshace. Si la auditoría falla, el trigger registra el error en `SGS_BITACORA_ERROR` y la operación sigue.
+4. **Operaciones críticas (`BIT_ES_CRITICA = 'S'`).** Todo borrado. FACTURACION: anular (estado `N`) o modificar una factura o línea existente, todo pago y toda nota de crédito. PRECIOS: utilidad, descuento máximo, impuesto, precio de servicio, y el costo cuando **no** lo cambia `SGS_PKG_COMPRAS` (se detecta con la pila de llamadas). INVENTARIO: existencia cambiada sin pasar por `TRG_MOV_EXISTENCIA` (ajuste a mano) y cualquier cambio a un lote o traslado registrado. CLIENTES: cédula, estado, preferencial y límite de crédito (el saldo no: lo mueven ventas y pagos). PROVEEDORES: cédula jurídica, estado y límite. PROMOCIONES: tipo, fechas, cantidades y estado de la promoción, y cambios a sus productos, premios y acciones otorgadas. DESCUENTOS: criterio, porcentaje, días, fechas y estado, y cambios a sus enlaces.
+5. **Consulta.** Vistas `SGS_VW_BITACORA` (encabezado con detalle) y `SGS_VW_BITACORA_CRITICA` (solo críticas, para la gerencia; en B7 se le da `SELECT` al rol Gerente).
+
 ## Carril S — Servidores
 
 *(Se completa a medida que avanza Andrés.)*

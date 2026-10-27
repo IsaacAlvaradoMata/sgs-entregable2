@@ -633,3 +633,23 @@ Las compras, pagos, devoluciones, traslados y ventas de prueba se cargan **con l
 ![Datos de operaciones](capturas/B3_10_01_datos_operaciones.png)
 
 Todas las tablas de operaciones tienen 5 o más registros (requisito del E1), y quedan listos los casos que disparan los procesos y notificaciones: una clienta al 86 % de su crédito, un proveedor al 71 %, un cliente moroso, un lote por vencer en la semana, un lote vencido con existencia y un lote con más de 6 meses en bodega.
+
+# B4 — Bitácoras de auditoría (`bd/05_bitacoras.sql`)
+
+Cada operación sobre las tablas de facturación, precios, inventario, clientes, proveedores, promociones y descuentos deja un encabezado en `SGS_BITACORA` (área, tabla, operación, registro, usuario de base de datos y del sistema operativo, equipo, fecha y si es crítica) y una fila en `SGS_BITACORA_DETALLE` por cada columna que cambió, con su valor anterior y nuevo.
+
+![Objetos de auditoría](capturas/B4_05_01_objetos.png)
+
+El package `SGS_PKG_BITACORA` (especificación y cuerpo), los 33 triggers de auditoría (uno por tabla auditada, todos válidos y habilitados), las 7 áreas cubiertas y las vistas `SGS_VW_BITACORA` y `SGS_VW_BITACORA_CRITICA`.
+
+![Rastro por área](capturas/B4_05_02_rastro_areas.png)
+
+Después de una operación normal en cada área (compra de contado con costo nuevo, traslado, aumento de crédito, venta a crédito con abono, cambio de teléfono de un proveedor, cambio de descripción de una promoción y un descuento nuevo), las 7 áreas tienen rastro. Se marcan como críticos los pagos y el cambio de límite de crédito. No son críticos el costo actualizado por la compra, las existencias movidas por los movimientos de inventario, el saldo que sube con la venta ni el teléfono del proveedor. Los triggers de auditoría no registraron errores.
+
+![Operaciones críticas](capturas/B4_05_03_criticas.png)
+
+Seis operaciones hechas a mano, sin pasar por los packages, quedan marcadas como críticas junto a las de la prueba anterior (los dos pagos y el aumento de límite): una factura anulada (`P` → `N`), el costo del arroz cambiado sin una compra, una existencia ajustada sin movimiento de inventario, un proveedor inactivado, una promoción con condiciones cambiadas y el borrado de un enlace de descuento. Cada operación muestra solo las columnas que cambiaron con su valor anterior y nuevo; el borrado guarda los valores que tenía el registro.
+
+![Rollback](capturas/B4_05_04_rollback.png)
+
+Después de `ROLLBACK`, las seis operaciones a mano desaparecen de la bitácora y quedan solo las confirmadas: la auditoría va en la misma transacción que el cambio, así que nunca muestra un cambio que no ocurrió.
