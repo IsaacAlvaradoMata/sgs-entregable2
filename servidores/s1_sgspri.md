@@ -111,3 +111,15 @@ ssh root@192.168.56.101
 ```
 
 La primera vez se acepta la huella con `yes`. Oracle Linux 8 permite el acceso de root por SSH por defecto.
+
+## 8. Sincronización de la hora (en SGSPRI y SGSSTB)
+
+La zona horaria (`America/Costa_Rica`, CST -0600) quedó desde la instalación, pero la sincronización automática venía apagada (`NTP service: inactive`). Los jobs programados y Data Guard necesitan la misma hora exacta en los dos servidores. Como `root`, en cada uno:
+
+```
+systemctl enable --now chronyd
+timedatectl
+# Time zone: America/Costa_Rica (CST, -0600)
+# System clock synchronized: yes
+# NTP service: active
+```
