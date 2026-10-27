@@ -132,6 +132,7 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_VENTAS AS
         v_impuesto     NUMBER := 0;
         v_total        NUMBER;
         v_pagado       NUMBER := 0;
+        v_pagos        t_pagos := p_pagos;
         v_tipo_pago    SGS_TIPO_PAGO.TPA_ID%TYPE;
         v_dfv_id       SGS_DETALLE_FACTURA_VENTA.DFV_ID%TYPE;
         v_asignaciones SGS_PKG_INVENTARIO.t_asignaciones;
@@ -184,10 +185,13 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_VENTAS AS
         END LOOP;
         v_total := v_subtotal - v_descuento + v_impuesto;
         IF p_es_credito = 'N' THEN
-            v_i := p_pagos.FIRST;
+            IF v_pagos.COUNT = 1 AND v_pagos(v_pagos.FIRST).monto IS NULL THEN
+                v_pagos(v_pagos.FIRST).monto := v_total;
+            END IF;
+            v_i := v_pagos.FIRST;
             WHILE v_i IS NOT NULL LOOP
-                v_pagado := v_pagado + p_pagos(v_i).monto;
-                v_i := p_pagos.NEXT(v_i);
+                v_pagado := v_pagado + v_pagos(v_i).monto;
+                v_i := v_pagos.NEXT(v_i);
             END LOOP;
             IF v_pagado <> v_total THEN
                 RAISE_APPLICATION_ERROR(-20104, 'Los pagos (' || v_pagado || ') no suman el total de la factura (' || v_total || ')');
@@ -213,12 +217,12 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_VENTAS AS
                 END LOOP;
             END IF;
         END LOOP;
-        v_i := p_pagos.FIRST;
+        v_i := v_pagos.FIRST;
         WHILE v_i IS NOT NULL LOOP
-            v_tipo_pago := id_tipo_pago(p_pagos(v_i).tipo);
+            v_tipo_pago := id_tipo_pago(v_pagos(v_i).tipo);
             INSERT INTO SGS_PAGO_FACTURA_VENTA (PFV_ID, PFV_ID_FACTURA, PFV_ID_TIPO_PAGO, PFV_MONTO)
-            VALUES (SEQ_PAGO_FACTURA_VENTA.NEXTVAL, p_id_factura, v_tipo_pago, p_pagos(v_i).monto);
-            v_i := p_pagos.NEXT(v_i);
+            VALUES (SEQ_PAGO_FACTURA_VENTA.NEXTVAL, p_id_factura, v_tipo_pago, v_pagos(v_i).monto);
+            v_i := v_pagos.NEXT(v_i);
         END LOOP;
         FOR r IN (SELECT pr.PRM_ID, SUM(dv.DFV_CANTIDAD) AS PATROCINADORES,
                          FLOOR(SUM(dv.DFV_CANTIDAD) / pr.PRM_CANTIDAD_REQUERIDA) * pr.PRM_CANTIDAD_ACCIONES AS ACCIONES

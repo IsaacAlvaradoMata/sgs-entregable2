@@ -113,7 +113,8 @@ bd/
 ├── 06_padron.sql                ← B5
 ├── 07_procesos.sql              ← B6
 ├── 08_seguridad.sql             ← B7
-└── 09_monitoreo.sql             ← B8
+├── 09_monitoreo.sql             ← B8
+└── 10_datos_operaciones.sql     ← datos de prueba de operaciones (con los packages; va al final)
 ```
 
 - **Vos no podés ejecutar contra el Oracle de Isaac.** Tu sesión no llega a su Docker. Escribís y ordenás los scripts; Isaac los ejecuta y te pega los resultados o errores.
