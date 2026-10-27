@@ -4,6 +4,34 @@
 
 -- 0. EJECUTAR COMO SYS (SYSDBA), en la PDB: privilegios sobre paquetes del sistema que usan los packages
 GRANT EXECUTE ON SYS.DBMS_CRYPTO TO SGS_ADMIN;
+GRANT EXECUTE ON SYS.UTL_SMTP TO SGS_ADMIN;
+GRANT EXECUTE ON SYS.UTL_TCP TO SGS_ADMIN;
+
+-- Lista de control de red: Oracle bloquea las conexiones salientes; se autoriza solo el servidor de correo
+-- en sus dos puertos seguros: 465 (TLS desde el inicio) y 587 (STARTTLS); se usa el que permita la red
+BEGIN
+    DBMS_NETWORK_ACL_ADMIN.APPEND_HOST_ACE(
+        host       => 'smtp.gmail.com',
+        lower_port => 465,
+        upper_port => 465,
+        ace        => xs$ace_type(privilege_list => xs$name_list('connect'),
+                                  principal_name => 'SGS_ADMIN',
+                                  principal_type => xs_acl.ptype_db));
+    DBMS_NETWORK_ACL_ADMIN.APPEND_HOST_ACE(
+        host       => 'smtp.gmail.com',
+        lower_port => 587,
+        upper_port => 587,
+        ace        => xs$ace_type(privilege_list => xs$name_list('connect'),
+                                  principal_name => 'SGS_ADMIN',
+                                  principal_type => xs_acl.ptype_db));
+    -- Resolver el nombre del servidor (este privilegio no lleva puertos)
+    DBMS_NETWORK_ACL_ADMIN.APPEND_HOST_ACE(
+        host => 'smtp.gmail.com',
+        ace  => xs$ace_type(privilege_list => xs$name_list('resolve'),
+                            principal_name => 'SGS_ADMIN',
+                            principal_type => xs_acl.ptype_db));
+END;
+/
 
 -- 1. A partir de aqui, conectado como SGS_ADMIN: validar que la sesion es del dueno del esquema
 DECLARE
@@ -126,7 +154,10 @@ VALUES (SEQ_PARAMETRO.NEXTVAL, 'CORREO_REMITENTE', 'sgs.notificaciones.una@gmail
 INSERT INTO SGS_PARAMETRO (PAR_ID, PAR_CODIGO, PAR_VALOR, PAR_DESCRIPCION)
 VALUES (SEQ_PARAMETRO.NEXTVAL, 'CORREO_SERVIDOR', 'smtp.gmail.com', 'Servidor SMTP');
 INSERT INTO SGS_PARAMETRO (PAR_ID, PAR_CODIGO, PAR_VALOR, PAR_DESCRIPCION)
-VALUES (SEQ_PARAMETRO.NEXTVAL, 'CORREO_PUERTO', '587', 'Puerto SMTP con STARTTLS');
+VALUES (SEQ_PARAMETRO.NEXTVAL, 'CORREO_PUERTO', '465', 'Puerto SMTP: 465 = TLS desde el inicio, 587 = STARTTLS');
+-- Ruta del wallet con los certificados de Google; cambia segun el servidor (ver servidores/configuracion)
+INSERT INTO SGS_PARAMETRO (PAR_ID, PAR_CODIGO, PAR_VALOR, PAR_DESCRIPCION)
+VALUES (SEQ_PARAMETRO.NEXTVAL, 'CORREO_WALLET', 'file:/opt/oracle/oradata/wallet_sgs', 'Wallet con los certificados para la conexion cifrada con el servidor de correo');
 INSERT INTO SGS_PARAMETRO (PAR_ID, PAR_CODIGO, PAR_VALOR, PAR_DESCRIPCION)
 VALUES (SEQ_PARAMETRO.NEXTVAL, 'PCT_AVISO_CLIENTE', '0.85', 'Uso del credito a partir del cual se avisa al cliente');
 INSERT INTO SGS_PARAMETRO (PAR_ID, PAR_CODIGO, PAR_VALOR, PAR_DESCRIPCION)
@@ -283,5 +314,110 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_CIFRADO AS
 
 END;
 ]');
+END;
+/
+
+-- 7. Correo: envia por SMTP con STARTTLS leyendo servidor, puerto, wallet, remitente y clave (descifrada) de los parametros
+-- Errores propios: -20030 fallo el envio, -20031 no hay destinatarios activos del tipo
+CREATE OR REPLACE PACKAGE SGS_PKG_CORREO AS
+    -- p_destinatarios: uno o varios correos separados por coma
+    PROCEDURE enviar (p_destinatarios IN VARCHAR2, p_asunto IN VARCHAR2, p_cuerpo IN VARCHAR2);
+    -- Envia a todos los destinatarios activos de un tipo: GERENTE, COORDINADOR o DBA
+    PROCEDURE enviar_a_tipo (p_tipo IN VARCHAR2, p_asunto IN VARCHAR2, p_cuerpo IN VARCHAR2);
+END;
+/
+
+CREATE OR REPLACE PACKAGE BODY SGS_PKG_CORREO AS
+
+    -- Escribe texto en UTF-8 por partes, para no superar el limite de un RAW
+    PROCEDURE escribir (p_conexion IN OUT NOCOPY UTL_SMTP.CONNECTION, p_texto IN VARCHAR2) IS
+        v_pos PLS_INTEGER := 1;
+    BEGIN
+        WHILE v_pos <= NVL(LENGTH(p_texto), 0) LOOP
+            UTL_SMTP.WRITE_RAW_DATA(p_conexion, UTL_I18N.STRING_TO_RAW(SUBSTR(p_texto, v_pos, 8000), 'AL32UTF8'));
+            v_pos := v_pos + 8000;
+        END LOOP;
+    END;
+
+    PROCEDURE enviar (p_destinatarios IN VARCHAR2, p_asunto IN VARCHAR2, p_cuerpo IN VARCHAR2) IS
+        v_conexion   UTL_SMTP.CONNECTION;
+        v_remitente  VARCHAR2(250) := SGS_PKG_PARAMETROS.obtener('CORREO_REMITENTE');
+        v_servidor   VARCHAR2(250) := SGS_PKG_PARAMETROS.obtener('CORREO_SERVIDOR');
+        v_puerto     PLS_INTEGER   := SGS_PKG_PARAMETROS.obtener_numero('CORREO_PUERTO');
+        v_wallet     VARCHAR2(250) := SGS_PKG_PARAMETROS.obtener('CORREO_WALLET');
+        v_clave      VARCHAR2(250) := SGS_PKG_CIFRADO.obtener_parametro('CORREO_CLAVE');
+        v_correo     VARCHAR2(250);
+        v_i          PLS_INTEGER := 1;
+        v_error      VARCHAR2(200);
+        -- El asunto va en UTF-8 codificado en base64 para que se vean bien las tildes
+        v_asunto     VARCHAR2(1000) := '=?UTF-8?B?' || UTL_RAW.CAST_TO_VARCHAR2(UTL_ENCODE.BASE64_ENCODE(
+                                         UTL_I18N.STRING_TO_RAW(p_asunto, 'AL32UTF8'))) || '?=';
+    BEGIN
+        -- 465: la conexion es cifrada desde el inicio; 587: se cifra despues con STARTTLS
+        -- tx_timeout evita que la sesion quede esperando si el servidor no responde
+        v_conexion := UTL_SMTP.OPEN_CONNECTION(host => v_servidor, port => v_puerto, tx_timeout => 30,
+                                               wallet_path => v_wallet, wallet_password => NULL,
+                                               secure_connection_before_smtp => (v_puerto = 465));
+        UTL_SMTP.EHLO(v_conexion, v_servidor);
+        IF v_puerto <> 465 THEN
+            UTL_SMTP.STARTTLS(v_conexion);
+            UTL_SMTP.EHLO(v_conexion, v_servidor);
+        END IF;
+        UTL_SMTP.AUTH(c => v_conexion, username => v_remitente, password => v_clave, schemes => 'PLAIN');
+        UTL_SMTP.MAIL(v_conexion, v_remitente);
+
+        LOOP
+            v_correo := TRIM(REGEXP_SUBSTR(p_destinatarios, '[^,]+', 1, v_i));
+            EXIT WHEN v_correo IS NULL;
+            UTL_SMTP.RCPT(v_conexion, v_correo);
+            v_i := v_i + 1;
+        END LOOP;
+
+        UTL_SMTP.OPEN_DATA(v_conexion);
+        escribir(v_conexion, 'From: SGS Notificaciones <' || v_remitente || '>' || UTL_TCP.CRLF
+                          || 'To: ' || p_destinatarios || UTL_TCP.CRLF
+                          || 'Subject: ' || REPLACE(v_asunto, UTL_TCP.CRLF) || UTL_TCP.CRLF
+                          || 'Date: ' || TO_CHAR(SYSTIMESTAMP, 'Dy, DD Mon YYYY HH24:MI:SS TZHTZM', 'NLS_DATE_LANGUAGE=ENGLISH') || UTL_TCP.CRLF
+                          || 'MIME-Version: 1.0' || UTL_TCP.CRLF
+                          || 'Content-Type: text/plain; charset=UTF-8' || UTL_TCP.CRLF
+                          || 'Content-Transfer-Encoding: 8bit' || UTL_TCP.CRLF
+                          || UTL_TCP.CRLF);
+        escribir(v_conexion, p_cuerpo);
+        UTL_SMTP.CLOSE_DATA(v_conexion);
+        UTL_SMTP.QUIT(v_conexion);
+    EXCEPTION
+        WHEN OTHERS THEN
+            v_error := SUBSTR(SQLERRM, 1, 200);
+            SGS_PKG_ERRORES.registrar('SGS_PKG_CORREO.enviar');
+            -- Cierra la conexion si quedo abierta; si ya estaba cerrada se ignora
+            BEGIN
+                UTL_SMTP.QUIT(v_conexion);
+            EXCEPTION
+                WHEN OTHERS THEN
+                    NULL;
+            END;
+            RAISE_APPLICATION_ERROR(-20030, 'No se pudo enviar el correo: ' || v_error);
+    END;
+
+    PROCEDURE enviar_a_tipo (p_tipo IN VARCHAR2, p_asunto IN VARCHAR2, p_cuerpo IN VARCHAR2) IS
+        v_destinatarios VARCHAR2(4000);
+    BEGIN
+        SELECT LISTAGG(DES_EMAIL, ',') WITHIN GROUP (ORDER BY DES_ID)
+          INTO v_destinatarios
+          FROM SGS_DESTINATARIO
+         WHERE DES_TIPO = UPPER(p_tipo)
+           AND DES_ESTADO = 'A';
+
+        IF v_destinatarios IS NULL THEN
+            RAISE_APPLICATION_ERROR(-20031, 'No hay destinatarios activos del tipo ' || p_tipo);
+        END IF;
+
+        enviar(v_destinatarios, p_asunto, p_cuerpo);
+    EXCEPTION
+        WHEN OTHERS THEN
+            SGS_PKG_ERRORES.registrar('SGS_PKG_CORREO.enviar_a_tipo');
+            RAISE;
+    END;
+
 END;
 /

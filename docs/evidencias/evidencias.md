@@ -243,3 +243,30 @@ SELECT SGS_PKG_CIFRADO.validar_usuario('lmora', 'Gerente2026') AS clave_correcta
 ![Validación de usuarios](capturas/B2_03_06_validar_usuario.png)
 
 Las contraseñas de los usuarios del sistema se guardan como hash SHA-256 con sal. La validación acepta la clave correcta y rechaza una clave incorrecta y un usuario inexistente.
+
+### 7. Lista de control de red para el correo
+
+```sql
+SELECT host, lower_port, upper_port, principal, privilege
+  FROM dba_host_aces
+ WHERE principal = 'SGS_ADMIN'
+ ORDER BY privilege;
+```
+
+![ACL de red](capturas/B2_03_07_acl_red.png)
+
+Oracle bloquea toda conexión saliente. La lista de control de red solo autoriza a `SGS_ADMIN` a conectarse a `smtp.gmail.com` (en sus puertos seguros) y a resolver ese nombre. La captura se tomó con el puerto 587; después se agregó el 465, que es el que se usa en la red de desarrollo.
+
+### 8. Correo enviado desde Oracle (`SGS_PKG_CORREO`)
+
+```sql
+BEGIN
+    SGS_PKG_CORREO.enviar_a_tipo('DBA', 'Prueba SGS: correo enviado desde Oracle',
+        'Hola, este correo lo envió Oracle directamente por SMTP sobre TLS, sin VPN.' || CHR(13) || CHR(10)
+        || 'Prueba de caracteres: tildes áéíóú, eñe ñ, colones ₡100.000.');
+END;
+```
+
+![Correo recibido](capturas/B2_03_08_correo_recibido.png)
+
+Oracle envía el correo directamente a Gmail por SMTP sobre TLS (puerto 465), sin VPN. El package lee el servidor, el puerto, el wallet y el remitente de `SGS_PARAMETRO`, descifra la clave en el momento del envío y toma el destinatario de `SGS_DESTINATARIO` (tipo DBA). El texto llega en UTF-8, con tildes, eñe y el símbolo de colones.

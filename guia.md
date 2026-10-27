@@ -261,8 +261,8 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 - [x] Package de parámetros: leer y actualizar valores de forma centralizada.
 - [x] Package de errores: registrar en la bitácora de errores desde cualquier procedimiento.
 - [x] Package de cifrado con `DBMS_CRYPTO`: cifrar y descifrar datos sensibles.
-- [ ] Package de correo: enviar un correo leyendo remitente, clave (descifrada), servidor y destinatarios desde parámetros.
-- [ ] Prueba real: llega un correo a una bandeja externa.
+- [x] Package de correo: enviar un correo leyendo remitente, clave (descifrada), servidor y destinatarios desde parámetros.
+- [x] Prueba real: llega un correo a una bandeja externa.
 
 **Cuidados:**
 - **El correo es lo de mayor riesgo técnico del carril B**: probarlo lo antes posible.

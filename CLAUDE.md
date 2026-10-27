@@ -183,11 +183,14 @@ Prohibido: `IF NOT EXISTS` en DDL, `BOOLEAN` en columnas, `SELECT` sin `FROM DUA
 
 **Decisión 6 de B1 (confirmada 2026-10-26)** — `SGS_LOTE` (nace de la línea de factura de proveedor) + `SGS_EXISTENCIA` (lote × sucursal) + traslado encabezado/detalle por lote + `SGS_MOVIMIENTO_INVENTARIO` (cada entrada/salida por lote con su documento). Ventas por FEFO; la factura no lleva lote, el movimiento sí.
 
-**Las 6 decisiones de B1 están cerradas.** Siguiente paso: escribir `bd/02_modelo.sql` tabla por tabla, con Isaac probando en Docker.
+**Avance al 2026-10-26** (detalle en `guia.md`, `docs/decisiones.md` y `docs/evidencias/evidencias.md`):
+- **B1 (modelo):** `bd/02_modelo.sql` con 57 tablas por bloques funcionales, vista de precio de venta y datos de catálogos (mínimo 5 filas). Probado desde cero (`00` → `01` → `02`). Pendientes: datos de operaciones (después de B3, con los packages), diagrama y diccionario (se generan del script al cerrar el modelo), retomar las capturas 1 a 4 de B1 (el modelo pasó de 55 a 57 tablas).
+- **B2 (base interna) completa:** `bd/03_base_interna.sql` con `SGS_PKG_ERRORES`, `SGS_PKG_PARAMETROS`, `SGS_PKG_CIFRADO` (cuerpo con `DBMS_DDL.CREATE_WRAPPED`, llave como `<LLAVE_CIFRADO>` en el repo) y `SGS_PKG_CORREO` (Gmail por el puerto 465 en desarrollo, wallet en `/opt/oracle/oradata/wallet_sgs`, ver `servidores/configuracion/wallet_correo.md`). Correo de prueba recibido.
+- **Siguiente:** B3 (reglas de negocio).
+- Conexiones DBeaver: `Docker - SGS_ADMIN (FREEPDB1)`, SYSTEM y `free (SYSDBA)` (entra como SYS a `FREEPDB1`). Bloques PL/SQL con `Cmd + Enter`; varias sentencias con `Option + X`.
+- El Docker está en hora UTC (6 h adelante); en los servidores se configura `America/Costa_Rica` (pendiente de Andrés).
 
-**Pendiente de Isaac:** crear la conexión DBeaver "Docker - SGS_ADMIN (FREEPDB1)". No borrar "free (SYSDBA)".
-
-**Pendiente de Andrés:** RAM y disco libre de la HP (se necesitan ~16 GB RAM y ~100 GB de disco); definir `RESP_HORA_DIARIO`; instalar VirtualBox, Oracle Linux 8 y Oracle 21c EE; crear las dos VMs con red interna + NAT.
+**Pendiente de Andrés:** RAM y disco libre de la HP (se necesitan ~16 GB RAM y ~100 GB de disco); definir `RESP_HORA_DIARIO`; instalar VirtualBox, Oracle Linux 8 y Oracle 21c EE; crear las dos VMs con red interna + NAT; zona horaria; wallet del correo y prueba de puertos en las dos VMs; decir si standby/RMAN necesitan alguna tabla. Ver `notas/pendientes.md`.
 
 **Preguntas abiertas al profesor:**
 - ¿El aviso del 85% al coordinador "en cuentas por pagar" es de clientes o de proveedores? (la escala dice "Proveedores con límite de crédito").
