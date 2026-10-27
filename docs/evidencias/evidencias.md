@@ -334,3 +334,21 @@ VALUES (SEQ_CLIENTE_PERSONA.NEXTVAL, (SELECT cli_id FROM SGS_CLIENTE WHERE cli_c
 ![Empresa con datos de persona](capturas/B3_04_04_error_empresa_persona.png)
 
 Error esperado: los datos de persona (apellidos, sexo, estado civil, etc.) solo aplican a personas. El trigger `TRG_CLP_VALIDA` protege la relación de subtipo entre `SGS_CLIENTE` y `SGS_CLIENTE_PERSONA`.
+
+### 5. Historial automático de precios de costo
+
+```sql
+UPDATE SGS_PRODUCTO SET PRO_PRECIO_COSTO = 1550 WHERE PRO_CODIGO = 'ABA-001';
+UPDATE SGS_PRODUCTO SET PRO_PRECIO_COSTO = 1550 WHERE PRO_CODIGO = 'ABA-001';
+COMMIT;
+
+SELECT p.pro_codigo, h.hpr_precio_ant, h.hpr_precio_nue, h.hpr_fecha, h.hpr_usuario
+  FROM SGS_HISTORICO_PRECIO h
+  JOIN SGS_PRODUCTO p ON p.pro_id = h.hpr_id_producto
+ WHERE p.pro_codigo = 'ABA-001'
+ ORDER BY h.hpr_id;
+```
+
+![Historial de precios](capturas/B3_04_05_historico_precio.png)
+
+El trigger `TRG_PRO_HISTORICO_PRECIO` registró el cambio de costo del arroz (₡1.500 → ₡1.550) con la cuenta de Oracle y la fecha. El segundo `UPDATE` deja el mismo costo, así que no genera registro. La primera fila es el registro inicial de los datos de catálogo. (La hora sale en UTC porque así está configurado el contenedor de desarrollo.)

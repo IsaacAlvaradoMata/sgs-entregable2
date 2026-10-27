@@ -297,7 +297,7 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 - [ ] Ventas → bajan el inventario.
 - [ ] Devoluciones (de cliente y a proveedor) → ajustan el inventario.
 - [ ] Cada movimiento de inventario queda registrado.
-- [ ] Cambio de precio de costo → historial de precios.
+- [x] Cambio de precio de costo → historial de precios.
 - [ ] Promociones → cálculo automático de acciones según productos patrocinadores.
 - [ ] Concurrencia con `SELECT FOR UPDATE` (`NOWAIT`/`WAIT`) al aplicar pagos y descontar existencias.
 

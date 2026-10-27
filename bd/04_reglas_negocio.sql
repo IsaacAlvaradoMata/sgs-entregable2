@@ -279,3 +279,55 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_CLIENTES AS
 
 END;
 /
+
+-- 3. Historial de precios de costo
+-- Al crear un producto o cambiar su costo queda el registro; si el costo no cambia, no se registra nada
+CREATE OR REPLACE TRIGGER TRG_PRO_HISTORICO_PRECIO
+AFTER INSERT OR UPDATE OF PRO_PRECIO_COSTO ON SGS_PRODUCTO
+FOR EACH ROW
+BEGIN
+    IF INSERTING OR :OLD.PRO_PRECIO_COSTO <> :NEW.PRO_PRECIO_COSTO THEN
+        INSERT INTO SGS_HISTORICO_PRECIO (HPR_ID, HPR_ID_PRODUCTO, HPR_PRECIO_ANT, HPR_PRECIO_NUE)
+        VALUES (SEQ_HISTORICO_PRECIO.NEXTVAL, :NEW.PRO_ID, :OLD.PRO_PRECIO_COSTO, :NEW.PRO_PRECIO_COSTO);
+    END IF;
+END;
+/
+
+-- 4. Existencias a partir de los movimientos de inventario
+-- Errores propios: -20050 existencia insuficiente, -20051 movimiento no modificable
+
+-- Entradas suman a la existencia del lote en la sucursal (la crea si no existe); salidas restan si alcanza
+CREATE OR REPLACE TRIGGER TRG_MOV_EXISTENCIA
+AFTER INSERT ON SGS_MOVIMIENTO_INVENTARIO
+FOR EACH ROW
+BEGIN
+    IF :NEW.MOV_TIPO IN ('COMPRA', 'DEVOLUCION_CLIENTE', 'TRASLADO_ENTRADA') THEN
+        MERGE INTO SGS_EXISTENCIA e
+        USING (SELECT :NEW.MOV_ID_LOTE AS LOTE, :NEW.MOV_ID_SUCURSAL AS SUCURSAL FROM DUAL) m
+           ON (e.EXI_ID_LOTE = m.LOTE AND e.EXI_ID_SUCURSAL = m.SUCURSAL)
+         WHEN MATCHED THEN
+              UPDATE SET e.EXI_CANTIDAD = e.EXI_CANTIDAD + :NEW.MOV_CANTIDAD
+         WHEN NOT MATCHED THEN
+              INSERT (EXI_ID, EXI_ID_LOTE, EXI_ID_SUCURSAL, EXI_CANTIDAD)
+              VALUES (SEQ_EXISTENCIA.NEXTVAL, m.LOTE, m.SUCURSAL, :NEW.MOV_CANTIDAD);
+    ELSE
+        UPDATE SGS_EXISTENCIA
+           SET EXI_CANTIDAD = EXI_CANTIDAD - :NEW.MOV_CANTIDAD
+         WHERE EXI_ID_LOTE = :NEW.MOV_ID_LOTE
+           AND EXI_ID_SUCURSAL = :NEW.MOV_ID_SUCURSAL
+           AND EXI_CANTIDAD >= :NEW.MOV_CANTIDAD;
+        IF SQL%ROWCOUNT = 0 THEN
+            RAISE_APPLICATION_ERROR(-20050, 'Existencia insuficiente del lote ' || :NEW.MOV_ID_LOTE
+                                            || ' en la sucursal ' || :NEW.MOV_ID_SUCURSAL);
+        END IF;
+    END IF;
+END;
+/
+
+-- Los movimientos son la historia del inventario: un error se corrige con otro movimiento, nunca editando o borrando
+CREATE OR REPLACE TRIGGER TRG_MOV_INMUTABLE
+BEFORE UPDATE OR DELETE ON SGS_MOVIMIENTO_INVENTARIO
+BEGIN
+    RAISE_APPLICATION_ERROR(-20051, 'Los movimientos de inventario no se modifican ni se borran; se corrigen con otro movimiento');
+END;
+/
