@@ -554,3 +554,74 @@ De las 230 leches enviadas a San Isidro, 200 salieron del lote que vence primero
 ![Rechazos del traslado](capturas/B3_04_24_traslado_rechazos.png)
 
 Existencia insuficiente, sucursal inexistente y origen igual al destino (restricción `CK_TRA_ORIGEN_DESTINO`). Cada intento se deshizo con `ROLLBACK TO SAVEPOINT` y quedó registrado por `SGS_PKG_ERRORES`.
+
+### 9. Ventas (`SGS_PKG_VENTAS`)
+
+```sql
+DECLARE
+    v_f1        NUMBER;
+    v_f2        NUMBER;
+    v_nota      NUMBER;
+    v_sin_pagos SGS_PKG_VENTAS.t_pagos;
+BEGIN
+    SGS_PKG_VENTAS.registrar_venta(p_sucursal => 'Sucursal San Isidro', p_usuario => 'mcastro', p_cliente => NULL, p_es_credito => 'N',
+        p_lineas => SGS_PKG_VENTAS.t_lineas(1 => SGS_PKG_VENTAS.t_linea(codigo => 'LAC-001', cantidad => 5),
+                                            2 => SGS_PKG_VENTAS.t_linea(codigo => 'LAC-002', cantidad => 1),
+                                            3 => SGS_PKG_VENTAS.t_linea(codigo => 'ABA-001', cantidad => 2),
+                                            4 => SGS_PKG_VENTAS.t_linea(codigo => 'Entrega a domicilio', cantidad => 1)),
+        p_pagos  => SGS_PKG_VENTAS.t_pagos(1 => SGS_PKG_VENTAS.t_pago(tipo => 'Efectivo', monto => 5000),
+                                           2 => SGS_PKG_VENTAS.t_pago(tipo => 'SINPE Movil', monto => 6682.44)),
+        p_id_factura => v_f1);
+    SGS_PKG_VENTAS.registrar_venta(p_sucursal => 'Sucursal San Isidro', p_usuario => 'mcastro', p_cliente => '199990001', p_es_credito => 'S',
+        p_lineas => SGS_PKG_VENTAS.t_lineas(1 => SGS_PKG_VENTAS.t_linea(codigo => 'LAC-001', cantidad => 20),
+                                            2 => SGS_PKG_VENTAS.t_linea(codigo => 'FRU-001', cantidad => 10)),
+        p_pagos  => v_sin_pagos,
+        p_id_factura => v_f2);
+    SGS_PKG_VENTAS.registrar_pago(v_f2, 5000, 'SINPE Movil');
+    SGS_PKG_VENTAS.registrar_devolucion(v_f2,
+        SGS_PKG_VENTAS.t_lineas(1 => SGS_PKG_VENTAS.t_linea(codigo => 'LAC-001', cantidad => 4)),
+        'Leche en mal estado', 'mcastro', v_nota);
+END;
+```
+
+**Verificación: totales, pagos, acciones, saldos e inventario**
+
+![Verificación de ventas](capturas/B3_04_25_ventas_verificacion.png)
+
+- Venta de contado al cliente por defecto pagada con dos medios (efectivo y SINPE) que suman exactamente el total.
+- Venta a crédito a una clienta preferencial: queda pendiente en su cuenta por cobrar; un abono y una nota de crédito (devolución de 4 leches) rebajan el saldo.
+- Acciones de la promoción "Lácteos premian" (2 lácteos por acción) calculadas automáticamente al facturar.
+- Las ventas descuentan inventario por FEFO desde la sucursal; la devolución regresa la leche al lote del que salió; ningún lote difiere de sus movimientos.
+
+**Detalle de la venta de contado**
+
+![Detalle de la venta](capturas/B3_04_26_venta_detalle.png)
+
+Cada línea toma el precio de la vista de precio de venta (costo + utilidad de la sucursal), aplica el mayor descuento vigente con el tope de la sucursal (10 % a lácteos, 5 % a abarrotes) y el impuesto del artículo (1 % canasta básica, 0 % exento, 13 % el servicio de entrega).
+
+**Rechazos**
+
+![Rechazos de ventas](capturas/B3_04_27_ventas_rechazos.png)
+
+La bodega central no vende, los pagos de contado deben sumar el total, solo los clientes preferenciales compran a crédito, ninguna venta a crédito supera el límite del cliente y no se devuelve más de lo vendido.
+
+### 10. Concurrencia con `SELECT … FOR UPDATE NOWAIT` y `WAIT`
+
+Prueba con dos sesiones de `SGS_ADMIN`. La sesión A bloquea la cuenta por cobrar de una clienta sin terminar su transacción:
+
+```sql
+SELECT cxc_id, cxc_saldo
+  FROM SGS_CUENTA_COBRAR
+ WHERE cxc_id_cliente = (SELECT cli_id FROM SGS_CLIENTE WHERE cli_cedula = '199990001')
+   FOR UPDATE;
+```
+
+Mientras tanto, la sesión B intenta usar la misma cuenta dos veces: cambiar el límite (`SGS_PKG_CLIENTES.asignar_credito`, que bloquea con `NOWAIT`) y registrar un abono (`SGS_PKG_VENTAS.registrar_pago`, que bloquea con `WAIT 5`).
+
+![Bloqueos](capturas/B3_04_28_concurrencia_bloqueos.png)
+
+La bitácora registra el error original de Oracle de cada caso: con `NOWAIT` el rechazo es inmediato (`ORA-00054`); con `WAIT 5` la sesión espera 5 segundos y luego se rinde (`ORA-30006`). Al usuario el package le devuelve un mensaje claro ("la cuenta la está usando otra sesión; intente de nuevo").
+
+![Bloqueo liberado](capturas/B3_04_29_concurrencia_liberada.png)
+
+Cuando la sesión A termina (`ROLLBACK`), el mismo abono en la sesión B pasa de inmediato: el saldo baja a ₡10.567 y la clienta tiene 2 abonos.

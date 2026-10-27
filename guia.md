@@ -294,12 +294,12 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 - [x] Validación de límites de crédito (clientes y proveedores): si se supera, no se guarda como pendiente.
 - [x] Pagos/abonos → bajan el saldo; si se cancela completo, la factura pasa a cancelada.
 - [x] Compras → crean lote y suben el inventario.
-- [ ] Ventas → bajan el inventario.
-- [ ] Devoluciones (de cliente y a proveedor) → ajustan el inventario.
-- [ ] Cada movimiento de inventario queda registrado.
+- [x] Ventas → bajan el inventario.
+- [x] Devoluciones (de cliente y a proveedor) → ajustan el inventario.
+- [x] Cada movimiento de inventario queda registrado.
 - [x] Cambio de precio de costo → historial de precios.
-- [ ] Promociones → cálculo automático de acciones según productos patrocinadores.
-- [ ] Concurrencia con `SELECT FOR UPDATE` (`NOWAIT`/`WAIT`) al aplicar pagos y descontar existencias.
+- [x] Promociones → cálculo automático de acciones según productos patrocinadores.
+- [x] Concurrencia con `SELECT FOR UPDATE` (`NOWAIT`/`WAIT`) al aplicar pagos y descontar existencias.
 
 **Cuidados:**
 - Varias reglas se disparan con la misma operación: definir bien el orden y que todo ocurra en una sola transacción.
