@@ -653,3 +653,27 @@ Seis operaciones hechas a mano, sin pasar por los packages, quedan marcadas como
 ![Rollback](capturas/B4_05_04_rollback.png)
 
 Después de `ROLLBACK`, las seis operaciones a mano desaparecen de la bitácora y quedan solo las confirmadas: la auditoría va en la misma transacción que el cambio, así que nunca muestra un cambio que no ocurrió.
+
+# B5 — Padrón nacional (`bd/06_padron.sql`)
+
+El padrón se carga desde los archivos oficiales del TSE (`PADRON_COMPLETO.txt` y `distelec.txt`), copiados a una carpeta del servidor.
+
+![Archivos en el servidor](capturas/B5_06_01_archivos.png)
+
+Los dos archivos del TSE en la carpeta del servidor de desarrollo, con dueño `oracle` para que la base los pueda leer.
+
+![Directorio de Oracle](capturas/B5_06_02_directorio.png)
+
+El objeto directorio `SGS_DIR_PADRON` apunta a esa carpeta; SGS_ADMIN tiene lectura (los archivos) y escritura (los `.log` y `.bad` de cada lectura).
+
+![Tablas externas](capturas/B5_06_03_tablas_externas.png)
+
+Las tablas externas leen los archivos sin cargarlos: las 2179 líneas de distritos (incluida la que trae una coma en el nombre), las 3 762 240 personas con cédula válida, y los nombres con Ñ convertidos correctamente de Latin-1 a la base.
+
+![Carga del padrón](capturas/B5_06_04_carga.png)
+
+`SGS_PKG_PADRON.cargar` dejó los 2179 distritos electorales y las 3 762 240 personas del TSE, más las 8 personas de prueba, que se conservan porque la carga nunca borra. Los 5 clientes nacionales siguen enlazados a su persona del padrón y la carga no registró errores.
+
+![Recarga del padrón](capturas/B5_06_05_recarga.png)
+
+Al volver a cargar el mismo archivo no se inserta ni se actualiza nada: el `MERGE` solo toca a las personas nuevas o con datos distintos. La carga se puede repetir cada vez que el TSE publique un padrón nuevo sin duplicar datos ni reescribir millones de filas que llegarían a la standby como redo.

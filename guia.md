@@ -339,8 +339,8 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 **Definir antes de empezar:** fuente y formato del padrón vigente, y cómo se "carga automáticamente" (desde archivo, programado o a demanda).
 
 **Implementaciones:**
-- [ ] Procedimiento de carga automática del padrón con registro de errores.
-- [ ] Enlace cliente ↔ padrón para obtener los datos básicos de la persona.
+- [x] Procedimiento de carga automática del padrón con registro de errores.
+- [x] Enlace cliente ↔ padrón para obtener los datos básicos de la persona.
 - [ ] Ubicación del archivo en el servidor acordada con Andrés.
 
 **Cuidados:**
@@ -656,7 +656,7 @@ Estado: ⬜ pendiente · 🟨 en progreso · ✅ listo
 | F01 | Cuentas por cobrar automáticas | B3 | Act. automática de CxC (4 %) | ⬜ |
 | F02 | Cuentas por pagar automáticas | B3 | Act. automática de CxP (4 %) | ⬜ |
 | F03 | Cambio automático de estado de factura | B3 | Cambio automático del estado (3 %) | ⬜ |
-| F04 | Padrón nacional y adaptación del modelo | B1 + B5 | Integración del padrón (6 %) | ⬜ |
+| F04 | Padrón nacional y adaptación del modelo | B1 + B5 | Integración del padrón (6 %) | ✅ |
 | F05 | Inventario automático en compras y ventas | B3 | Act. automática del inventario (5 %) | ⬜ |
 | F06 | Inventario automático en devoluciones | B3 | Act. automática del inventario (5 %) | ⬜ |
 | F07 | Historial automático de precios | B3 | Historial de precios (3 %) | ⬜ |

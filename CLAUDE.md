@@ -110,7 +110,7 @@ bd/
 ├── 03_base_interna.sql          ← B2  ✅
 ├── 04_reglas_negocio.sql        ← B3  ✅
 ├── 05_bitacoras.sql             ← B4  ✅
-├── 06_padron.sql                ← B5
+├── 06_padron.sql                ← B5  ✅
 ├── 07_procesos.sql              ← B6
 ├── 08_seguridad.sql             ← B7
 ├── 09_monitoreo.sql             ← B8
@@ -194,7 +194,9 @@ Prohibido: `IF NOT EXISTS` en DDL, `BOOLEAN` en columnas, `SELECT` sin `FROM DUA
 - **B2 (base interna) completa:** `bd/03_base_interna.sql` con `SGS_PKG_ERRORES`, `SGS_PKG_PARAMETROS`, `SGS_PKG_CIFRADO` (cuerpo con `DBMS_DDL.CREATE_WRAPPED`, llave como `<LLAVE_CIFRADO>` en el repo) y `SGS_PKG_CORREO` (Gmail por el puerto 465 en desarrollo, wallet en `/opt/oracle/oradata/wallet_sgs`, ver `servidores/configuracion/wallet_correo.md`). Correo de prueba recibido.
 - **B3 (reglas de negocio) completa:** `bd/04_reglas_negocio.sql` (triggers de cuentas, inventario, historial y validaciones; packages de clientes, compras, inventario y ventas, con SAVEPOINT, FOR UPDATE NOWAIT/WAIT y bitácora de errores) y `bd/10_datos_operaciones.sql` (datos de operaciones con los packages + simulación de fechas para B6).
 - **B4 (bitácoras) completa:** `bd/05_bitacoras.sql` (`SGS_PKG_BITACORA`, 33 triggers `TRG_AUD_*` generados de las columnas del modelo, vistas `SGS_VW_BITACORA` y `SGS_VW_BITACORA_CRITICA`); críticas definidas en `docs/decisiones.md`. Probado: rastro en las 7 áreas, críticas bien marcadas y el `ROLLBACK` deshace el rastro.
-- **Siguiente:** B5 (carga del padrón).
+- **B5 (padrón) completa en Docker:** `bd/06_padron.sql` (directorio `SGS_DIR_PADRON` desde SYSDBA, tablas externas `SGS_EXT_DISTELEC` y `SGS_EXT_PADRON` sobre los TXT del TSE, `SGS_PKG_PADRON.cargar` con `MERGE` que nunca borra). Cargados 2179 distritos y 3 762 240 personas; recargar el mismo archivo no cambia nada. Sin job: el enunciado no lo pide. Falta acordar con Andrés la carpeta en las VMs.
+- Instalación en SGSPRI (valores por servidor, orden, verificaciones): `servidores/configuracion/instalacion_bd_sgspri.md`.
+- **Siguiente:** B6 (procesos programados y notificaciones).
 - Conexiones DBeaver: `Docker - SGS_ADMIN (FREEPDB1)`, SYSTEM y `free (SYSDBA)` (entra como SYS a `FREEPDB1`). Bloques PL/SQL con `Cmd + Enter`; varias sentencias con `Option + X`.
 - El Docker está en hora UTC (6 h adelante); en los servidores se configura `America/Costa_Rica` (pendiente de Andrés).
 

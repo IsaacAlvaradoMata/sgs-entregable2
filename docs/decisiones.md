@@ -215,6 +215,16 @@ Son dos mundos separados; ninguna tabla los mezcla.
 4. **Operaciones críticas (`BIT_ES_CRITICA = 'S'`).** Todo borrado. FACTURACION: anular (estado `N`) o modificar una factura o línea existente, todo pago y toda nota de crédito. PRECIOS: utilidad, descuento máximo, impuesto, precio de servicio, y el costo cuando **no** lo cambia `SGS_PKG_COMPRAS` (se detecta con la pila de llamadas). INVENTARIO: existencia cambiada sin pasar por `TRG_MOV_EXISTENCIA` (ajuste a mano) y cualquier cambio a un lote o traslado registrado. CLIENTES: cédula, estado, preferencial y límite de crédito (el saldo no: lo mueven ventas y pagos). PROVEEDORES: cédula jurídica, estado y límite. PROMOCIONES: tipo, fechas, cantidades y estado de la promoción, y cambios a sus productos, premios y acciones otorgadas. DESCUENTOS: criterio, porcentaje, días, fechas y estado, y cambios a sus enlaces.
 5. **Consulta.** Vistas `SGS_VW_BITACORA` (encabezado con detalle) y `SGS_VW_BITACORA_CRITICA` (solo críticas, para la gerencia; en B7 se le da `SELECT` al rol Gerente).
 
+### B5 — Padrón
+
+**Definiciones de B5** · 2026-10-27
+
+El enunciado pide cargar el padrón con la información actual, enlazarlo con clientes (hecho en B1 y B3) y "un procedimiento que cargue automáticamente el padrón". Se implementa lo mínimo que lo cumple:
+1. **Archivos del TSE** (`PADRON_COMPLETO.txt` y `distelec.txt`) en un directorio del servidor, con el objeto de directorio `SGS_DIR_PADRON` creado desde SYSDBA. Docker: `/opt/oracle/oradata/padron`; SGSPRI: a acordar con Andrés.
+2. **Dos tablas externas** (`ORACLE_LOADER`, Latin-1): el padrón por posiciones fijas (todas las líneas miden 118 caracteres) y `distelec` por línea completa, separando solo las tres primeras comas (una fila trae coma en el nombre del distrito).
+3. **`SGS_PKG_PADRON.cargar`**: `MERGE` de distritos por codelec y de personas por cédula, sin borrar nunca; con `SAVEPOINT`/`ROLLBACK TO` y `SGS_PKG_ERRORES.registrar` como los demás packages. Sin `NOLOGGING` para que la standby reciba la carga.
+4. **Sin job:** "automáticamente" es que el procedimiento hace la carga completa solo; el enunciado no pide que corra programado. Se ejecuta cuando hay que cargar o actualizar el padrón.
+
 ## Carril S — Servidores
 
 *(Se completa a medida que avanza Andrés.)*
