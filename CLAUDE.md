@@ -141,6 +141,7 @@ Prohibido: `IF NOT EXISTS` en DDL, `BOOLEAN` en columnas, `SELECT` sin `FROM DUA
 
 ### Errores conocidos
 - `SQLERRM` no va directo en un `INSERT VALUES` (ORA-00984): asignarlo antes a una variable.
+- Una función **privada** de un package (no declarada en la especificación) no se puede usar dentro de una sentencia SQL (PLS-00231): calcular el valor antes en una variable y usar la variable en el SQL.
 - No existe `CREATE OR REPLACE SEQUENCE`.
 - Usuarios y objetos van en la PDB, nunca en `CDB$ROOT` (ORA-65096).
 - `GRANT ... ON DIRECTORY` y privilegios sobre `DBMS_CRYPTO`, `UTL_SMTP`, `UTL_FILE` se otorgan desde la conexión SYSDBA ("free (SYSDBA)" en DBeaver).

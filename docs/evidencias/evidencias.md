@@ -270,3 +270,67 @@ END;
 ![Correo recibido](capturas/B2_03_08_correo_recibido.png)
 
 Oracle envía el correo directamente a Gmail por SMTP sobre TLS (puerto 465), sin VPN. El package lee el servidor, el puerto, el wallet y el remitente de `SGS_PARAMETRO`, descifra la clave en el momento del envío y toma el destinatario de `SGS_DESTINATARIO` (tipo DBA). El texto llega en UTF-8, con tildes, eñe y el símbolo de colones.
+
+## B3 — Reglas de negocio (`bd/04_reglas_negocio.sql`)
+
+Ambiente: Docker, PDB `FREEPDB1`, conectado como `SGS_ADMIN`.
+
+### 1. Registro de un cliente nacional desde el padrón (`SGS_PKG_CLIENTES`)
+
+```sql
+DECLARE
+    v_id NUMBER;
+BEGIN
+    SGS_PKG_CLIENTES.registrar_nacional(p_cedula => '199990005', p_sexo => 'F', p_estado_civil => 'S',
+                                        p_email => 'sgs.notificaciones.una+laura@gmail.com', p_id_cliente => v_id);
+    SGS_PKG_CLIENTES.asignar_credito(v_id, 150000);
+END;
+
+SELECT c.cli_id, c.cli_cedula, c.cli_nombre, p.clp_apellido1, p.clp_apellido2, p.clp_sexo,
+       p.clp_id_padron, c.cli_es_preferencial, x.cxc_limite_credito, x.cxc_saldo
+  FROM SGS_CLIENTE c
+  JOIN SGS_CLIENTE_PERSONA p ON p.clp_id_cliente = c.cli_id
+  JOIN SGS_CUENTA_COBRAR x ON x.cxc_id_cliente = c.cli_id
+ WHERE c.cli_cedula = '199990005';
+```
+
+![Cliente registrado desde el padrón](capturas/B3_04_01_cliente_padron.png)
+
+Con solo la cédula, el procedimiento tomó el nombre y los apellidos del padrón y dejó a la clienta enlazada a su persona del padrón. El trigger `TRG_CLI_CREA_CUENTA` le creó la cuenta por cobrar, y `asignar_credito` (que bloquea la cuenta con `FOR UPDATE NOWAIT`) le asignó ₡150.000 de límite y la marcó como preferencial.
+
+### 2. Rechazo: cédula que no está en el padrón
+
+```sql
+DECLARE
+    v_id NUMBER;
+BEGIN
+    SGS_PKG_CLIENTES.registrar_nacional(p_cedula => '199990099', p_sexo => 'M', p_id_cliente => v_id);
+END;
+```
+
+![Cédula fuera del padrón](capturas/B3_04_02_error_cedula_padron.png)
+
+Error esperado: un cliente nacional solo se registra si su cédula existe en el padrón. El procedimiento deshace lo hecho (`ROLLBACK TO SAVEPOINT`), registra el error en la bitácora de errores y lo devuelve con un mensaje claro.
+
+### 3. Rechazo: enlazar a un cliente con otra persona del padrón
+
+```sql
+UPDATE SGS_CLIENTE_PERSONA
+   SET clp_id_padron = (SELECT pad_id FROM SGS_PADRON WHERE pad_cedula = '199990002')
+ WHERE clp_id_cliente = (SELECT cli_id FROM SGS_CLIENTE WHERE cli_cedula = '199990001');
+```
+
+![Enlace al padrón inválido](capturas/B3_04_03_error_enlace_padron.png)
+
+Error esperado: el trigger `TRG_CLP_VALIDA` impide enlazar a un cliente con una persona del padrón que tiene otra cédula. La regla se cumple aunque el cambio se haga con un `UPDATE` directo, sin pasar por el package.
+
+### 4. Rechazo: datos de persona para un cliente empresa
+
+```sql
+INSERT INTO SGS_CLIENTE_PERSONA (clp_id, clp_id_cliente, clp_apellido1)
+VALUES (SEQ_CLIENTE_PERSONA.NEXTVAL, (SELECT cli_id FROM SGS_CLIENTE WHERE cli_cedula = '3101654321'), 'X');
+```
+
+![Empresa con datos de persona](capturas/B3_04_04_error_empresa_persona.png)
+
+Error esperado: los datos de persona (apellidos, sexo, estado civil, etc.) solo aplican a personas. El trigger `TRG_CLP_VALIDA` protege la relación de subtipo entre `SGS_CLIENTE` y `SGS_CLIENTE_PERSONA`.
