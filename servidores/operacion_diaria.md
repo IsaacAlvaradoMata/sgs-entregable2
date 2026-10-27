@@ -53,3 +53,17 @@ Justo después de `lsnrctl start`, los servicios estáticos aparecen con `status
    ```
    shutdown -h now
    ```
+
+## Verificar que la standby sigue sincronizada
+
+```
+-- En SGSSTB: número del último archivo aplicado
+SELECT MAX(sequence#) AS ultimo_aplicado FROM v$archived_log WHERE applied = 'YES';
+
+-- En SGSPRI: forzar un archivo nuevo
+ALTER SYSTEM SWITCH LOGFILE;
+SELECT dest_id, status, error FROM v$archive_dest WHERE dest_id = 2;   -- 2  VALID
+
+-- En SGSSTB, unos segundos después: el número sube (en la prueba del 2026-10-27 pasó de 12 a 13)
+SELECT MAX(sequence#) AS ultimo_aplicado FROM v$archived_log WHERE applied = 'YES';
+```
