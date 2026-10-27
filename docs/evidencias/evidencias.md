@@ -516,3 +516,41 @@ No se le puede comprar a un proveedor un producto que no es suyo.
 ![Movimiento inmutable](capturas/B3_04_21_error_movimiento_inmutable.png)
 
 Los movimientos de inventario son la historia del inventario: `TRG_MOV_INMUTABLE` impide modificarlos o borrarlos; un error se corrige con otro movimiento.
+
+### 8. Traslados con selección de lotes por FEFO (`SGS_PKG_INVENTARIO`)
+
+```sql
+DECLARE
+    v_id NUMBER;
+BEGIN
+    SGS_PKG_COMPRAS.registrar_compra(p_proveedor => '3101100001', p_numero => 'LDV-1002', p_usuario => 'crodriguez', p_es_credito => 'S',
+        p_lineas => SGS_PKG_COMPRAS.t_lineas(1 => SGS_PKG_COMPRAS.t_linea(codigo => 'LAC-001', cantidad => 100, costo => 650, vencimiento => TRUNC(SYSDATE) + 40)),
+        p_id_factura => v_id);
+    SGS_PKG_INVENTARIO.trasladar('Bodega Central', 'Sucursal San Isidro', 'crodriguez',
+        SGS_PKG_INVENTARIO.t_lineas(1 => SGS_PKG_INVENTARIO.t_linea(codigo => 'LAC-001', cantidad => 230),
+                                    2 => SGS_PKG_INVENTARIO.t_linea(codigo => 'LAC-002', cantidad => 20),
+                                    3 => SGS_PKG_INVENTARIO.t_linea(codigo => 'ABA-001', cantidad => 40),
+                                    4 => SGS_PKG_INVENTARIO.t_linea(codigo => 'FRU-001', cantidad => 30)), v_id);
+    SGS_PKG_INVENTARIO.trasladar('Bodega Central', 'Sucursal Buenos Aires', 'crodriguez',
+        SGS_PKG_INVENTARIO.t_lineas(1 => SGS_PKG_INVENTARIO.t_linea(codigo => 'LAC-001', cantidad => 50),
+                                    2 => SGS_PKG_INVENTARIO.t_linea(codigo => 'ABA-001', cantidad => 30)), v_id);
+END;
+```
+
+**Verificación: existencias por producto y sucursal, y consistencia con los movimientos**
+
+![Verificación de traslados](capturas/B3_04_22_traslado_verificacion.png)
+
+Las existencias de cada producto en la Bodega Central y en las sucursales quedaron como se esperaba, y en ningún lote la existencia difiere de la suma de sus movimientos (entradas menos salidas).
+
+**Reparto de lotes por FEFO**
+
+![FEFO](capturas/B3_04_23_traslado_fefo.png)
+
+De las 230 leches enviadas a San Isidro, 200 salieron del lote que vence primero (lo dejó en 0 en la central) y 30 del lote siguiente. Los lotes se bloquean con `SELECT … FOR UPDATE WAIT 5` mientras se reparten, para que dos operaciones simultáneas no tomen las mismas unidades.
+
+**Rechazos registrados en la bitácora de errores**
+
+![Rechazos del traslado](capturas/B3_04_24_traslado_rechazos.png)
+
+Existencia insuficiente, sucursal inexistente y origen igual al destino (restricción `CK_TRA_ORIGEN_DESTINO`). Cada intento se deshizo con `ROLLBACK TO SAVEPOINT` y quedó registrado por `SGS_PKG_ERRORES`.
