@@ -24,6 +24,8 @@ Los parámetros se guardan como **filas** dentro de la tabla de parámetros (no 
 
 **Destinatarios de notificaciones:** no van como parámetros. Se guardan en una **tabla de destinatarios** aparte (tipo: gerente, coordinador, DBA; uno o varios correos por tipo), porque el enunciado habla de "correo(s)". Su diseño se cierra en B1.
 
+**Correos de desarrollo** (2026-10-26): los destinatarios y los clientes de prueba usan alias de la cuenta del proyecto (`sgs.notificaciones.una+gerente@gmail.com`, `+coordinador`, `+dba`, `+maria`, etc.). Todo llega a la bandeja del proyecto y no se publica ningún correo personal en el repo. Antes de la defensa se actualizan las filas de `SGS_DESTINATARIO` con el correo externo que indique el profesor.
+
 ### Correo
 
 | Código | Valor inicial | Tipo | Lo usa |

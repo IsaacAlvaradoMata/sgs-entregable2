@@ -180,3 +180,27 @@ SELECT ber_id, ber_programa, ber_codigo, ber_mensaje, ber_traza, ber_usuario_bd,
 ![Bitácora de errores](capturas/B2_03_01_bitacora_error.png)
 
 El error quedó registrado con el programa que falló, su código y mensaje, la línea donde ocurrió (traza), la cuenta de Oracle y la fecha. Se registra en una transacción autónoma, por eso queda guardado aunque el bloque que falló haga `ROLLBACK`.
+
+### 2. Parámetros del sistema (`SGS_PKG_PARAMETROS`)
+
+```sql
+SELECT par_codigo, par_valor, par_es_cifrado, par_descripcion
+  FROM SGS_PARAMETRO
+ ORDER BY par_codigo;
+```
+
+![Parámetros](capturas/B2_03_02_parametros.png)
+
+Los valores que el enunciado marca como parametrizados están registrados en `SGS_PARAMETRO`: correo, porcentajes de aviso (como fracción), días, meses, premiación, uso máximo de tablespace y los tiempos del standby. Los packages los leen con `SGS_PKG_PARAMETROS.obtener` y `obtener_numero`; se cambian con `actualizar`, que bloquea la fila con `FOR UPDATE NOWAIT`. Los parámetros cifrados (clave del correo y claves de roles) se agregan con el package de cifrado.
+
+### 3. Destinatarios de las notificaciones
+
+```sql
+SELECT des_tipo, des_nombre, des_email, des_estado
+  FROM SGS_DESTINATARIO
+ ORDER BY des_tipo;
+```
+
+![Destinatarios](capturas/B2_03_03_destinatarios.png)
+
+Cada tipo de destinatario (coordinador, DBA, gerente) tiene su correo. En desarrollo son alias de la cuenta del proyecto; antes de la defensa se cambian por el correo externo que indique el profesor.
