@@ -431,3 +431,88 @@ El mismo mecanismo del lado de los proveedores: la factura pendiente aumenta lo 
 ![Límite con el proveedor](capturas/B3_04_12_error_limite_proveedor.png)
 
 Una segunda compra a crédito de ₡200.000 llevaría la deuda a ₡580.000 y se rechaza.
+
+### 7. Compras (`SGS_PKG_COMPRAS`)
+
+Operaciones completas con el package: una sola transacción con `SAVEPOINT`, bloqueo de la cuenta del proveedor con `FOR UPDATE WAIT 5`, `COMMIT`, y ante error `ROLLBACK TO SAVEPOINT` + bitácora de errores. Los triggers de los pasos anteriores reaccionan a lo que inserta el package.
+
+**Compra a crédito: factura y cuenta por pagar**
+
+```sql
+DECLARE
+    v_id NUMBER;
+BEGIN
+    SGS_PKG_COMPRAS.registrar_compra(
+        p_proveedor  => '3101100001',
+        p_numero     => 'LDV-1001',
+        p_usuario    => 'crodriguez',
+        p_es_credito => 'S',
+        p_lineas     => SGS_PKG_COMPRAS.t_lineas(
+                            1 => SGS_PKG_COMPRAS.t_linea(codigo => 'LAC-001', cantidad => 200, costo => 650,  vencimiento => TRUNC(SYSDATE) + 20),
+                            2 => SGS_PKG_COMPRAS.t_linea(codigo => 'LAC-002', cantidad => 50,  costo => 2300, vencimiento => TRUNC(SYSDATE) + 55)),
+        p_id_factura => v_id);
+END;
+```
+
+![Compra a crédito](capturas/B3_04_13_compra_credito.png)
+
+Subtotal ₡245.000 + 1 % de impuesto = ₡247.450, pendiente y cargado a la cuenta por pagar del proveedor.
+
+**Lotes, existencias y movimientos de la compra**
+
+![Lotes de la compra](capturas/B3_04_14_compra_lotes_existencia.png)
+
+Cada línea creó su lote con fecha de ingreso y de vencimiento, registró el movimiento `COMPRA` en la Bodega Central (el inventario está centralizado) y el trigger `TRG_MOV_EXISTENCIA` subió la existencia.
+
+**Costo distinto → historial de precios**
+
+![Historial de costo](capturas/B3_04_15_compra_historial_costo.png)
+
+El queso se compró a ₡2.300 (costaba ₡2.200): el package actualizó el costo del producto y el trigger registró el cambio. La leche se compró al mismo costo y no genera registro.
+
+**Compra de contado**
+
+![Compra de contado](capturas/B3_04_16_compra_contado.png)
+
+Una compra de contado nace cancelada, con su pago registrado, y no entra a la cuenta por pagar.
+
+**Abono y devolución al proveedor**
+
+```sql
+DECLARE
+    v_factura NUMBER;
+    v_nota    NUMBER;
+BEGIN
+    SELECT fp_id INTO v_factura FROM SGS_FACTURA_PROVEEDOR WHERE fp_numero = 'LDV-1001';
+    SGS_PKG_COMPRAS.registrar_pago(p_id_factura => v_factura, p_monto => 100000, p_tipo_pago => 'Transferencia');
+    SGS_PKG_COMPRAS.registrar_devolucion(
+        p_id_factura => v_factura,
+        p_lineas     => SGS_PKG_COMPRAS.t_lineas_devolucion(
+                            1 => SGS_PKG_COMPRAS.t_linea_devolucion(codigo => 'LAC-002', cantidad => 10)),
+        p_motivo     => 'Empaque dañado',
+        p_usuario    => 'crodriguez',
+        p_id_nota    => v_nota);
+END;
+```
+
+![Abono y nota de crédito](capturas/B3_04_17_compra_abono_devolucion.png)
+
+El abono de ₡100.000 y la nota de crédito de ₡23.230 (10 de los 50 quesos) rebajan el saldo a ₡124.220.
+
+![Devolución en el inventario](capturas/B3_04_18_devolucion_inventario.png)
+
+La devolución sale del mismo lote que entró con la compra: el movimiento `DEVOLUCION_PROVEEDOR` bajó la existencia de 50 a 40.
+
+**Rechazos**
+
+![Producto de otro proveedor](capturas/B3_04_19_error_producto_proveedor.png)
+
+No se le puede comprar a un proveedor un producto que no es suyo.
+
+![Devolución mayor a lo comprado](capturas/B3_04_20_error_devolucion_excesiva.png)
+
+`TRG_DNCP_VALIDA` impide devolver más de lo comprado, sumando todas las notas de crédito de la línea.
+
+![Movimiento inmutable](capturas/B3_04_21_error_movimiento_inmutable.png)
+
+Los movimientos de inventario son la historia del inventario: `TRG_MOV_INMUTABLE` impide modificarlos o borrarlos; un error se corrige con otro movimiento.

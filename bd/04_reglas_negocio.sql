@@ -491,3 +491,391 @@ BEGIN
        AND DCP_SALDO > 0;
 END;
 /
+
+-- 7. Compras
+-- Errores propios: -20070 producto de otro proveedor, -20071 cuenta en uso por otra sesion, -20072 usuario no existe o inactivo,
+-- -20073 tipo de pago no existe, -20074 compra sin lineas, -20075 proveedor no existe o inactivo, -20076 producto no existe,
+-- -20077 factura no existe, -20078 factura sin saldo pendiente, -20079 producto no esta en la factura,
+-- -20080 devolucion mayor a lo comprado, -20081 linea de otra factura
+
+-- No se puede devolver mas de lo comprado (sumando todas las notas) ni una linea de otra factura
+CREATE OR REPLACE TRIGGER TRG_DNCP_VALIDA
+BEFORE INSERT ON SGS_DETALLE_NOTA_CREDITO_PROVEEDOR
+FOR EACH ROW
+DECLARE
+    v_comprada        SGS_DETALLE_FACTURA_PROVEEDOR.DFP_CANTIDAD%TYPE;
+    v_factura_linea   SGS_DETALLE_FACTURA_PROVEEDOR.DFP_ID_FACTURA%TYPE;
+    v_factura_nota    SGS_NOTA_CREDITO_PROVEEDOR.NCP_ID_FACTURA%TYPE;
+    v_devuelta        NUMBER;
+BEGIN
+    SELECT DFP_CANTIDAD, DFP_ID_FACTURA
+      INTO v_comprada, v_factura_linea
+      FROM SGS_DETALLE_FACTURA_PROVEEDOR
+     WHERE DFP_ID = :NEW.DNCP_ID_DETALLE_FACTURA;
+
+    SELECT NCP_ID_FACTURA
+      INTO v_factura_nota
+      FROM SGS_NOTA_CREDITO_PROVEEDOR
+     WHERE NCP_ID = :NEW.DNCP_ID_NOTA;
+
+    IF v_factura_linea <> v_factura_nota THEN
+        RAISE_APPLICATION_ERROR(-20081, 'La linea devuelta no pertenece a la factura de la nota de credito');
+    END IF;
+
+    SELECT NVL(SUM(DNCP_CANTIDAD), 0)
+      INTO v_devuelta
+      FROM SGS_DETALLE_NOTA_CREDITO_PROVEEDOR
+     WHERE DNCP_ID_DETALLE_FACTURA = :NEW.DNCP_ID_DETALLE_FACTURA;
+
+    IF v_devuelta + :NEW.DNCP_CANTIDAD > v_comprada THEN
+        RAISE_APPLICATION_ERROR(-20080, 'No se puede devolver mas de lo comprado (comprado ' || v_comprada
+                                        || ', ya devuelto ' || v_devuelta || ')');
+    END IF;
+EXCEPTION
+    -- Si la linea o la nota no existen, la llave foranea da el error correspondiente
+    WHEN NO_DATA_FOUND THEN
+        NULL;
+END;
+/
+
+CREATE OR REPLACE PACKAGE SGS_PKG_COMPRAS AS
+    -- Linea de compra: codigo del producto, cantidad, costo unitario y vencimiento del lote (nulo si no vence)
+    TYPE t_linea IS RECORD (codigo VARCHAR2(30), cantidad NUMBER, costo NUMBER, vencimiento DATE);
+    TYPE t_lineas IS TABLE OF t_linea INDEX BY PLS_INTEGER;
+
+    -- Linea devuelta: codigo del producto y cantidad
+    TYPE t_linea_devolucion IS RECORD (codigo VARCHAR2(30), cantidad NUMBER);
+    TYPE t_lineas_devolucion IS TABLE OF t_linea_devolucion INDEX BY PLS_INTEGER;
+
+    -- Registra la factura del proveedor, sus lotes y la entrada a la bodega central
+    PROCEDURE registrar_compra (p_proveedor  IN  VARCHAR2,
+                                p_numero     IN  VARCHAR2,
+                                p_usuario    IN  VARCHAR2,
+                                p_es_credito IN  VARCHAR2,
+                                p_lineas     IN  t_lineas,
+                                p_tipo_pago  IN  VARCHAR2 DEFAULT 'Transferencia',
+                                p_id_factura OUT NUMBER);
+
+    -- Abono a una factura de proveedor a credito
+    PROCEDURE registrar_pago (p_id_factura IN NUMBER,
+                              p_monto      IN NUMBER,
+                              p_tipo_pago  IN VARCHAR2 DEFAULT 'Transferencia');
+
+    -- Devolucion al proveedor: sale de la bodega central el lote que entro con esa compra
+    PROCEDURE registrar_devolucion (p_id_factura IN  NUMBER,
+                                    p_lineas     IN  t_lineas_devolucion,
+                                    p_motivo     IN  VARCHAR2,
+                                    p_usuario    IN  VARCHAR2,
+                                    p_id_nota    OUT NUMBER);
+END;
+/
+
+CREATE OR REPLACE PACKAGE BODY SGS_PKG_COMPRAS AS
+
+    -- Las funciones privadas no se usan dentro de SQL: su resultado se guarda antes en variables
+
+    FUNCTION id_usuario (p_username IN VARCHAR2) RETURN NUMBER IS
+        v_id SGS_USUARIO.USU_ID%TYPE;
+    BEGIN
+        SELECT USU_ID INTO v_id FROM SGS_USUARIO WHERE USU_USERNAME = LOWER(p_username) AND USU_ESTADO = 'A';
+        RETURN v_id;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20072, 'No existe o no esta activo el usuario ' || p_username);
+    END;
+
+    FUNCTION id_tipo_pago (p_nombre IN VARCHAR2) RETURN NUMBER IS
+        v_id SGS_TIPO_PAGO.TPA_ID%TYPE;
+    BEGIN
+        SELECT TPA_ID INTO v_id FROM SGS_TIPO_PAGO WHERE TPA_NOMBRE = p_nombre AND TPA_ESTADO = 'A';
+        RETURN v_id;
+    EXCEPTION
+        WHEN NO_DATA_FOUND THEN
+            RAISE_APPLICATION_ERROR(-20073, 'No existe el tipo de pago ' || p_nombre);
+    END;
+
+    FUNCTION id_central RETURN NUMBER IS
+        v_id SGS_SUCURSAL.SUC_ID%TYPE;
+    BEGIN
+        SELECT SUC_ID INTO v_id FROM SGS_SUCURSAL WHERE SUC_ES_CENTRAL = 'S';
+        RETURN v_id;
+    END;
+
+    PROCEDURE registrar_compra (p_proveedor  IN  VARCHAR2,
+                                p_numero     IN  VARCHAR2,
+                                p_usuario    IN  VARCHAR2,
+                                p_es_credito IN  VARCHAR2,
+                                p_lineas     IN  t_lineas,
+                                p_tipo_pago  IN  VARCHAR2 DEFAULT 'Transferencia',
+                                p_id_factura OUT NUMBER) IS
+        v_prv_id     SGS_PROVEEDOR.PRV_ID%TYPE;
+        v_prv_estado SGS_PROVEEDOR.PRV_ESTADO%TYPE;
+        v_usuario    SGS_USUARIO.USU_ID%TYPE;
+        v_central    SGS_SUCURSAL.SUC_ID%TYPE;
+        v_tipo_pago  SGS_TIPO_PAGO.TPA_ID%TYPE;
+        v_cuenta     SGS_CUENTA_PAGAR.CXP_ID%TYPE;
+        v_pro_id     SGS_PRODUCTO.PRO_ID%TYPE;
+        v_pro_prv    SGS_PRODUCTO.PRO_ID_PROVEEDOR%TYPE;
+        v_costo_act  SGS_PRODUCTO.PRO_PRECIO_COSTO%TYPE;
+        v_pct_imp    SGS_ARTICULO_FACTURABLE.ART_PCT_IMPUESTO%TYPE;
+        v_subtotal   NUMBER := 0;
+        v_impuesto   NUMBER := 0;
+        v_imp_linea  NUMBER;
+        v_dfp_id     SGS_DETALLE_FACTURA_PROVEEDOR.DFP_ID%TYPE;
+        v_lote_id    SGS_LOTE.LOT_ID%TYPE;
+        v_i          PLS_INTEGER;
+        e_espera     EXCEPTION;
+        PRAGMA EXCEPTION_INIT(e_espera, -30006);
+    BEGIN
+        SAVEPOINT sp_registrar_compra;
+
+        IF p_lineas.COUNT = 0 THEN
+            RAISE_APPLICATION_ERROR(-20074, 'La compra no tiene lineas');
+        END IF;
+
+        BEGIN
+            SELECT PRV_ID, PRV_ESTADO INTO v_prv_id, v_prv_estado
+              FROM SGS_PROVEEDOR WHERE PRV_CEDULA_JURIDICA = p_proveedor;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                v_prv_estado := NULL;
+        END;
+        IF v_prv_estado IS NULL OR v_prv_estado <> 'A' THEN
+            RAISE_APPLICATION_ERROR(-20075, 'No existe o no esta activo el proveedor ' || p_proveedor);
+        END IF;
+
+        v_usuario := id_usuario(p_usuario);
+        v_central := id_central;
+
+        -- A credito: se bloquea la cuenta del proveedor; si otra sesion la usa, espera hasta 5 segundos
+        IF p_es_credito = 'S' THEN
+            SELECT CXP_ID INTO v_cuenta
+              FROM SGS_CUENTA_PAGAR
+             WHERE CXP_ID_PROVEEDOR = v_prv_id
+               FOR UPDATE WAIT 5;
+        END IF;
+
+        -- Primera pasada: validar productos y calcular totales
+        v_i := p_lineas.FIRST;
+        WHILE v_i IS NOT NULL LOOP
+            BEGIN
+                SELECT p.PRO_ID_PROVEEDOR, a.ART_PCT_IMPUESTO
+                  INTO v_pro_prv, v_pct_imp
+                  FROM SGS_PRODUCTO p
+                  JOIN SGS_ARTICULO_FACTURABLE a ON a.ART_ID = p.PRO_ID_ARTICULO
+                 WHERE p.PRO_CODIGO = p_lineas(v_i).codigo;
+            EXCEPTION
+                WHEN NO_DATA_FOUND THEN
+                    RAISE_APPLICATION_ERROR(-20076, 'No existe el producto ' || p_lineas(v_i).codigo);
+            END;
+            IF v_pro_prv <> v_prv_id THEN
+                RAISE_APPLICATION_ERROR(-20070, 'El producto ' || p_lineas(v_i).codigo || ' no es de este proveedor');
+            END IF;
+            v_subtotal := v_subtotal + p_lineas(v_i).cantidad * p_lineas(v_i).costo;
+            v_impuesto := v_impuesto + ROUND(p_lineas(v_i).cantidad * p_lineas(v_i).costo * v_pct_imp, 2);
+            v_i := p_lineas.NEXT(v_i);
+        END LOOP;
+
+        -- La factura a credito queda pendiente (los triggers la llevan a la cuenta por pagar); la de contado, cancelada
+        INSERT INTO SGS_FACTURA_PROVEEDOR (FP_ID, FP_ID_PROVEEDOR, FP_ID_USUARIO, FP_NUMERO, FP_SUBTOTAL, FP_IMPUESTO,
+                                           FP_TOTAL, FP_ES_CREDITO, FP_ESTADO)
+        VALUES (SEQ_FACTURA_PROVEEDOR.NEXTVAL, v_prv_id, v_usuario, p_numero, v_subtotal, v_impuesto,
+                v_subtotal + v_impuesto, p_es_credito, CASE WHEN p_es_credito = 'S' THEN 'P' ELSE 'C' END)
+        RETURNING FP_ID INTO p_id_factura;
+
+        -- Segunda pasada: detalle, lote y entrada a la bodega central; costo distinto actualiza el producto
+        v_i := p_lineas.FIRST;
+        WHILE v_i IS NOT NULL LOOP
+            SELECT p.PRO_ID, p.PRO_PRECIO_COSTO, a.ART_PCT_IMPUESTO
+              INTO v_pro_id, v_costo_act, v_pct_imp
+              FROM SGS_PRODUCTO p
+              JOIN SGS_ARTICULO_FACTURABLE a ON a.ART_ID = p.PRO_ID_ARTICULO
+             WHERE p.PRO_CODIGO = p_lineas(v_i).codigo;
+
+            v_imp_linea := ROUND(p_lineas(v_i).cantidad * p_lineas(v_i).costo * v_pct_imp, 2);
+
+            INSERT INTO SGS_DETALLE_FACTURA_PROVEEDOR (DFP_ID, DFP_ID_FACTURA, DFP_ID_PRODUCTO, DFP_CANTIDAD,
+                                                       DFP_PRECIO_UNITARIO, DFP_IMPUESTO, DFP_SUBTOTAL)
+            VALUES (SEQ_DETALLE_FACTURA_PROVEEDOR.NEXTVAL, p_id_factura, v_pro_id, p_lineas(v_i).cantidad,
+                    p_lineas(v_i).costo, v_imp_linea, p_lineas(v_i).cantidad * p_lineas(v_i).costo + v_imp_linea)
+            RETURNING DFP_ID INTO v_dfp_id;
+
+            INSERT INTO SGS_LOTE (LOT_ID, LOT_ID_DETALLE_COMPRA, LOT_FECHA_VENCIMIENTO)
+            VALUES (SEQ_LOTE.NEXTVAL, v_dfp_id, p_lineas(v_i).vencimiento)
+            RETURNING LOT_ID INTO v_lote_id;
+
+            INSERT INTO SGS_MOVIMIENTO_INVENTARIO (MOV_ID, MOV_ID_LOTE, MOV_ID_SUCURSAL, MOV_TIPO, MOV_CANTIDAD, MOV_ID_DETALLE_COMPRA)
+            VALUES (SEQ_MOVIMIENTO_INVENTARIO.NEXTVAL, v_lote_id, v_central, 'COMPRA', p_lineas(v_i).cantidad, v_dfp_id);
+
+            IF p_lineas(v_i).costo <> v_costo_act THEN
+                UPDATE SGS_PRODUCTO SET PRO_PRECIO_COSTO = p_lineas(v_i).costo WHERE PRO_ID = v_pro_id;
+            END IF;
+
+            v_i := p_lineas.NEXT(v_i);
+        END LOOP;
+
+        -- De contado: se registra el pago completo
+        IF p_es_credito = 'N' THEN
+            v_tipo_pago := id_tipo_pago(p_tipo_pago);
+            INSERT INTO SGS_PAGO_FACTURA_PROVEEDOR (PFP_ID, PFP_ID_FACTURA, PFP_ID_TIPO_PAGO, PFP_MONTO)
+            VALUES (SEQ_PAGO_FACTURA_PROVEEDOR.NEXTVAL, p_id_factura, v_tipo_pago, v_subtotal + v_impuesto);
+        END IF;
+
+        COMMIT;
+    EXCEPTION
+        WHEN e_espera THEN
+            ROLLBACK TO sp_registrar_compra;
+            SGS_PKG_ERRORES.registrar('SGS_PKG_COMPRAS.registrar_compra');
+            RAISE_APPLICATION_ERROR(-20071, 'La cuenta del proveedor la esta usando otra sesion; intente de nuevo');
+        WHEN OTHERS THEN
+            ROLLBACK TO sp_registrar_compra;
+            SGS_PKG_ERRORES.registrar('SGS_PKG_COMPRAS.registrar_compra');
+            RAISE;
+    END;
+
+    PROCEDURE registrar_pago (p_id_factura IN NUMBER,
+                              p_monto      IN NUMBER,
+                              p_tipo_pago  IN VARCHAR2 DEFAULT 'Transferencia') IS
+        v_credito   SGS_FACTURA_PROVEEDOR.FP_ES_CREDITO%TYPE;
+        v_estado    SGS_FACTURA_PROVEEDOR.FP_ESTADO%TYPE;
+        v_prv_id    SGS_FACTURA_PROVEEDOR.FP_ID_PROVEEDOR%TYPE;
+        v_cuenta    SGS_CUENTA_PAGAR.CXP_ID%TYPE;
+        v_tipo_pago SGS_TIPO_PAGO.TPA_ID%TYPE;
+        e_espera    EXCEPTION;
+        PRAGMA EXCEPTION_INIT(e_espera, -30006);
+    BEGIN
+        SAVEPOINT sp_registrar_pago;
+
+        BEGIN
+            SELECT FP_ES_CREDITO, FP_ESTADO, FP_ID_PROVEEDOR INTO v_credito, v_estado, v_prv_id
+              FROM SGS_FACTURA_PROVEEDOR WHERE FP_ID = p_id_factura;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                RAISE_APPLICATION_ERROR(-20077, 'No existe la factura de proveedor ' || p_id_factura);
+        END;
+        IF v_credito <> 'S' OR v_estado <> 'P' THEN
+            RAISE_APPLICATION_ERROR(-20078, 'La factura ' || p_id_factura || ' no tiene saldo pendiente');
+        END IF;
+
+        -- Se bloquea la cuenta del proveedor mientras se aplica el pago
+        SELECT CXP_ID INTO v_cuenta
+          FROM SGS_CUENTA_PAGAR
+         WHERE CXP_ID_PROVEEDOR = v_prv_id
+           FOR UPDATE WAIT 5;
+
+        v_tipo_pago := id_tipo_pago(p_tipo_pago);
+        INSERT INTO SGS_PAGO_FACTURA_PROVEEDOR (PFP_ID, PFP_ID_FACTURA, PFP_ID_TIPO_PAGO, PFP_MONTO)
+        VALUES (SEQ_PAGO_FACTURA_PROVEEDOR.NEXTVAL, p_id_factura, v_tipo_pago, p_monto);
+
+        COMMIT;
+    EXCEPTION
+        WHEN e_espera THEN
+            ROLLBACK TO sp_registrar_pago;
+            SGS_PKG_ERRORES.registrar('SGS_PKG_COMPRAS.registrar_pago');
+            RAISE_APPLICATION_ERROR(-20071, 'La cuenta del proveedor la esta usando otra sesion; intente de nuevo');
+        WHEN OTHERS THEN
+            ROLLBACK TO sp_registrar_pago;
+            SGS_PKG_ERRORES.registrar('SGS_PKG_COMPRAS.registrar_pago');
+            RAISE;
+    END;
+
+    PROCEDURE registrar_devolucion (p_id_factura IN  NUMBER,
+                                    p_lineas     IN  t_lineas_devolucion,
+                                    p_motivo     IN  VARCHAR2,
+                                    p_usuario    IN  VARCHAR2,
+                                    p_id_nota    OUT NUMBER) IS
+        v_estado    SGS_FACTURA_PROVEEDOR.FP_ESTADO%TYPE;
+        v_credito   SGS_FACTURA_PROVEEDOR.FP_ES_CREDITO%TYPE;
+        v_prv_id    SGS_FACTURA_PROVEEDOR.FP_ID_PROVEEDOR%TYPE;
+        v_usuario   SGS_USUARIO.USU_ID%TYPE;
+        v_central   SGS_SUCURSAL.SUC_ID%TYPE;
+        v_cuenta    SGS_CUENTA_PAGAR.CXP_ID%TYPE;
+        v_dfp_id    SGS_DETALLE_FACTURA_PROVEEDOR.DFP_ID%TYPE;
+        v_cantidad  SGS_DETALLE_FACTURA_PROVEEDOR.DFP_CANTIDAD%TYPE;
+        v_total_lin SGS_DETALLE_FACTURA_PROVEEDOR.DFP_SUBTOTAL%TYPE;
+        v_lote_id   SGS_LOTE.LOT_ID%TYPE;
+        v_monto     NUMBER := 0;
+        v_monto_lin NUMBER;
+        v_dncp_id   SGS_DETALLE_NOTA_CREDITO_PROVEEDOR.DNCP_ID%TYPE;
+        v_i         PLS_INTEGER;
+        e_espera    EXCEPTION;
+        PRAGMA EXCEPTION_INIT(e_espera, -30006);
+
+        -- Linea de la factura donde se compro el producto y el lote que nacio de ella
+        PROCEDURE buscar_linea (p_codigo IN VARCHAR2) IS
+        BEGIN
+            SELECT d.DFP_ID, d.DFP_CANTIDAD, d.DFP_SUBTOTAL, l.LOT_ID
+              INTO v_dfp_id, v_cantidad, v_total_lin, v_lote_id
+              FROM SGS_DETALLE_FACTURA_PROVEEDOR d
+              JOIN SGS_PRODUCTO p ON p.PRO_ID = d.DFP_ID_PRODUCTO
+              JOIN SGS_LOTE l ON l.LOT_ID_DETALLE_COMPRA = d.DFP_ID
+             WHERE d.DFP_ID_FACTURA = p_id_factura
+               AND p.PRO_CODIGO = p_codigo;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                RAISE_APPLICATION_ERROR(-20079, 'El producto ' || p_codigo || ' no esta en la factura ' || p_id_factura);
+        END;
+    BEGIN
+        SAVEPOINT sp_registrar_devolucion;
+
+        BEGIN
+            SELECT FP_ESTADO, FP_ES_CREDITO, FP_ID_PROVEEDOR INTO v_estado, v_credito, v_prv_id
+              FROM SGS_FACTURA_PROVEEDOR WHERE FP_ID = p_id_factura;
+        EXCEPTION
+            WHEN NO_DATA_FOUND THEN
+                RAISE_APPLICATION_ERROR(-20077, 'No existe la factura de proveedor ' || p_id_factura);
+        END;
+
+        v_usuario := id_usuario(p_usuario);
+        v_central := id_central;
+
+        -- Si la nota rebaja un saldo pendiente, se bloquea la cuenta del proveedor
+        IF v_credito = 'S' AND v_estado = 'P' THEN
+            SELECT CXP_ID INTO v_cuenta
+              FROM SGS_CUENTA_PAGAR
+             WHERE CXP_ID_PROVEEDOR = v_prv_id
+               FOR UPDATE WAIT 5;
+        END IF;
+
+        -- Monto de la nota: parte proporcional del total de cada linea devuelta
+        v_i := p_lineas.FIRST;
+        WHILE v_i IS NOT NULL LOOP
+            buscar_linea(p_lineas(v_i).codigo);
+            v_monto := v_monto + ROUND(v_total_lin * p_lineas(v_i).cantidad / v_cantidad, 2);
+            v_i := p_lineas.NEXT(v_i);
+        END LOOP;
+
+        INSERT INTO SGS_NOTA_CREDITO_PROVEEDOR (NCP_ID, NCP_ID_FACTURA, NCP_ID_USUARIO, NCP_MOTIVO, NCP_MONTO)
+        VALUES (SEQ_NOTA_CREDITO_PROVEEDOR.NEXTVAL, p_id_factura, v_usuario, p_motivo, v_monto)
+        RETURNING NCP_ID INTO p_id_nota;
+
+        -- Cada linea devuelta sale de la bodega central desde su lote
+        v_i := p_lineas.FIRST;
+        WHILE v_i IS NOT NULL LOOP
+            buscar_linea(p_lineas(v_i).codigo);
+            v_monto_lin := ROUND(v_total_lin * p_lineas(v_i).cantidad / v_cantidad, 2);
+
+            INSERT INTO SGS_DETALLE_NOTA_CREDITO_PROVEEDOR (DNCP_ID, DNCP_ID_NOTA, DNCP_ID_DETALLE_FACTURA, DNCP_CANTIDAD, DNCP_SUBTOTAL)
+            VALUES (SEQ_DETALLE_NOTA_CREDITO_PROVEEDOR.NEXTVAL, p_id_nota, v_dfp_id, p_lineas(v_i).cantidad, v_monto_lin)
+            RETURNING DNCP_ID INTO v_dncp_id;
+
+            INSERT INTO SGS_MOVIMIENTO_INVENTARIO (MOV_ID, MOV_ID_LOTE, MOV_ID_SUCURSAL, MOV_TIPO, MOV_CANTIDAD, MOV_ID_DETALLE_NC_PROVEEDOR)
+            VALUES (SEQ_MOVIMIENTO_INVENTARIO.NEXTVAL, v_lote_id, v_central, 'DEVOLUCION_PROVEEDOR', p_lineas(v_i).cantidad, v_dncp_id);
+
+            v_i := p_lineas.NEXT(v_i);
+        END LOOP;
+
+        COMMIT;
+    EXCEPTION
+        WHEN e_espera THEN
+            ROLLBACK TO sp_registrar_devolucion;
+            SGS_PKG_ERRORES.registrar('SGS_PKG_COMPRAS.registrar_devolucion');
+            RAISE_APPLICATION_ERROR(-20071, 'La cuenta del proveedor la esta usando otra sesion; intente de nuevo');
+        WHEN OTHERS THEN
+            ROLLBACK TO sp_registrar_devolucion;
+            SGS_PKG_ERRORES.registrar('SGS_PKG_COMPRAS.registrar_devolucion');
+            RAISE;
+    END;
+
+END;
+/

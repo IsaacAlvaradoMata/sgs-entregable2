@@ -293,7 +293,7 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 - [x] Factura de proveedor pendiente → sube el saldo adeudado y entra a cuentas por pagar.
 - [x] Validación de límites de crédito (clientes y proveedores): si se supera, no se guarda como pendiente.
 - [x] Pagos/abonos → bajan el saldo; si se cancela completo, la factura pasa a cancelada.
-- [ ] Compras → crean lote y suben el inventario.
+- [x] Compras → crean lote y suben el inventario.
 - [ ] Ventas → bajan el inventario.
 - [ ] Devoluciones (de cliente y a proveedor) → ajustan el inventario.
 - [ ] Cada movimiento de inventario queda registrado.
