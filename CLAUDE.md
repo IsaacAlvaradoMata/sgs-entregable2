@@ -138,6 +138,7 @@ Prohibido: `IF NOT EXISTS` en DDL, `BOOLEAN` en columnas, `SELECT` sin `FROM DUA
 - Varias sentencias SQL simples: seleccionar → `Option + X`.
 - Una sola sentencia: cursor encima → `Cmd + Enter`.
 - Con `/` al final de un trigger usando `Cmd+Enter` queda `INVALID`. `END nombre;` dentro de un procedimiento puede cortar el parseo: usar `END;`.
+- **Varios triggers juntos con `Option + X` (probado 2026-10-27):** funciona si cada trigger va **sin la `/`**, **sin comentarios ni líneas en blanco dentro**, y separados entre sí por una línea en blanco. Con `/` y comentarios entre ellos falló (ORA-00900, el primero quedó INVALID). Los archivos del repo conservan las `/` (las necesitan SQL*Plus y SQL Developer); a Isaac se le pasan los bloques en el formato de DBeaver, listos para copiar.
 
 ### Errores conocidos
 - `SQLERRM` no va directo en un `INSERT VALUES` (ORA-00984): asignarlo antes a una variable.

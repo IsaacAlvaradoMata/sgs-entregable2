@@ -352,3 +352,82 @@ SELECT p.pro_codigo, h.hpr_precio_ant, h.hpr_precio_nue, h.hpr_fecha, h.hpr_usua
 ![Historial de precios](capturas/B3_04_05_historico_precio.png)
 
 El trigger `TRG_PRO_HISTORICO_PRECIO` registró el cambio de costo del arroz (₡1.500 → ₡1.550) con la cuenta de Oracle y la fecha. El segundo `UPDATE` deja el mismo costo, así que no genera registro. La primera fila es el registro inicial de los datos de catálogo. (La hora sale en UTC porque así está configurado el contenedor de desarrollo.)
+
+### 6. Cuentas por cobrar y por pagar automáticas
+
+Prueba hecha con `INSERT` directos (sin packages), en modo de commit manual y deshecha al final con `ROLLBACK`: los triggers reaccionan aunque nadie use el package.
+
+**Factura a crédito pendiente → saldo del cliente y detalle de la cuenta por cobrar**
+
+```sql
+INSERT INTO SGS_FACTURA_VENTA (FV_ID, FV_ID_CLIENTE, FV_ID_SUCURSAL, FV_ID_USUARIO, FV_SUBTOTAL, FV_TOTAL, FV_ES_CREDITO, FV_ESTADO)
+VALUES (SEQ_FACTURA_VENTA.NEXTVAL,
+        (SELECT CLI_ID FROM SGS_CLIENTE WHERE CLI_CEDULA = '199990001'),
+        (SELECT SUC_ID FROM SGS_SUCURSAL WHERE SUC_NOMBRE = 'Sucursal San Isidro'),
+        (SELECT USU_ID FROM SGS_USUARIO WHERE USU_USERNAME = 'mcastro'),
+        50000, 50000, 'S', 'P');
+
+SELECT f.fv_id, f.fv_total, f.fv_es_credito, f.fv_estado,
+       d.dcc_monto_original, d.dcc_saldo, x.cxc_limite_credito, x.cxc_saldo
+  FROM SGS_FACTURA_VENTA f
+  JOIN SGS_DETALLE_CUENTA_COBRAR d ON d.dcc_id_factura = f.fv_id
+  JOIN SGS_CUENTA_COBRAR x ON x.cxc_id = d.dcc_id_cuenta
+ WHERE f.fv_id = (SELECT MAX(fv_id) FROM SGS_FACTURA_VENTA);
+```
+
+![Factura a crédito](capturas/B3_04_06_factura_credito_cxc.png)
+
+`TRG_FV_CUENTA_COBRAR` agregó la factura al detalle de la cuenta por cobrar y `TRG_DCC_SALDO` aumentó el saldo de la clienta a ₡50.000.
+
+**Pagos → la factura pasa a cancelada**
+
+```sql
+INSERT INTO SGS_PAGO_FACTURA_VENTA (PFV_ID, PFV_ID_FACTURA, PFV_ID_TIPO_PAGO, PFV_MONTO)
+VALUES (SEQ_PAGO_FACTURA_VENTA.NEXTVAL, (SELECT MAX(FV_ID) FROM SGS_FACTURA_VENTA),
+        (SELECT TPA_ID FROM SGS_TIPO_PAGO WHERE TPA_NOMBRE = 'SINPE Movil'), 20000);
+INSERT INTO SGS_PAGO_FACTURA_VENTA (PFV_ID, PFV_ID_FACTURA, PFV_ID_TIPO_PAGO, PFV_MONTO)
+VALUES (SEQ_PAGO_FACTURA_VENTA.NEXTVAL, (SELECT MAX(FV_ID) FROM SGS_FACTURA_VENTA),
+        (SELECT TPA_ID FROM SGS_TIPO_PAGO WHERE TPA_NOMBRE = 'Efectivo'), 30000);
+```
+
+![Factura cancelada](capturas/B3_04_07_factura_cancelada.png)
+
+Cada abono bajó el saldo de la factura (`TRG_PFV_ABONO`) y de la cuenta (`TRG_DCC_SALDO`). Al llegar a 0, la factura cambió sola de pendiente (`P`) a cancelada (`C`).
+
+**Rechazo: factura que supera el límite de crédito**
+
+![Límite de crédito](capturas/B3_04_08_error_limite_credito.png)
+
+Una factura a crédito de ₡250.000 para una clienta con límite de ₡200.000 se rechaza completa: no se guarda con estado pendiente.
+
+**Rechazo: crédito para un cliente no preferencial**
+
+![Cliente no preferencial](capturas/B3_04_09_error_no_preferencial.png)
+
+`TRG_FV_VALIDA_CREDITO` solo permite facturar a crédito a clientes preferenciales y activos (nunca al cliente por defecto).
+
+**Rechazo: pago mayor al saldo de la factura**
+
+![Pago excesivo](capturas/B3_04_10_error_pago_excesivo.png)
+
+Sobre una factura de ₡10.000, un pago de ₡15.000 se rechaza.
+
+**Factura de proveedor a crédito → cuenta por pagar**
+
+```sql
+INSERT INTO SGS_FACTURA_PROVEEDOR (FP_ID, FP_ID_PROVEEDOR, FP_ID_USUARIO, FP_NUMERO, FP_SUBTOTAL, FP_TOTAL, FP_ES_CREDITO, FP_ESTADO)
+VALUES (SEQ_FACTURA_PROVEEDOR.NEXTVAL,
+        (SELECT PRV_ID FROM SGS_PROVEEDOR WHERE PRV_CEDULA_JURIDICA = '3101100005'),
+        (SELECT USU_ID FROM SGS_USUARIO WHERE USU_USERNAME = 'crodriguez'),
+        'DAS-0001', 380000, 380000, 'S', 'P');
+```
+
+![Cuenta por pagar](capturas/B3_04_11_factura_proveedor_cxp.png)
+
+El mismo mecanismo del lado de los proveedores: la factura pendiente aumenta lo que se le debe al proveedor (₡380.000 de ₡500.000).
+
+**Rechazo: factura de proveedor que supera el límite**
+
+![Límite con el proveedor](capturas/B3_04_12_error_limite_proveedor.png)
+
+Una segunda compra a crédito de ₡200.000 llevaría la deuda a ₡580.000 y se rechaza.

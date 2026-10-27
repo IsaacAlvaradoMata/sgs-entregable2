@@ -331,3 +331,163 @@ BEGIN
     RAISE_APPLICATION_ERROR(-20051, 'Los movimientos de inventario no se modifican ni se borran; se corrigen con otro movimiento');
 END;
 /
+
+-- 5. Cuentas por cobrar
+-- Errores propios: -20060 cliente sin credito, -20061 supera el limite, -20062 pago mayor al saldo
+
+-- Solo un cliente preferencial y activo (y no el cliente por defecto) compra a credito
+CREATE OR REPLACE TRIGGER TRG_FV_VALIDA_CREDITO
+BEFORE INSERT OR UPDATE OF FV_ES_CREDITO, FV_ID_CLIENTE ON SGS_FACTURA_VENTA
+FOR EACH ROW
+WHEN (NEW.FV_ES_CREDITO = 'S')
+DECLARE
+    v_preferencial SGS_CLIENTE.CLI_ES_PREFERENCIAL%TYPE;
+    v_estado       SGS_CLIENTE.CLI_ESTADO%TYPE;
+    v_defecto      SGS_CLIENTE.CLI_ES_DEFECTO%TYPE;
+BEGIN
+    SELECT CLI_ES_PREFERENCIAL, CLI_ESTADO, CLI_ES_DEFECTO
+      INTO v_preferencial, v_estado, v_defecto
+      FROM SGS_CLIENTE
+     WHERE CLI_ID = :NEW.FV_ID_CLIENTE;
+
+    IF v_preferencial <> 'S' OR v_estado <> 'A' OR v_defecto = 'S' THEN
+        RAISE_APPLICATION_ERROR(-20060, 'El cliente no puede comprar a credito: debe ser preferencial y estar activo');
+    END IF;
+EXCEPTION
+    -- Si el cliente no existe, la llave foranea da el error correspondiente
+    WHEN NO_DATA_FOUND THEN
+        NULL;
+END;
+/
+
+-- Factura a credito pendiente: entra al detalle de la cuenta por cobrar del cliente
+CREATE OR REPLACE TRIGGER TRG_FV_CUENTA_COBRAR
+AFTER INSERT ON SGS_FACTURA_VENTA
+FOR EACH ROW
+WHEN (NEW.FV_ES_CREDITO = 'S' AND NEW.FV_ESTADO = 'P')
+BEGIN
+    INSERT INTO SGS_DETALLE_CUENTA_COBRAR (DCC_ID, DCC_ID_CUENTA, DCC_ID_FACTURA, DCC_MONTO_ORIGINAL, DCC_SALDO)
+    SELECT SEQ_DETALLE_CUENTA_COBRAR.NEXTVAL, CXC_ID, :NEW.FV_ID, :NEW.FV_TOTAL, :NEW.FV_TOTAL
+      FROM SGS_CUENTA_COBRAR
+     WHERE CXC_ID_CLIENTE = :NEW.FV_ID_CLIENTE;
+END;
+/
+
+-- Cada cambio en el saldo de una factura se refleja en el saldo total de la cuenta;
+-- el CHECK de la cuenta impide superar el limite. Saldo de la factura en 0: pasa a cancelada
+CREATE OR REPLACE TRIGGER TRG_DCC_SALDO
+AFTER INSERT OR UPDATE OF DCC_SALDO ON SGS_DETALLE_CUENTA_COBRAR
+FOR EACH ROW
+DECLARE
+    e_check EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_check, -2290);
+BEGIN
+    UPDATE SGS_CUENTA_COBRAR
+       SET CXC_SALDO = CXC_SALDO + (:NEW.DCC_SALDO - NVL(:OLD.DCC_SALDO, 0))
+     WHERE CXC_ID = :NEW.DCC_ID_CUENTA;
+
+    IF UPDATING AND :NEW.DCC_SALDO = 0 THEN
+        UPDATE SGS_FACTURA_VENTA
+           SET FV_ESTADO = 'C'
+         WHERE FV_ID = :NEW.DCC_ID_FACTURA
+           AND FV_ESTADO = 'P';
+    END IF;
+EXCEPTION
+    WHEN e_check THEN
+        RAISE_APPLICATION_ERROR(-20061, 'La factura supera el limite de credito del cliente');
+END;
+/
+
+-- Un pago o abono a una factura a credito baja su saldo (las de contado no tienen detalle en la cuenta)
+CREATE OR REPLACE TRIGGER TRG_PFV_ABONO
+AFTER INSERT ON SGS_PAGO_FACTURA_VENTA
+FOR EACH ROW
+DECLARE
+    e_check EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_check, -2290);
+BEGIN
+    UPDATE SGS_DETALLE_CUENTA_COBRAR
+       SET DCC_SALDO = DCC_SALDO - :NEW.PFV_MONTO
+     WHERE DCC_ID_FACTURA = :NEW.PFV_ID_FACTURA;
+EXCEPTION
+    WHEN e_check THEN
+        RAISE_APPLICATION_ERROR(-20062, 'El pago supera el saldo pendiente de la factura');
+END;
+/
+
+-- Una nota de credito rebaja el saldo pendiente de la factura, hasta dejarlo en 0
+CREATE OR REPLACE TRIGGER TRG_NCV_SALDO
+AFTER INSERT ON SGS_NOTA_CREDITO_VENTA
+FOR EACH ROW
+BEGIN
+    UPDATE SGS_DETALLE_CUENTA_COBRAR
+       SET DCC_SALDO = GREATEST(DCC_SALDO - :NEW.NCV_MONTO, 0)
+     WHERE DCC_ID_FACTURA = :NEW.NCV_ID_FACTURA
+       AND DCC_SALDO > 0;
+END;
+/
+
+-- 6. Cuentas por pagar (mismas reglas del lado de los proveedores)
+-- Errores propios: -20063 supera el limite con el proveedor, -20064 pago mayor al saldo
+
+CREATE OR REPLACE TRIGGER TRG_FP_CUENTA_PAGAR
+AFTER INSERT ON SGS_FACTURA_PROVEEDOR
+FOR EACH ROW
+WHEN (NEW.FP_ES_CREDITO = 'S' AND NEW.FP_ESTADO = 'P')
+BEGIN
+    INSERT INTO SGS_DETALLE_CUENTA_PAGAR (DCP_ID, DCP_ID_CUENTA, DCP_ID_FACTURA, DCP_MONTO_ORIGINAL, DCP_SALDO)
+    SELECT SEQ_DETALLE_CUENTA_PAGAR.NEXTVAL, CXP_ID, :NEW.FP_ID, :NEW.FP_TOTAL, :NEW.FP_TOTAL
+      FROM SGS_CUENTA_PAGAR
+     WHERE CXP_ID_PROVEEDOR = :NEW.FP_ID_PROVEEDOR;
+END;
+/
+
+CREATE OR REPLACE TRIGGER TRG_DCP_SALDO
+AFTER INSERT OR UPDATE OF DCP_SALDO ON SGS_DETALLE_CUENTA_PAGAR
+FOR EACH ROW
+DECLARE
+    e_check EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_check, -2290);
+BEGIN
+    UPDATE SGS_CUENTA_PAGAR
+       SET CXP_SALDO = CXP_SALDO + (:NEW.DCP_SALDO - NVL(:OLD.DCP_SALDO, 0))
+     WHERE CXP_ID = :NEW.DCP_ID_CUENTA;
+
+    IF UPDATING AND :NEW.DCP_SALDO = 0 THEN
+        UPDATE SGS_FACTURA_PROVEEDOR
+           SET FP_ESTADO = 'C'
+         WHERE FP_ID = :NEW.DCP_ID_FACTURA
+           AND FP_ESTADO = 'P';
+    END IF;
+EXCEPTION
+    WHEN e_check THEN
+        RAISE_APPLICATION_ERROR(-20063, 'La factura supera el limite de credito con el proveedor');
+END;
+/
+
+CREATE OR REPLACE TRIGGER TRG_PFP_ABONO
+AFTER INSERT ON SGS_PAGO_FACTURA_PROVEEDOR
+FOR EACH ROW
+DECLARE
+    e_check EXCEPTION;
+    PRAGMA EXCEPTION_INIT(e_check, -2290);
+BEGIN
+    UPDATE SGS_DETALLE_CUENTA_PAGAR
+       SET DCP_SALDO = DCP_SALDO - :NEW.PFP_MONTO
+     WHERE DCP_ID_FACTURA = :NEW.PFP_ID_FACTURA;
+EXCEPTION
+    WHEN e_check THEN
+        RAISE_APPLICATION_ERROR(-20064, 'El pago supera el saldo pendiente con el proveedor');
+END;
+/
+
+CREATE OR REPLACE TRIGGER TRG_NCP_SALDO
+AFTER INSERT ON SGS_NOTA_CREDITO_PROVEEDOR
+FOR EACH ROW
+BEGIN
+    UPDATE SGS_DETALLE_CUENTA_PAGAR
+       SET DCP_SALDO = GREATEST(DCP_SALDO - :NEW.NCP_MONTO, 0)
+     WHERE DCP_ID_FACTURA = :NEW.NCP_ID_FACTURA
+       AND DCP_SALDO > 0;
+END;
+/
