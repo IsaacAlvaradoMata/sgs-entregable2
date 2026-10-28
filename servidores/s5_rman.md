@@ -2,7 +2,7 @@
 
 Estrategia de respaldo y recuperación de `SGSPRI` con RMAN: backup full, backup incremental, restore y recovery, y copia del respaldo al standby. Capturas en [`capturas/s5_rman/`](capturas/s5_rman/).
 
-Estado: **RMAN configurado y backup full (nivel 0) e incremental (nivel 1) hechos; restore y recovery probados.** Falta: copia a `SGSSTB` y automatización diaria (`DBMS_SCHEDULER`, cuando exista `RESP_HORA_DIARIO` en la tabla de parámetros).
+Estado: **RMAN configurado y backup full (nivel 0) e incremental (nivel 1) hechos; restore y recovery probados; copia a `SGSSTB` y script de respaldo a demanda funcionando.** Falta: automatización diaria (`DBMS_SCHEDULER`, cuando exista `RESP_HORA_DIARIO` en la tabla de parámetros).
 
 Comandos en `SGSPRI`, como `oracle`, dentro de `tmux` (`tmux new -s rman`) para que un respaldo no se pierda si se corta el SSH.
 
@@ -154,3 +154,20 @@ rsync -av --delete-excluded --exclude='control*.ctl' --exclude='flashback/' --ex
 - `rsync` solo envía lo nuevo: la primera copia fueron ~1,9 GB; las siguientes, apenas los respaldos nuevos.
 
 En `SGSSTB` quedan `archivelog`, `autobackup`, `backupset` y las carpetas de las PDB (por GUID).
+
+## 8. Script de respaldo (a demanda y para el job diario)
+
+[`scripts/respaldo_rman.sh`](scripts/respaldo_rman.sh) junta todo en un paso: backup con RMAN (nivel 0 los domingos, nivel 1 los demás días, o el nivel indicado), `CROSSCHECK` y `DELETE OBSOLETE` según la retención, y copia a `SGSSTB` con `rsync`. Deja un log por ejecución en `/home/oracle/logs` y devuelve `0` si todo salió bien (`1` error de RMAN, `2` nivel inválido, `3` error al copiar). Define las variables de Oracle porque un job del scheduler no carga `.bash_profile`.
+
+Instalación en `SGSPRI` (como `oracle`): crear `~/scripts/respaldo_rman.sh` con el contenido del archivo del repo y `chmod +x ~/scripts/respaldo_rman.sh`.
+
+**Ejecución a demanda** (la que pide el enunciado para la revisión):
+
+```
+~/scripts/respaldo_rman.sh 1; echo "Resultado: $?"     # Resultado: 0
+tail -20 ~/logs/respaldo_*_L1.log                        # ... fin OK
+```
+
+En la prueba (2026-10-28), `DELETE OBSOLETE` borró 14 objetos que la retención ya no necesita: archivos de redo del 26-oct (ya aplicados en la standby), autobackups viejos del control file y el respaldo `SGS_PRUEBA_TS`, reemplazado por la copia nueva del datafile 13 que hizo el incremental (RMAN hace nivel 0 de un archivo que no tiene nivel 0 previo).
+
+**Pendiente:** job diario con `DBMS_SCHEDULER` que ejecute este script (`RESP_HORA_DIARIO` en la tabla de parámetros de Isaac; ver `notas/pendientes.md`).
