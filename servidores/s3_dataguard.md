@@ -269,3 +269,25 @@ INSERT INTO system.prueba_dg VALUES (2, 'Desde la standby', SYSDATE);
 El dato viaja de la principal a la standby y la standby no acepta escrituras. **S3 queda completo.**
 
 > En la prueba la fila se insertó dos veces por error; por eso aparece duplicada en las capturas.
+
+## 11. Corrección: `local_listener` (registro dinámico en el listener)
+
+**Síntoma:** después de reiniciar la base, `lsnrctl status` solo mostraba los servicios estáticos (`status UNKNOWN`) y no aparecía `sgspdb` (`status READY`), así que no se podía conectar a la PDB por red. Data Guard siguió funcionando porque usa los servicios estáticos.
+
+**Causa:** `dbca` dejó `local_listener=LISTENER_SGSPRI`, un alias que guardó en `tnsnames.ora`. En el paso 6 el `tnsnames.ora` se reescribió completo (`cat >`) y el alias se perdió; la base no encuentra a qué listener anunciarse. `SGSSTB` heredó el mismo valor al duplicarse.
+
+**Solución:** poner la dirección del listener directamente (no depende de `tnsnames.ora` y sigue sirviendo después de un switchover):
+
+```
+-- En SGSPRI
+ALTER SYSTEM SET local_listener='(ADDRESS=(PROTOCOL=TCP)(HOST=sgspri.localdomain)(PORT=1521))' SCOPE=BOTH;
+ALTER SYSTEM REGISTER;
+
+-- En SGSSTB
+ALTER SYSTEM SET local_listener='(ADDRESS=(PROTOCOL=TCP)(HOST=sgsstb.localdomain)(PORT=1521))' SCOPE=BOTH;
+ALTER SYSTEM REGISTER;
+```
+
+Después `lsnrctl status` muestra `SGSPRI`, `SGSPRIXDB` y `sgspdb` con `status READY`.
+
+> Lección: para agregar entradas a `tnsnames.ora` usar `cat >>` (agrega), no `cat >` (reemplaza el archivo).
