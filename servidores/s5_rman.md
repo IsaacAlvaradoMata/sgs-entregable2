@@ -2,7 +2,7 @@
 
 Estrategia de respaldo y recuperación de `SGSPRI` con RMAN: backup full, backup incremental, restore y recovery, y copia del respaldo al standby. Capturas en [`capturas/s5_rman/`](capturas/s5_rman/).
 
-Estado: **RMAN configurado.** Falta: backup full, incremental, prueba de restore/recovery, copia a `SGSSTB` y automatización diaria (`DBMS_SCHEDULER`, cuando exista `RESP_HORA_DIARIO` en la tabla de parámetros).
+Estado: **RMAN configurado y backup full (nivel 0) hecho.** Falta: incremental, prueba de restore/recovery, copia a `SGSSTB` y automatización diaria (`DBMS_SCHEDULER`, cuando exista `RESP_HORA_DIARIO` en la tabla de parámetros).
 
 Comandos en `SGSPRI`, como `oracle`, dentro de `tmux` (`tmux new -s rman`) para que un respaldo no se pierda si se corta el SSH.
 
@@ -37,3 +37,17 @@ SHOW ALL;
 | `BACKUP OPTIMIZATION ON` | No repite archivos que ya están respaldados |
 | `COMPRESSED BACKUPSET` | Compresión básica (incluida sin licencia extra) para ahorrar espacio |
 | `ARCHIVELOG DELETION POLICY TO APPLIED ON ALL STANDBY` | RMAN no borra archivos de redo que la standby todavía no aplicó |
+
+## 3. Backup full (incremental nivel 0)
+
+Un backup **incremental de nivel 0** es un respaldo **completo** de toda la base (raíz, `PDB$SEED` y `SGSPDB`) y además es el punto de partida de los incrementales de nivel 1.
+
+```
+BACKUP INCREMENTAL LEVEL 0 DATABASE PLUS ARCHIVELOG TAG 'SGS_FULL_L0';
+```
+
+- `PLUS ARCHIVELOG`: respalda los archivos de redo antes y después de los datafiles, para poder recuperar hasta el último momento.
+- Terminó en 1 minuto con `Finished backup` y `Finished Control File and SPFILE Autobackup`.
+- Los respaldos quedan en `/opt/oracle/fast_recovery_area/SGSPRI/backupset/` (los de la PDB, en una subcarpeta con su GUID) y el autobackup del control file en `.../SGSPRI/autobackup/`.
+
+> Con `PLUS ARCHIVELOG`, el `TAG` escrito al final se aplica a los archivos de redo; los datafiles quedan con un tag automático (`TAG<fecha>`). Para etiquetar los datafiles, el `TAG` va justo después de `DATABASE`.
