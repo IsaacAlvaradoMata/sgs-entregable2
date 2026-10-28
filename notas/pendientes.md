@@ -12,7 +12,9 @@ Qué falta y quién lo tiene. Se actualiza al cerrar cada sesión de trabajo.
 - [x] Anotar en `docs/decisiones.md` la decisión `DB_NAME = SGS`.
 - [ ] Avisar a Isaac que `SGSPDB` ya existe en `SGSPRI` (punto I1).
 - [ ] Antes de la defensa: cambiar las contraseñas de `SYS`, `SYSTEM` y `PDBADMIN` por unas fuertes.
-- [ ] Tailscale en ambas VMs (sin exit node) para que el Mac de Isaac llegue a `SGSPDB`.
+- [x] Tailscale en ambas VMs (sin exit node): [`servidores/tailscale.md`](../servidores/tailscale.md). `SGSPRI` = `100.76.209.30`, `SGSSTB` = `100.69.133.78`.
+- [ ] Pedirle a Isaac que revoque la llave de Tailscale ya usada.
+- [ ] Listener escuchando también en la IP de Tailscale y prueba de conexión desde DBeaver en el Mac de Isaac.
 - [x] S3: Data Guard (`SGSSTB` como standby física de `SGSPRI`).
 - [x] Rutina de arranque y apagado probada (2026-10-27): [`servidores/operacion_diaria.md`](../servidores/operacion_diaria.md).
 - [x] Hora sincronizada con `chronyd` en los dos servidores.
