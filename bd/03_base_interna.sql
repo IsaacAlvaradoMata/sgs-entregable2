@@ -1,6 +1,7 @@
 -- 03_base_interna.sql: packages internos que usan todos los procesos (errores, parametros, cifrado y correo).
 -- Seccion 0 como SYS (SYSDBA); el resto como SGS_ADMIN. Ambas en la PDB del ambiente (desarrollo: FREEPDB1, oficial: SGSPDB).
--- Requiere haber ejecutado 02_modelo.sql. Antes de la seccion de cifrado: reemplazar <LLAVE_CIFRADO> por la llave real.
+-- Requiere haber ejecutado 02_modelo.sql. Antes de ejecutar: reemplazar <LLAVE_CIFRADO> por la llave real del ambiente
+-- y <CLAVE_CORREO> por la contrasena de aplicacion de la cuenta de Gmail del proyecto.
 
 -- 0. EJECUTAR COMO SYS (SYSDBA), en la PDB: privilegios sobre paquetes del sistema que usan los packages
 GRANT EXECUTE ON SYS.DBMS_CRYPTO TO SGS_ADMIN;
@@ -423,5 +424,11 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_CORREO AS
             RAISE;
     END;
 
+END;
+/
+
+-- 8. Clave del correo: se guarda cifrada (nunca en texto plano en la tabla de parametros)
+BEGIN
+    SGS_PKG_CIFRADO.guardar_parametro('CORREO_CLAVE', '<CLAVE_CORREO>', 'Contrasena de aplicacion de la cuenta de correo (cifrada)');
 END;
 /

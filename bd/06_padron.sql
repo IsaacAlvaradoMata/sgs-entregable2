@@ -1,6 +1,7 @@
 -- 06_padron.sql: carga del padron nacional del TSE (distritos electorales y personas) desde los archivos oficiales.
 -- Seccion 0 como SYS (SYSDBA); el resto como SGS_ADMIN. Ambas en la PDB del ambiente (desarrollo: FREEPDB1, oficial: SGSPDB).
 -- Solo se ejecuta en el servidor principal; el standby recibe el directorio y los datos por el redo.
+-- La carga inicial (seccion 4) tarda unos minutos: son 3,7 millones de personas.
 -- Antes de la seccion 0: copiar PADRON_COMPLETO.txt y distelec.txt a la carpeta del servidor, con dueno oracle,
 -- y reemplazar <RUTA_PADRON> por esa carpeta (desarrollo: /opt/oracle/oradata/padron).
 
@@ -150,5 +151,16 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_PADRON AS
             RAISE;
     END;
 
+END;
+/
+
+-- 4. Carga inicial del padron (despues, cada vez que el TSE publique uno nuevo, se vuelve a ejecutar este bloque)
+DECLARE
+    v_distritos  NUMBER;
+    v_personas   NUMBER;
+    v_rechazadas NUMBER;
+BEGIN
+    SGS_PKG_PADRON.cargar(v_distritos, v_personas, v_rechazadas);
+    DBMS_OUTPUT.PUT_LINE('Distritos: ' || v_distritos || ' | Personas: ' || v_personas || ' | Rechazadas: ' || v_rechazadas);
 END;
 /
