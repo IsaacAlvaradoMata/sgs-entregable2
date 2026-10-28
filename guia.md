@@ -365,7 +365,7 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 - [ ] Semestral: top 10 clientes → orden de compra → coordinador.
 - [ ] Diario: cierre diario (totales y detalle por cajero) → coordinador y gerente.
 - [x] Clientes al 85 % de su límite → correo al propio cliente.
-- [ ] Lista del 85 % → coordinador (ver pendiente N2).
+- [x] Lista del 85 % → coordinador (ver pendiente N2).
 - [ ] Cuentas por pagar al 70 % → **un solo correo** al gerente con todos los proveedores.
 - [ ] Morosos (saldo pendiente y último pago con más de un mes) → gerente y coordinador.
 - [ ] Productos vencidos con total → coordinador.
@@ -681,7 +681,7 @@ Estado: ⬜ pendiente · 🟨 en progreso · ✅ listo
 | Código | Requerimiento | Etapa | Rúbrica | Estado |
 |---|---|---|---|---|
 | N1 | Cliente al 85 % de su límite | B6 | Clientes con límite de crédito (2 %) | ✅ |
-| N2 | Lista del 85 % al coordinador *(confirmar)* | B6 | Proveedores con límite de crédito (2 %) | ⬜ |
+| N2 | Lista del 85 % al coordinador *(confirmar)* | B6 | Proveedores con límite de crédito (2 %) | ✅ |
 | N3 | Gerente al 70 % de CxP, un solo correo | B6 | Notificaciones agrupadas (2 %) | ⬜ |
 | N4 | Clientes morosos | B6 | Clientes morosos (2 %) | ⬜ |
 | N5 | Productos vencidos con total | B6 | Productos vencidos (2 %) | ⬜ |

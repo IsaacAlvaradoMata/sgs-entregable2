@@ -699,3 +699,9 @@ Al correr el job a demanda, Laura recibe en su correo el aviso con el porcentaje
 ![Ejecución del job](capturas/B6_07_04_ejecucion_job.png)
 
 El scheduler registra la ejecución del job como exitosa, con su hora de inicio en Costa Rica y su duración.
+
+## Lista al coordinador de los clientes al 85 %
+
+![Correo al coordinador](capturas/B6_07_05_correo_coordinador.png)
+
+El coordinador recibe un solo correo con todos los clientes que deben el 85 % o más de su límite (parámetro `PCT_AVISO_COORDINADOR`): porcentaje usado, saldo, límite y correo de cada uno, más el total de clientes y la suma de sus saldos.

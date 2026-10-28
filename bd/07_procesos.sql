@@ -19,10 +19,26 @@ END;
 CREATE OR REPLACE PACKAGE SGS_PKG_PROCESOS AS
     -- Aviso a cada cliente que debe el porcentaje PCT_AVISO_CLIENTE o mas de su limite de credito
     PROCEDURE avisar_clientes_limite;
+    -- Un solo correo al coordinador con todos los clientes que deben el porcentaje PCT_AVISO_COORDINADOR o mas de su limite
+    PROCEDURE avisar_coordinador_limite;
 END;
 /
 
 CREATE OR REPLACE PACKAGE BODY SGS_PKG_PROCESOS AS
+
+    -- Clientes activos con credito que deben el porcentaje indicado o mas de su limite (N1 y N2 usan el mismo criterio)
+    CURSOR c_clientes_limite (p_pct IN NUMBER) IS
+        SELECT TRIM(c.CLI_NOMBRE || ' ' || p.CLP_APELLIDO1) AS NOMBRE,
+               c.CLI_EMAIL,
+               x.CXC_LIMITE_CREDITO AS LIMITE,
+               x.CXC_SALDO AS SALDO
+          FROM SGS_CUENTA_COBRAR x
+          JOIN SGS_CLIENTE c ON c.CLI_ID = x.CXC_ID_CLIENTE
+          LEFT JOIN SGS_CLIENTE_PERSONA p ON p.CLP_ID_CLIENTE = c.CLI_ID
+         WHERE c.CLI_ESTADO = 'A'
+           AND x.CXC_LIMITE_CREDITO > 0
+           AND x.CXC_SALDO >= x.CXC_LIMITE_CREDITO * p_pct
+         ORDER BY x.CXC_SALDO / x.CXC_LIMITE_CREDITO DESC;
 
     -- Montos y porcentajes como se muestran en los correos: ₡129.000,00 y 86 %
     FUNCTION monto (p_valor IN NUMBER) RETURN VARCHAR2 IS
@@ -35,23 +51,19 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_PROCESOS AS
         RETURN TO_CHAR(ROUND(p_fraccion * 100, 1), 'FM990D0', 'NLS_NUMERIC_CHARACTERS='',.''') || ' %';
     END;
 
-    -- Un correo por cliente; si falla el de uno, se registra y se sigue con los demas
+    -- Fecha de hoy en Costa Rica para los reportes
+    FUNCTION hoy RETURN VARCHAR2 IS
+    BEGIN
+        RETURN TO_CHAR(SYSTIMESTAMP AT TIME ZONE 'America/Costa_Rica', 'DD/MM/YYYY');
+    END;
+
+    -- Un correo por cliente con correo registrado; si falla el de uno, se registra y se sigue con los demas
     PROCEDURE avisar_clientes_limite IS
         v_pct       NUMBER := SGS_PKG_PARAMETROS.obtener_numero('PCT_AVISO_CLIENTE');
         v_fallidos  PLS_INTEGER := 0;
     BEGIN
-        FOR r IN (SELECT TRIM(c.CLI_NOMBRE || ' ' || p.CLP_APELLIDO1) AS NOMBRE,
-                         c.CLI_EMAIL,
-                         x.CXC_LIMITE_CREDITO AS LIMITE,
-                         x.CXC_SALDO AS SALDO
-                    FROM SGS_CUENTA_COBRAR x
-                    JOIN SGS_CLIENTE c ON c.CLI_ID = x.CXC_ID_CLIENTE
-                    LEFT JOIN SGS_CLIENTE_PERSONA p ON p.CLP_ID_CLIENTE = c.CLI_ID
-                   WHERE c.CLI_ESTADO = 'A'
-                     AND c.CLI_EMAIL IS NOT NULL
-                     AND x.CXC_LIMITE_CREDITO > 0
-                     AND x.CXC_SALDO >= x.CXC_LIMITE_CREDITO * v_pct
-                   ORDER BY x.CXC_SALDO / x.CXC_LIMITE_CREDITO DESC) LOOP
+        FOR r IN c_clientes_limite(v_pct) LOOP
+            CONTINUE WHEN r.CLI_EMAIL IS NULL;
             BEGIN
                 SGS_PKG_CORREO.enviar(
                     r.CLI_EMAIL,
@@ -80,28 +92,69 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_PROCESOS AS
             RAISE;
     END;
 
+    PROCEDURE avisar_coordinador_limite IS
+        v_pct     NUMBER := SGS_PKG_PARAMETROS.obtener_numero('PCT_AVISO_COORDINADOR');
+        v_lista   VARCHAR2(32000);
+        v_total   NUMBER := 0;
+        v_cuenta  PLS_INTEGER := 0;
+    BEGIN
+        FOR r IN c_clientes_limite(v_pct) LOOP
+            v_cuenta := v_cuenta + 1;
+            v_total  := v_total + r.SALDO;
+            v_lista  := v_lista || v_cuenta || '. ' || r.NOMBRE || CHR(10)
+                        || '   Usado: ' || porcentaje(r.SALDO / r.LIMITE)
+                        || ' | Saldo: ' || monto(r.SALDO) || ' de ' || monto(r.LIMITE)
+                        || ' | Correo: ' || NVL(r.CLI_EMAIL, 'sin correo') || CHR(10);
+        END LOOP;
+
+        IF v_cuenta > 0 THEN
+            SGS_PKG_CORREO.enviar_a_tipo(
+                'COORDINADOR',
+                'Clientes con ' || porcentaje(v_pct) || ' o más de su crédito (' || hoy || ')',
+                'Clientes que deben el ' || porcentaje(v_pct) || ' o más de su límite de crédito al ' || hoy || ':'
+                || CHR(10) || CHR(10) || v_lista || CHR(10)
+                || 'Total de clientes: ' || v_cuenta || CHR(10)
+                || 'Saldo total de estos clientes: ' || monto(v_total) || CHR(10) || CHR(10)
+                || 'Mensaje automático del Sistema de Gestión de Supermercados.');
+        END IF;
+    EXCEPTION
+        WHEN OTHERS THEN
+            SGS_PKG_ERRORES.registrar('SGS_PKG_PROCESOS.avisar_coordinador_limite');
+            RAISE;
+    END;
+
 END;
 /
 
 -- 3. Jobs
 -- La fecha de inicio va en hora de Costa Rica: el scheduler calcula BYHOUR en esa zona aunque el servidor este en otra.
--- Cada bloque borra el job si ya existe (ORA-27475 = no existe) para poder volver a ejecutar el script.
-BEGIN
+-- Cada job se borra si ya existe (ORA-27475 = no existe) para poder volver a ejecutar el bloque.
+DECLARE
+    PROCEDURE programar (p_job IN VARCHAR2, p_accion IN VARCHAR2, p_intervalo IN VARCHAR2, p_comentario IN VARCHAR2) IS
     BEGIN
-        DBMS_SCHEDULER.DROP_JOB('SGS_JOB_AVISO_CLIENTES', force => TRUE);
-    EXCEPTION
-        WHEN OTHERS THEN
-            IF SQLCODE <> -27475 THEN
-                RAISE;
-            END IF;
+        BEGIN
+            DBMS_SCHEDULER.DROP_JOB(p_job, force => TRUE);
+        EXCEPTION
+            WHEN OTHERS THEN
+                IF SQLCODE <> -27475 THEN
+                    RAISE;
+                END IF;
+        END;
+        DBMS_SCHEDULER.CREATE_JOB(
+            job_name        => p_job,
+            job_type        => 'STORED_PROCEDURE',
+            job_action      => p_accion,
+            start_date      => SYSTIMESTAMP AT TIME ZONE 'America/Costa_Rica',
+            repeat_interval => p_intervalo,
+            enabled         => TRUE,
+            comments        => p_comentario);
     END;
-    DBMS_SCHEDULER.CREATE_JOB(
-        job_name        => 'SGS_JOB_AVISO_CLIENTES',
-        job_type        => 'STORED_PROCEDURE',
-        job_action      => 'SGS_PKG_PROCESOS.avisar_clientes_limite',
-        start_date      => SYSTIMESTAMP AT TIME ZONE 'America/Costa_Rica',
-        repeat_interval => 'FREQ=DAILY;BYHOUR=7;BYMINUTE=0;BYSECOND=0',
-        enabled         => TRUE,
-        comments        => 'Aviso diario a los clientes con 85 % o mas de su limite de credito');
+BEGIN
+    programar('SGS_JOB_AVISO_CLIENTES', 'SGS_PKG_PROCESOS.avisar_clientes_limite',
+              'FREQ=DAILY;BYHOUR=7;BYMINUTE=0;BYSECOND=0',
+              'Aviso diario a los clientes con 85 % o mas de su limite de credito');
+    programar('SGS_JOB_AVISO_COORDINADOR', 'SGS_PKG_PROCESOS.avisar_coordinador_limite',
+              'FREQ=DAILY;BYHOUR=7;BYMINUTE=0;BYSECOND=0',
+              'Lista diaria al coordinador de los clientes con 85 % o mas de su limite de credito');
 END;
 /
