@@ -21,7 +21,11 @@ Qué falta y quién lo tiene. Se actualiza al cerrar cada sesión de trabajo.
 - [x] Hora sincronizada con `chronyd` en los dos servidores.
 - [ ] S4: administración parametrizada del standby (necesita la tabla de parámetros de Isaac, I2).
 - [x] S5: RMAN configurado; full, incremental, restore y recovery probados; copia a `SGSSTB`; script a demanda (`servidores/scripts/respaldo_rman.sh`). Ver [`servidores/s5_rman.md`](../servidores/s5_rman.md).
-- [ ] S5: job diario con `DBMS_SCHEDULER` que ejecute el script (falta definir `RESP_HORA_DIARIO` y dónde vive el job, coordinado con Isaac).
+- [ ] S5: job diario `SGS_JOB_RESPALDO_DIARIO` (en `SGSPDB`, dueño `SGS_ADMIN`, como los jobs de Isaac) que ejecute `respaldo_rman.sh`. Hora decidida: `RESP_HORA_DIARIO` = `1` (1:00 a. m.); si a esa hora las VMs están apagadas, ese día no hay respaldo automático y se corre a demanda. Necesita:
+  - [ ] Isaac agrega en `bd/03_base_interna.sql` la fila `RESP_HORA_DIARIO` = `'1'` ("Hora del respaldo diario con RMAN").
+  - [ ] Isaac agrega en `bd/01_infraestructura.sql`: `GRANT CREATE EXTERNAL JOB TO SGS_ADMIN;` y `GRANT CREATE CREDENTIAL TO SGS_ADMIN;`.
+  - [ ] I1 hecho (esquema de Isaac instalado en `SGSPDB` de `SGSPRI`).
+  - [ ] Credencial con el usuario Linux `oracle` (la contraseña no va al repo); el job revisa que la base sea `SGSPRI` en rol PRIMARY antes de respaldar.
 - [ ] Borrar el tablespace de prueba `ts_prueba_rman` (y su tabla) de `SGSPDB` cuando ya no se necesite.
 - [x] S6: switchover, failover y reincorporación probados con el broker `sgs_dg`: [`servidores/s6_switchover_failover.md`](../servidores/s6_switchover_failover.md).
 - [ ] S7: situaciones problemáticas y manual del standby.

@@ -59,7 +59,7 @@ Los parámetros se guardan como **filas** dentro de la tabla de parámetros (no 
 | `STB_MB_ARCHIVO` | 50 | 🔴 | Andrés |
 | `STB_MINUTOS_TRASLADO` | 10 | 🔴 | Andrés |
 | `STB_DIAS_BORRADO` | 3 | 🔴 | Andrés |
-| `RESP_HORA_DIARIO` | **pendiente (Andrés)** | 🟢 | Andrés |
+| `RESP_HORA_DIARIO` | `1` (1:00 a. m., hora de Costa Rica; se usa como `BYHOUR`) | 🟢 | Andrés |
 
 ### Claves de roles
 
