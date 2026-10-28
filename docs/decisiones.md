@@ -146,5 +146,17 @@ Pasos detallados en [`servidores/s1_sgspri.md`](../servidores/s1_sgspri.md).
 | Tamaño de redo y standby redo | 50 MB (requisito "cada 50 MB"); 3 grupos de redo y 4 de standby redo |
 | Creación de la standby | `RMAN DUPLICATE ... FOR STANDBY FROM ACTIVE DATABASE` |
 | Rutas de datafiles en `SGSSTB` | `/opt/oracle/oradata/SGSSTB/` (`db_file_name_convert`) |
-| Force logging / Flashback | Activados en ambos |
+| Force logging / Flashback | Activados en ambos (el flashback de `SGSSTB` se activó en S6, tras el failover) |
 
+
+### S6 — Switchover y failover
+
+**Broker y cambios de rol** · 2026-10-28
+
+| Elemento | Valor |
+|---|---|
+| Configuración del broker | `sgs_dg`, MaxPerformance |
+| Fast-Start Failover | Deshabilitado: el failover se hace a mano (`FAILOVER TO 'SGSSTB'`) |
+| Reincorporación | `REINSTATE DATABASE` con flashback (sin recrear la standby) |
+| Nombres en comandos del broker | Entre comillas y en mayúscula (`'SGSSTB'`, `'SGSPRI'`): sin comillas el failover da `ORA-16600` |
+| Roles normales | `SGSPRI` principal, `SGSSTB` standby; tras cualquier prueba se regresa con switchover |
