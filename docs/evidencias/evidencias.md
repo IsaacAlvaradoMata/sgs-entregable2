@@ -705,3 +705,9 @@ El scheduler registra la ejecución del job como exitosa, con su hora de inicio 
 ![Correo al coordinador](capturas/B6_07_05_correo_coordinador.png)
 
 El coordinador recibe un solo correo con todos los clientes que deben el 85 % o más de su límite (parámetro `PCT_AVISO_COORDINADOR`): porcentaje usado, saldo, límite y correo de cada uno, más el total de clientes y la suma de sus saldos.
+
+## Proveedores al 70 % de su límite
+
+![Correo al gerente](capturas/B6_07_06_correo_gerente_cxp.png)
+
+El gerente recibe un solo correo: primero los proveedores a los que se les debe el 70 % o más de su propio límite (parámetro `PCT_AVISO_GERENTE_CXP`), con lo disponible, y después el estado de todos los proveedores con crédito y el total adeudado.

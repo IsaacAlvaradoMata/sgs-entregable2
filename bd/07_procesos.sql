@@ -21,6 +21,8 @@ CREATE OR REPLACE PACKAGE SGS_PKG_PROCESOS AS
     PROCEDURE avisar_clientes_limite;
     -- Un solo correo al coordinador con todos los clientes que deben el porcentaje PCT_AVISO_COORDINADOR o mas de su limite
     PROCEDURE avisar_coordinador_limite;
+    -- Un solo correo al gerente si a algun proveedor se le debe el porcentaje PCT_AVISO_GERENTE_CXP o mas de su limite
+    PROCEDURE avisar_gerente_proveedores;
 END;
 /
 
@@ -123,6 +125,50 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_PROCESOS AS
             RAISE;
     END;
 
+    -- Primero los proveedores que llegaron al umbral y despues el estado de todos los proveedores con credito
+    PROCEDURE avisar_gerente_proveedores IS
+        v_pct      NUMBER := SGS_PKG_PARAMETROS.obtener_numero('PCT_AVISO_GERENTE_CXP');
+        v_alerta   VARCHAR2(32000);
+        v_todos    VARCHAR2(32000);
+        v_cuenta   PLS_INTEGER := 0;
+        v_total    NUMBER := 0;
+    BEGIN
+        FOR r IN (SELECT v.PRV_NOMBRE AS NOMBRE,
+                         x.CXP_LIMITE_CREDITO AS LIMITE,
+                         x.CXP_SALDO AS SALDO
+                    FROM SGS_CUENTA_PAGAR x
+                    JOIN SGS_PROVEEDOR v ON v.PRV_ID = x.CXP_ID_PROVEEDOR
+                   WHERE v.PRV_ESTADO = 'A'
+                     AND x.CXP_LIMITE_CREDITO > 0
+                   ORDER BY x.CXP_SALDO / x.CXP_LIMITE_CREDITO DESC) LOOP
+            v_total := v_total + r.SALDO;
+            v_todos := v_todos || '- ' || r.NOMBRE || ': ' || porcentaje(r.SALDO / r.LIMITE)
+                       || ' (' || monto(r.SALDO) || ' de ' || monto(r.LIMITE) || ')' || CHR(10);
+            IF r.SALDO >= r.LIMITE * v_pct THEN
+                v_cuenta := v_cuenta + 1;
+                v_alerta := v_alerta || v_cuenta || '. ' || r.NOMBRE || CHR(10)
+                            || '   Usado: ' || porcentaje(r.SALDO / r.LIMITE)
+                            || ' | Saldo: ' || monto(r.SALDO) || ' de ' || monto(r.LIMITE)
+                            || ' | Disponible: ' || monto(r.LIMITE - r.SALDO) || CHR(10);
+            END IF;
+        END LOOP;
+
+        IF v_cuenta > 0 THEN
+            SGS_PKG_CORREO.enviar_a_tipo(
+                'GERENTE',
+                'Proveedores con ' || porcentaje(v_pct) || ' o más del crédito usado (' || hoy || ')',
+                'Proveedores a los que se les debe el ' || porcentaje(v_pct) || ' o más de su límite de crédito al ' || hoy || ':'
+                || CHR(10) || CHR(10) || v_alerta || CHR(10)
+                || 'Estado de todos los proveedores con crédito:' || CHR(10) || v_todos || CHR(10)
+                || 'Total adeudado a proveedores: ' || monto(v_total) || CHR(10) || CHR(10)
+                || 'Mensaje automático del Sistema de Gestión de Supermercados.');
+        END IF;
+    EXCEPTION
+        WHEN OTHERS THEN
+            SGS_PKG_ERRORES.registrar('SGS_PKG_PROCESOS.avisar_gerente_proveedores');
+            RAISE;
+    END;
+
 END;
 /
 
@@ -156,5 +202,8 @@ BEGIN
     programar('SGS_JOB_AVISO_COORDINADOR', 'SGS_PKG_PROCESOS.avisar_coordinador_limite',
               'FREQ=DAILY;BYHOUR=7;BYMINUTE=0;BYSECOND=0',
               'Lista diaria al coordinador de los clientes con 85 % o mas de su limite de credito');
+    programar('SGS_JOB_AVISO_GERENTE_CXP', 'SGS_PKG_PROCESOS.avisar_gerente_proveedores',
+              'FREQ=DAILY;BYHOUR=7;BYMINUTE=0;BYSECOND=0',
+              'Aviso diario al gerente de los proveedores con 70 % o mas de su limite de credito');
 END;
 /

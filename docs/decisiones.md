@@ -232,6 +232,8 @@ El enunciado pide cargar el padrón con la información actual, enlazarlo con cl
 1. **Organización.** Un package `SGS_PKG_PROCESOS` con un procedimiento por proceso y un job de `DBMS_SCHEDULER` (`SGS_JOB_*`) por procedimiento. Cada proceso se puede correr a demanda (llamando al procedimiento o con `DBMS_SCHEDULER.RUN_JOB`). Si un proceso no encuentra casos, no envía correo.
 2. **Frecuencia de las notificaciones (N1 a N5).** El enunciado no la define. Job **diario a las 07:00** (hora de Costa Rica) para cada una, y sin recordar a quién ya se avisó: mientras el caso siga, el correo se repite cada día como recordatorio. No se usan triggers para notificar: la morosidad y los vencidos dependen del paso del tiempo, N2 y N3 deben ser un solo correo agrupado, y un correo enviado desde un trigger sale aunque la operación haga `ROLLBACK`.
 3. **Hora de los jobs.** La fecha de inicio de cada job se fija en `America/Costa_Rica`, así el scheduler calcula la hora en Costa Rica aunque el servidor esté en otra zona (Docker está en UTC).
+4. **N2 (lista al coordinador).** El enunciado dice "clientes" y "cuentas por pagar"; se toma como **clientes**: un solo correo al coordinador con todos los clientes al 85 % o más de su límite (`PCT_AVISO_COORDINADOR`). N1 y N2 comparten la consulta. Pregunta enviada al profesor; si responde que son proveedores, solo cambia esa consulta.
+5. **N3 (proveedores al 70 %).** Sobre el límite **de cada proveedor** (`SGS_CUENTA_PAGAR`), con saldo ≥ 70 % (`PCT_AVISO_GERENTE_CXP`); "cerca de" se toma como "70 % o más". Un solo correo al gerente con los proveedores que llegaron al umbral y, para cumplir "que incluya a todos los proveedores", el estado de todos los proveedores con crédito y el total adeudado.
 
 ## Carril S — Servidores
 
