@@ -23,7 +23,7 @@ Qué falta y quién lo tiene. Se actualiza al cerrar cada sesión de trabajo.
 - [x] S5: RMAN configurado; full, incremental, restore y recovery probados; copia a `SGSSTB`; script a demanda (`servidores/scripts/respaldo_rman.sh`). Ver [`servidores/s5_rman.md`](../servidores/s5_rman.md).
 - [ ] S5: job diario con `DBMS_SCHEDULER` que ejecute el script (falta definir `RESP_HORA_DIARIO` y dónde vive el job, coordinado con Isaac).
 - [ ] Borrar el tablespace de prueba `ts_prueba_rman` (y su tabla) de `SGSPDB` cuando ya no se necesite.
-- [ ] S6: switchover, failover y reincorporación (broker de Data Guard).
+- [ ] S6: switchover, failover y reincorporación (broker `sgs_dg` ya configurado; ver [`servidores/s6_switchover_failover.md`](../servidores/s6_switchover_failover.md)).
 - [ ] Borrar la tabla de prueba `system.prueba_dg` de `SGSPDB` cuando ya no se necesite.
 
 ## Carril B — Base de datos (Isaac)
