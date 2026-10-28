@@ -31,8 +31,9 @@ CREATE OR REPLACE PACKAGE SGS_PKG_PROCESOS AS
     PROCEDURE reportar_inventario;
     -- Semanal: agrega al detalle de los descuentos por ingreso o por vencimiento los productos que ahora cumplen la condicion
     PROCEDURE incluir_descuentos;
-    -- Cada PREMIO_FRECUENCIA_MESES meses: orden de compra a los mejores clientes del periodo y correo al coordinador
-    PROCEDURE premiar_clientes;
+    -- Cada PREMIO_FRECUENCIA_MESES meses: orden de compra a los mejores clientes del periodo y correo al coordinador.
+    -- El periodo termina en la fecha de corte (por defecto hoy)
+    PROCEDURE premiar_clientes (p_fecha IN DATE DEFAULT NULL);
     -- Diario: cierre de un dia (por defecto ayer) con su detalle por cajero; correo al gerente y al coordinador
     PROCEDURE cerrar_dia (p_fecha IN DATE DEFAULT NULL);
 END;
@@ -389,12 +390,12 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_PROCESOS AS
     END;
 
     -- Compras netas del periodo (facturas no anuladas menos devoluciones), sin el cliente por defecto
-    PROCEDURE premiar_clientes IS
+    PROCEDURE premiar_clientes (p_fecha IN DATE DEFAULT NULL) IS
         v_meses     NUMBER := SGS_PKG_PARAMETROS.obtener_numero('PREMIO_FRECUENCIA_MESES');
         v_cantidad  NUMBER := SGS_PKG_PARAMETROS.obtener_numero('PREMIO_CANTIDAD_CLIENTES');
         v_monto     NUMBER := SGS_PKG_PARAMETROS.obtener_numero('PREMIO_MONTO_ORDEN');
-        v_inicio    DATE   := ADD_MONTHS(TRUNC(SYSDATE), -v_meses);
-        v_fin       DATE   := TRUNC(SYSDATE);
+        v_fin       DATE   := NVL(TRUNC(p_fecha), TRUNC(SYSDATE));
+        v_inicio    DATE   := ADD_MONTHS(v_fin, -v_meses);
         v_id        SGS_PREMIACION.PMC_ID%TYPE;
         v_lista     VARCHAR2(32000);
         v_posicion  PLS_INTEGER := 0;
@@ -402,8 +403,8 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_PROCESOS AS
     BEGIN
         SAVEPOINT sp_premiar_clientes;
 
-        INSERT INTO SGS_PREMIACION (PMC_ID, PMC_PERIODO_INICIO, PMC_PERIODO_FIN, PMC_MONTO_ORDEN)
-        VALUES (SEQ_PREMIACION.NEXTVAL, v_inicio, v_fin, v_monto)
+        INSERT INTO SGS_PREMIACION (PMC_ID, PMC_FECHA, PMC_PERIODO_INICIO, PMC_PERIODO_FIN, PMC_MONTO_ORDEN)
+        VALUES (SEQ_PREMIACION.NEXTVAL, CASE WHEN p_fecha IS NULL THEN SYSDATE ELSE v_fin END, v_inicio, v_fin, v_monto)
         RETURNING PMC_ID INTO v_id;
 
         FOR r IN (SELECT *
@@ -443,7 +444,7 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_PROCESOS AS
 
         SGS_PKG_CORREO.enviar_a_tipo(
             'COORDINADOR',
-            'Clientes premiados (' || hoy || ')',
+            'Clientes premiados (' || TO_CHAR(v_fin, 'DD/MM/YYYY') || ')',
             'Los ' || v_posicion || ' clientes que más compraron del ' || TO_CHAR(v_inicio, 'DD/MM/YYYY')
             || ' al ' || TO_CHAR(v_fin, 'DD/MM/YYYY') || ' reciben una orden de compra por ' || monto(v_monto) || ':'
             || CHR(10) || CHR(10) || v_lista || CHR(10)

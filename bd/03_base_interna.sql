@@ -194,6 +194,10 @@ INSERT INTO SGS_DESTINATARIO (DES_ID, DES_TIPO, DES_NOMBRE, DES_EMAIL)
 VALUES (SEQ_DESTINATARIO.NEXTVAL, 'COORDINADOR', 'Coordinacion', 'sgs.notificaciones.una+coordinador@gmail.com');
 INSERT INTO SGS_DESTINATARIO (DES_ID, DES_TIPO, DES_NOMBRE, DES_EMAIL)
 VALUES (SEQ_DESTINATARIO.NEXTVAL, 'DBA', 'Administracion de base de datos', 'sgs.notificaciones.una+dba@gmail.com');
+INSERT INTO SGS_DESTINATARIO (DES_ID, DES_TIPO, DES_NOMBRE, DES_EMAIL)
+VALUES (SEQ_DESTINATARIO.NEXTVAL, 'COORDINADOR', 'Coordinacion de sucursales', 'sgs.notificaciones.una+sucursales@gmail.com');
+INSERT INTO SGS_DESTINATARIO (DES_ID, DES_TIPO, DES_NOMBRE, DES_EMAIL)
+VALUES (SEQ_DESTINATARIO.NEXTVAL, 'DBA', 'Soporte de base de datos', 'sgs.notificaciones.una+soporte@gmail.com');
 
 COMMIT;
 

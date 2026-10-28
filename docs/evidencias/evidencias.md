@@ -845,3 +845,19 @@ Costo, índices usados y recorridos completos de las consultas analizadas con `E
 ![Padrón por nombre](capturas/B8_09_13_explain_padron_nombre.png)
 
 En el padrón de 3,7 millones de personas, buscar por cédula usa el índice único y cuesta 3; buscar por nombre recorre la tabla completa y cuesta 8 453.
+
+# Historial de los procesos (`bd/10_datos_operaciones.sql`, sección D)
+
+Para que las tablas que llenan los procesos también tengan 5 registros o más con datos coherentes, se cargaron ventas de servicios de semestres anteriores (no mueven inventario) y se ejecutaron los procesos con su fecha: premiaciones con fecha de corte, cierres de días anteriores, la inclusión semanal de descuentos y revisiones de monitoreo.
+
+![Filas por tabla](capturas/B3_10_02_filas_por_tabla.png)
+
+Las 57 tablas del modelo tienen 5 registros o más (la consulta pone primero las que no cumplan; no hay ninguna).
+
+![Premiaciones](capturas/B6_10_01_premiaciones.png)
+
+Cinco premiaciones semestrales, cada una con los clientes que más compraron en su período y su orden de compra de ₡100.000.
+
+![Cierres](capturas/B6_10_02_cierres.png)
+
+Cinco cierres diarios: el de la venta a crédito de José, tres días sin ventas (el cierre se hace igual) y el día de las ventas de prueba con sus cuatro cajeros.

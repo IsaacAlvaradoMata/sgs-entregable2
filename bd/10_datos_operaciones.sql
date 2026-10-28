@@ -1,6 +1,7 @@
 -- 10_datos_operaciones.sql: datos de prueba de operaciones (compras, pagos, devoluciones, traslados y ventas), cargados con los packages.
 -- Se ejecuta como SGS_ADMIN despues de los demas scripts. Los triggers mantienen saldos, existencias, movimientos e historial.
 -- Seccion A: operaciones hechas durante las pruebas de B3. Seccion B: el resto. Seccion C: simulacion de fechas para B6.
+-- Seccion D: historial de los procesos (premiaciones de semestres anteriores, cierres, descuentos y monitoreo).
 
 -- A. Operaciones de las pruebas de B3 (en una instalacion desde cero se ejecutan antes de la seccion B)
 DECLARE
@@ -217,3 +218,64 @@ UPDATE SGS_LOTE
                    JOIN SGS_FACTURA_PROVEEDOR f ON f.FP_ID = d.DFP_ID_FACTURA
                   WHERE f.FP_NUMERO = 'DAS-2003');
 COMMIT;
+
+-- D. Historial de los procesos (5 filas o mas en las tablas que llenan los procesos de B6 y B8)
+--    Ventas de servicios de semestres anteriores (no mueven inventario) para que cada premiacion tenga sus ganadores.
+--    Cambiar la fecha de una factura queda en la bitacora como operacion critica, igual que en la seccion C.
+DECLARE
+    v_jose  DATE;
+
+    PROCEDURE vender_historico (p_cliente IN VARCHAR2, p_servicio IN VARCHAR2, p_cantidad IN NUMBER, p_meses IN NUMBER) IS
+        v_factura  NUMBER;
+        v_fecha    DATE := ADD_MONTHS(TRUNC(SYSDATE), -p_meses);
+    BEGIN
+        SGS_PKG_VENTAS.registrar_venta(p_sucursal => 'Sucursal San Isidro', p_usuario => 'mcastro', p_cliente => p_cliente,
+            p_es_credito => 'N',
+            p_lineas => SGS_PKG_VENTAS.t_lineas(1 => SGS_PKG_VENTAS.t_linea(codigo => p_servicio, cantidad => p_cantidad)),
+            p_pagos  => SGS_PKG_VENTAS.t_pagos(1 => SGS_PKG_VENTAS.t_pago(tipo => 'Efectivo', monto => NULL)),
+            p_id_factura => v_factura);
+        UPDATE SGS_FACTURA_VENTA SET FV_FECHA = v_fecha WHERE FV_ID = v_factura;
+        UPDATE SGS_PAGO_FACTURA_VENTA SET PFV_FECHA = v_fecha WHERE PFV_ID_FACTURA = v_factura;
+        COMMIT;
+    END;
+BEGIN
+    -- Laura se registro con el package (fecha de ingreso de hoy); como los demas clientes de prueba, es cliente desde antes
+    UPDATE SGS_CLIENTE SET CLI_FECHA_INGRESO = DATE '2024-03-10' WHERE CLI_CEDULA = '199990005';
+    COMMIT;
+
+    -- Dos ventas por semestre, hace 26, 20, 14 y 8 meses
+    vender_historico('199990001', 'Recarga telefonica', 25, 26);
+    vender_historico('199990004', 'Entrega a domicilio', 10, 26);
+    vender_historico('199990002', 'Envio de encomiendas', 12, 20);
+    vender_historico('3101654321', 'Entrega a domicilio', 30, 20);
+    vender_historico('199990001', 'Envio de encomiendas', 8, 14);
+    vender_historico('155812345678', 'Recarga telefonica', 15, 14);
+    vender_historico('199990002', 'Recarga telefonica', 40, 8);
+    vender_historico('199990004', 'Envio de encomiendas', 5, 8);
+
+    -- Premiaciones semestrales: las cuatro anteriores con su fecha de corte y la de hoy
+    SGS_PKG_PROCESOS.premiar_clientes(ADD_MONTHS(TRUNC(SYSDATE), -24));
+    SGS_PKG_PROCESOS.premiar_clientes(ADD_MONTHS(TRUNC(SYSDATE), -18));
+    SGS_PKG_PROCESOS.premiar_clientes(ADD_MONTHS(TRUNC(SYSDATE), -12));
+    SGS_PKG_PROCESOS.premiar_clientes(ADD_MONTHS(TRUNC(SYSDATE), -6));
+    SGS_PKG_PROCESOS.premiar_clientes;
+
+    -- Productos que hoy cumplen los descuentos por antiguedad y por vencimiento
+    SGS_PKG_PROCESOS.incluir_descuentos;
+
+    -- Cierres: hoy (las ventas de la seccion B), el dia de la venta a Jose (seccion C) y los tres dias anteriores
+    SELECT MIN(f.FV_FECHA) INTO v_jose
+      FROM SGS_FACTURA_VENTA f JOIN SGS_CLIENTE c ON c.CLI_ID = f.FV_ID_CLIENTE
+     WHERE c.CLI_CEDULA = '199990004' AND f.FV_ES_CREDITO = 'S';
+    SGS_PKG_PROCESOS.cerrar_dia(v_jose);
+    SGS_PKG_PROCESOS.cerrar_dia(TRUNC(SYSDATE) - 3);
+    SGS_PKG_PROCESOS.cerrar_dia(TRUNC(SYSDATE) - 2);
+    SGS_PKG_PROCESOS.cerrar_dia(TRUNC(SYSDATE) - 1);
+    SGS_PKG_PROCESOS.cerrar_dia(TRUNC(SYSDATE));
+
+    -- Revisiones de monitoreo (en operacion las hace el job una vez al dia)
+    FOR i IN 1 .. 5 LOOP
+        SGS_PKG_MONITOREO.registrar_estado;
+    END LOOP;
+END;
+/
