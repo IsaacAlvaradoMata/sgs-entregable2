@@ -2,7 +2,7 @@
 
 Estrategia de respaldo y recuperación de `SGSPRI` con RMAN: backup full, backup incremental, restore y recovery, y copia del respaldo al standby. Capturas en [`capturas/s5_rman/`](capturas/s5_rman/).
 
-Estado: **RMAN configurado y backup full (nivel 0) hecho.** Falta: incremental, prueba de restore/recovery, copia a `SGSSTB` y automatización diaria (`DBMS_SCHEDULER`, cuando exista `RESP_HORA_DIARIO` en la tabla de parámetros).
+Estado: **RMAN configurado y backup full (nivel 0) e incremental (nivel 1) hechos.** Falta: prueba de restore/recovery, copia a `SGSSTB` y automatización diaria (`DBMS_SCHEDULER`, cuando exista `RESP_HORA_DIARIO` en la tabla de parámetros).
 
 Comandos en `SGSPRI`, como `oracle`, dentro de `tmux` (`tmux new -s rman`) para que un respaldo no se pierda si se corta el SSH.
 
@@ -51,3 +51,17 @@ BACKUP INCREMENTAL LEVEL 0 DATABASE PLUS ARCHIVELOG TAG 'SGS_FULL_L0';
 - Los respaldos quedan en `/opt/oracle/fast_recovery_area/SGSPRI/backupset/` (los de la PDB, en una subcarpeta con su GUID) y el autobackup del control file en `.../SGSPRI/autobackup/`.
 
 > Con `PLUS ARCHIVELOG`, el `TAG` escrito al final se aplica a los archivos de redo; los datafiles quedan con un tag automático (`TAG<fecha>`). Para etiquetar los datafiles, el `TAG` va justo después de `DATABASE`.
+
+`LIST BACKUP SUMMARY` después del full: `LV 0` = datafiles de la raíz, `PDB$SEED` y `SGSPDB`; `LV A` = archivos de redo; `LV F` = autobackup del control file y spfile.
+
+## 4. Backup incremental (nivel 1)
+
+Se generó un cambio en `SGSPDB` (`INSERT` en `system.prueba_dg`) y luego:
+
+```
+BACKUP INCREMENTAL LEVEL 1 DATABASE TAG 'SGS_INC_L1' PLUS ARCHIVELOG;
+```
+
+- Solo guarda los bloques que cambiaron desde el nivel 0.
+- Los datafiles sin cambios se omiten: `skipping datafile 00006 because it has not changed` (los de `PDB$SEED`).
+- Los archivos de redo ya respaldados también se omiten (`skipping archived logs ... already backed up`), por `BACKUP OPTIMIZATION ON`.
