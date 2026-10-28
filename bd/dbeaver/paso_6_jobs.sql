@@ -31,5 +31,8 @@ BEGIN
     programar('SGS_JOB_AVISO_MOROSOS', 'SGS_PKG_PROCESOS.avisar_morosos',
               'FREQ=DAILY;BYHOUR=7;BYMINUTE=0;BYSECOND=0',
               'Aviso diario al gerente y al coordinador de los clientes morosos');
+    programar('SGS_JOB_AVISO_VENCIDOS', 'SGS_PKG_PROCESOS.avisar_vencidos',
+              'FREQ=DAILY;BYHOUR=7;BYMINUTE=0;BYSECOND=0',
+              'Lista diaria al coordinador de los productos vencidos con existencia');
 END;
 

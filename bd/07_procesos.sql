@@ -25,6 +25,8 @@ CREATE OR REPLACE PACKAGE SGS_PKG_PROCESOS AS
     PROCEDURE avisar_gerente_proveedores;
     -- Un solo correo al gerente y al coordinador con los clientes con saldo y mas de DIAS_MOROSIDAD dias sin pagar
     PROCEDURE avisar_morosos;
+    -- Lista al coordinador de los lotes vencidos que todavia tienen existencia, con el total en unidades y al costo
+    PROCEDURE avisar_vencidos;
 END;
 /
 
@@ -246,6 +248,55 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_PROCESOS AS
             RAISE;
     END;
 
+    -- Un lote vencido sigue en inventario mientras tenga existencia; el costo es el de la compra de donde nacio el lote
+    PROCEDURE avisar_vencidos IS
+        v_lista     VARCHAR2(32000);
+        v_cuenta    PLS_INTEGER := 0;
+        v_unidades  NUMBER := 0;
+        v_total     NUMBER := 0;
+    BEGIN
+        FOR r IN (SELECT s.SUC_NOMBRE AS SUCURSAL,
+                         pr.PRO_CODIGO AS CODIGO,
+                         a.ART_NOMBRE AS PRODUCTO,
+                         l.LOT_ID AS LOTE,
+                         l.LOT_FECHA_VENCIMIENTO AS VENCIMIENTO,
+                         e.EXI_CANTIDAD AS CANTIDAD,
+                         d.DFP_PRECIO_UNITARIO AS COSTO
+                    FROM SGS_EXISTENCIA e
+                    JOIN SGS_LOTE l ON l.LOT_ID = e.EXI_ID_LOTE
+                    JOIN SGS_DETALLE_FACTURA_PROVEEDOR d ON d.DFP_ID = l.LOT_ID_DETALLE_COMPRA
+                    JOIN SGS_PRODUCTO pr ON pr.PRO_ID = d.DFP_ID_PRODUCTO
+                    JOIN SGS_ARTICULO_FACTURABLE a ON a.ART_ID = pr.PRO_ID_ARTICULO
+                    JOIN SGS_SUCURSAL s ON s.SUC_ID = e.EXI_ID_SUCURSAL
+                   WHERE e.EXI_CANTIDAD > 0
+                     AND l.LOT_FECHA_VENCIMIENTO < TRUNC(SYSDATE)
+                   ORDER BY s.SUC_NOMBRE, l.LOT_FECHA_VENCIMIENTO, pr.PRO_CODIGO) LOOP
+            v_cuenta   := v_cuenta + 1;
+            v_unidades := v_unidades + r.CANTIDAD;
+            v_total    := v_total + r.CANTIDAD * r.COSTO;
+            v_lista    := v_lista || v_cuenta || '. ' || r.CODIGO || ' ' || r.PRODUCTO || ' (lote ' || r.LOTE || ') en ' || r.SUCURSAL || CHR(10)
+                          || '   Venció: ' || TO_CHAR(r.VENCIMIENTO, 'DD/MM/YYYY')
+                          || ' | Cantidad: ' || r.CANTIDAD
+                          || ' | Costo: ' || monto(r.COSTO) || ' c/u = ' || monto(r.CANTIDAD * r.COSTO) || CHR(10);
+        END LOOP;
+
+        IF v_cuenta > 0 THEN
+            SGS_PKG_CORREO.enviar_a_tipo(
+                'COORDINADOR',
+                'Productos vencidos en inventario (' || hoy || ')',
+                'Lotes vencidos que todavía tienen existencia al ' || hoy || ':'
+                || CHR(10) || CHR(10) || v_lista || CHR(10)
+                || 'Total de lotes vencidos: ' || v_cuenta || CHR(10)
+                || 'Total de unidades vencidas: ' || v_unidades || CHR(10)
+                || 'Total al costo: ' || monto(v_total) || CHR(10) || CHR(10)
+                || 'Mensaje automático del Sistema de Gestión de Supermercados.');
+        END IF;
+    EXCEPTION
+        WHEN OTHERS THEN
+            SGS_PKG_ERRORES.registrar('SGS_PKG_PROCESOS.avisar_vencidos');
+            RAISE;
+    END;
+
 END;
 /
 
@@ -285,5 +336,8 @@ BEGIN
     programar('SGS_JOB_AVISO_MOROSOS', 'SGS_PKG_PROCESOS.avisar_morosos',
               'FREQ=DAILY;BYHOUR=7;BYMINUTE=0;BYSECOND=0',
               'Aviso diario al gerente y al coordinador de los clientes morosos');
+    programar('SGS_JOB_AVISO_VENCIDOS', 'SGS_PKG_PROCESOS.avisar_vencidos',
+              'FREQ=DAILY;BYHOUR=7;BYMINUTE=0;BYSECOND=0',
+              'Lista diaria al coordinador de los productos vencidos con existencia');
 END;
 /

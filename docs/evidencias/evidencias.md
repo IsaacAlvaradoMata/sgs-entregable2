@@ -721,3 +721,13 @@ Los clientes con saldo y los días desde su último abono a una factura a crédi
 ![Correo de morosos](capturas/B6_07_08_correo_morosos.png)
 
 Un solo correo, dirigido a la vez al gerente y al coordinador, con cada moroso, su saldo, sus facturas pendientes, su último pago y los días sin pagar, más el total de morosos y lo que deben.
+
+## Productos vencidos
+
+![Lotes vencidos](capturas/B6_07_09_vencidos.png)
+
+Los lotes con fecha de vencimiento pasada que todavía tienen existencia: el banano del lote 11 en la Bodega Central, 40 unidades a ₡400 de costo.
+
+![Correo de vencidos](capturas/B6_07_10_correo_vencidos.png)
+
+El coordinador recibe la lista de lotes vencidos con su sucursal, fecha de vencimiento, cantidad y costo, y el total en lotes, unidades y valor al costo para decidir qué hacer con ellos.
