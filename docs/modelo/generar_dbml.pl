@@ -12,7 +12,7 @@ for (my $i = 0; $i < @lineas; $i++) {
         if ($l =~ /CONSTRAINT \w+ PRIMARY KEY \((\w+)\)/) { $pk{$tabla}{$1} = 1; next; }
         if ($l =~ /CONSTRAINT \w+ UNIQUE \(([\w, ]+)\)/) { push @{$uk{$tabla}}, $1; next; }
         if ($l =~ /CONSTRAINT \w+ FOREIGN KEY \((\w+)\)/) { my $c = $1; my $sig = $lineas[$i+1];
-            $sig =~ /REFERENCES (\w+) \((\w+)\)/ and push @refs, "Ref: $tabla.$c > $1.$2"; next; }
+            $sig =~ /REFERENCES (\w+) \((\w+)\)/ and push @refs, [$tabla, $c, $1, $2]; next; }
         next if $l =~ /^\s*(CONSTRAINT|--|AND|OR|\+|NVL2)/ || $l !~ /^\s+([A-Z][A-Z0-9_]*)\s+((?:NUMBER|VARCHAR2|DATE|TIMESTAMP)(?:\([\d, ]+\))?)(.*)$/;
         my ($c, $t, $resto) = ($1, $2, $3);
         my @at;
@@ -42,7 +42,14 @@ for my $t (@orden) {
     print "\n  Note: '" . esc($tnote{$t}) . "'\n" if $tnote{$t};
     print "}\n\n";
 }
-print "$_\n" for @refs;
+# Cardinalidad: llave foranea unica = uno a uno (-), si no muchos a uno (>); si la columna admite nulos, la relacion es opcional (?)
+for my $r (@refs) {
+    my ($t, $c, $rt, $rc) = @$r;
+    my $unica = grep { $_ eq $c } @{$uk{$t} || []};
+    my ($col) = grep { $_->[0] eq $c } @{$cols{$t}};
+    my $nula = !grep { $_ eq 'not null' } @{$col->[2]};
+    printf "Ref: %s.%s %s%s %s.%s\n", $t, $c, $unica ? '-' : '>', $nula ? '?' : '', $rt, $rc;
+}
 print "\n";
 for my $g (@grupos) { my @ts = grep { $grupo{$_} eq $g } @orden; (my $n = $g) =~ s/[^A-Za-z0-9]+/_/g;
     print "TableGroup $n {\n", (map { "  $_\n" } @ts), "}\n\n"; }
