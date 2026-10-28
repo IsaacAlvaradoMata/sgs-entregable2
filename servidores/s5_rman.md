@@ -65,3 +65,4 @@ BACKUP INCREMENTAL LEVEL 1 DATABASE TAG 'SGS_INC_L1' PLUS ARCHIVELOG;
 - Solo guarda los bloques que cambiaron desde el nivel 0.
 - Los datafiles sin cambios se omiten: `skipping datafile 00006 because it has not changed` (los de `PDB$SEED`).
 - Los archivos de redo ya respaldados también se omiten (`skipping archived logs ... already backed up`), por `BACKUP OPTIMIZATION ON`.
+- `LIST BACKUP SUMMARY` muestra las filas nuevas con `LV 1` y tag `SGS_INC_L1` (raíz y `SGSPDB`; `PDB$SEED` no tuvo cambios).
