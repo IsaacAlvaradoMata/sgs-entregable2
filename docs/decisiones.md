@@ -225,6 +225,14 @@ El enunciado pide cargar el padrón con la información actual, enlazarlo con cl
 3. **`SGS_PKG_PADRON.cargar`**: `MERGE` de distritos por codelec y de personas por cédula, sin borrar nunca; con `SAVEPOINT`/`ROLLBACK TO` y `SGS_PKG_ERRORES.registrar` como los demás packages. Sin `NOLOGGING` para que la standby reciba la carga.
 4. **Sin job:** "automáticamente" es que el procedimiento hace la carga completa solo; el enunciado no pide que corra programado. Se ejecuta cuando hay que cargar o actualizar el padrón.
 
+### B6 — Procesos programados y notificaciones
+
+**Definiciones de B6** · 2026-10-27
+
+1. **Organización.** Un package `SGS_PKG_PROCESOS` con un procedimiento por proceso y un job de `DBMS_SCHEDULER` (`SGS_JOB_*`) por procedimiento. Cada proceso se puede correr a demanda (llamando al procedimiento o con `DBMS_SCHEDULER.RUN_JOB`). Si un proceso no encuentra casos, no envía correo.
+2. **Frecuencia de las notificaciones (N1 a N5).** El enunciado no la define. Job **diario a las 07:00** (hora de Costa Rica) para cada una, y sin recordar a quién ya se avisó: mientras el caso siga, el correo se repite cada día como recordatorio. No se usan triggers para notificar: la morosidad y los vencidos dependen del paso del tiempo, N2 y N3 deben ser un solo correo agrupado, y un correo enviado desde un trigger sale aunque la operación haga `ROLLBACK`.
+3. **Hora de los jobs.** La fecha de inicio de cada job se fija en `America/Costa_Rica`, así el scheduler calcula la hora en Costa Rica aunque el servidor esté en otra zona (Docker está en UTC).
+
 ## Carril S — Servidores
 
 *(Se completa a medida que avanza Andrés.)*

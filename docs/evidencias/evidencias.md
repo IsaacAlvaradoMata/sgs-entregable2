@@ -677,3 +677,25 @@ Las tablas externas leen los archivos sin cargarlos: las 2179 líneas de distrit
 ![Recarga del padrón](capturas/B5_06_05_recarga.png)
 
 Al volver a cargar el mismo archivo no se inserta ni se actualiza nada: el `MERGE` solo toca a las personas nuevas o con datos distintos. La carga se puede repetir cada vez que el TSE publique un padrón nuevo sin duplicar datos ni reescribir millones de filas que llegarían a la standby como redo.
+
+# B6 — Procesos programados y notificaciones (`bd/07_procesos.sql`)
+
+Cada proceso es un procedimiento de `SGS_PKG_PROCESOS` ejecutado por un job de `DBMS_SCHEDULER`; también se puede correr a demanda. Los correos se envían con `SGS_PKG_CORREO` a los destinatarios configurados.
+
+## Aviso al cliente al 85 % de su límite
+
+![Clientes con crédito](capturas/B6_07_01_clientes_limite.png)
+
+Los clientes con crédito y el porcentaje que usan de su límite. Solo Laura (86,4 %) supera el umbral del parámetro `PCT_AVISO_CLIENTE` (85 %) y debe recibir el aviso.
+
+![Job del aviso a clientes](capturas/B6_07_02_job_aviso_clientes.png)
+
+El job `SGS_JOB_AVISO_CLIENTES` está habilitado y programado todos los días a las 07:00 en hora de Costa Rica; la próxima ejecución la calcula el scheduler en esa zona aunque el servidor esté en UTC.
+
+![Correo al cliente](capturas/B6_07_03_correo_cliente.png)
+
+Al correr el job a demanda, Laura recibe en su correo el aviso con el porcentaje usado, su límite, su saldo y lo disponible, con montos en colones.
+
+![Ejecución del job](capturas/B6_07_04_ejecucion_job.png)
+
+El scheduler registra la ejecución del job como exitosa, con su hora de inicio en Costa Rica y su duración.

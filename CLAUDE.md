@@ -200,7 +200,9 @@ Prohibido: `IF NOT EXISTS` en DDL, `BOOLEAN` en columnas, `SELECT` sin `FROM DUA
 - Conexiones DBeaver: `Docker - SGS_ADMIN (FREEPDB1)`, SYSTEM y `free (SYSDBA)` (entra como SYS a `FREEPDB1`). Bloques PL/SQL con `Cmd + Enter`; varias sentencias con `Option + X`.
 - El Docker está en hora UTC (6 h adelante); en los servidores se configura `America/Costa_Rica` (pendiente de Andrés).
 
-**Pendiente de Andrés:** RAM y disco libre de la HP (se necesitan ~16 GB RAM y ~100 GB de disco); definir `RESP_HORA_DIARIO`; instalar VirtualBox, Oracle Linux 8 y Oracle 21c EE; crear las dos VMs con red interna + NAT; zona horaria; wallet del correo y prueba de puertos en las dos VMs; decir si standby/RMAN necesitan alguna tabla. Ver `notas/pendientes.md`.
+**Avance de Andrés (informado 2026-10-27):** VMs en VirtualBox con Oracle Linux 8.10 + Oracle 21c EE: `SGSPRI` en `192.168.56.101` y `SGSSTB` en `192.168.56.102` (red solo anfitrión, existe solo dentro de la HP). CDB `SGS` (`DB_UNIQUE_NAME=SGSPRI`) con la PDB `SGSPDB` (servicio `sgspdb`, puerto 1521). Data Guard funcionando hacia `SGSSTB`. Para que Isaac llegue desde el Mac, las dos VMs se unen a la tailnet de Isaac con una llave de autorización que genera Isaac (sin exit node; Data Guard sigue por `192.168.56.x`).
+
+**Pendiente de Andrés:** definir `RESP_HORA_DIARIO`; unir las VMs a Tailscale y abrir el listener en la IP `100.x`; zona horaria; wallet del correo y prueba de puertos en las dos VMs; decir si standby/RMAN necesitan alguna tabla. Ver `notas/pendientes.md`.
 
 **Preguntas abiertas al profesor:**
 - ¿El aviso del 85% al coordinador "en cuentas por pagar" es de clientes o de proveedores? (la escala dice "Proveedores con límite de crédito").
