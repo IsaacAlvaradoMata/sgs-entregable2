@@ -112,7 +112,7 @@ bd/
 ├── 05_bitacoras.sql             ← B4  ✅
 ├── 06_padron.sql                ← B5  ✅
 ├── 07_procesos.sql              ← B6  ✅
-├── 08_seguridad.sql             ← B7
+├── 08_seguridad.sql             ← B7  ✅
 ├── 09_monitoreo.sql             ← B8
 └── 10_datos_operaciones.sql     ← datos de prueba de operaciones (con los packages; va al final)
 ```
@@ -197,7 +197,9 @@ Prohibido: `IF NOT EXISTS` en DDL, `BOOLEAN` en columnas, `SELECT` sin `FROM DUA
 - **B5 (padrón) completa en Docker:** `bd/06_padron.sql` (directorio `SGS_DIR_PADRON` desde SYSDBA, tablas externas `SGS_EXT_DISTELEC` y `SGS_EXT_PADRON` sobre los TXT del TSE, `SGS_PKG_PADRON.cargar` con `MERGE` que nunca borra). Cargados 2179 distritos y 3 762 240 personas; recargar el mismo archivo no cambia nada. Sin job: el enunciado no lo pide. Falta acordar con Andrés la carpeta en las VMs.
 - Instalación en SGSPRI (valores por servidor, orden, verificaciones): `servidores/configuracion/instalacion_bd_sgspri.md`.
 - **B6 (procesos y notificaciones) completa:** `bd/07_procesos.sql` con `SGS_PKG_PROCESOS` (N1 a N5 diarios a las 07:00; P1 inventario y P2 descuentos semanales; P3 premiación cada `PREMIO_FRECUENCIA_MESES` meses; P4 cierre diario a las 00:05 del día anterior) y 9 jobs de `DBMS_SCHEDULER` en hora de Costa Rica. Todos probados a demanda con su correo. Decisiones en `docs/decisiones.md`; N2 en espera de la respuesta del profesor.
-- **Siguiente:** B7 (seguridad: perfiles, roles con clave cifrada, usuarios).
+- **B7 (seguridad) completa:** `bd/08_seguridad.sql`: perfil `SGS_PERFIL_USUARIO`, usuarios por rol (confirmado por el profesor) con `DEFAULT ROLE NONE`, roles `SGS_ROL_*` con clave cifrada en `CLAVE_ROL_*`, `SGS_PKG_SEGURIDAD.asignar_clave_rol`, `SGS_PKG_ROLES.clave_rol` y `SGS_PKG_ACCESO.activar_rol` (derechos del invocador). `asignar_credito` pasó a `SGS_PKG_CREDITO` (en el 04). Probado con los 4 usuarios, bloqueo y reutilización.
+- **Scripts con muchos bloques PL/SQL se corren con SQL*Plus dentro del contenedor** (`docker exec -i oracle_una sqlplus -s -L "<usuario>/<clave>@//localhost:1521/FREEPDB1" < archivo`); las copias con claves de desarrollo van en `bd/local/` (en `.gitignore`). En 26ai la falta de privilegio sale como `ORA-41900`; en 21c es `ORA-01031`.
+- **Siguiente:** B8 (monitoreo: tablespaces, objetos inválidos, índices, sesiones; vistas materializadas y EXPLAIN PLAN).
 - Conexiones DBeaver: `Docker - SGS_ADMIN (FREEPDB1)`, SYSTEM y `free (SYSDBA)` (entra como SYS a `FREEPDB1`). Bloques PL/SQL con `Cmd + Enter`; varias sentencias con `Option + X`.
 - El Docker está en hora UTC (6 h adelante); en los servidores se configura `America/Costa_Rica` (pendiente de Andrés).
 

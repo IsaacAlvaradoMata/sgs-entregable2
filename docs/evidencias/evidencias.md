@@ -753,3 +753,41 @@ Los clientes con más compras netas del período reciben una orden de compra por
 ![Cierre diario](capturas/B6_07_15_correo_cierre.png)
 
 El gerente y el coordinador reciben el cierre del día: facturas y monto vendido, devoluciones y monto devuelto, total del día y el detalle por cajero.
+
+# B7 — Seguridad (`bd/08_seguridad.sql`)
+
+Un usuario de Oracle por rol (Gerente, Jefe Departamento, Jefe Proveeduría, Digitador), con un perfil de contraseñas y un rol protegido con clave. La clave de cada rol está cifrada en la tabla de parámetros y se activa con un procedimiento.
+
+![Perfil](capturas/B7_08_01_perfil.png)
+
+El perfil `SGS_PERFIL_USUARIO`: 3 intentos fallidos, bloqueo automático de 30 minutos (0,0208 días), contraseña de 60 días con 7 de gracia, sin reutilizar las últimas 5 ni las de los últimos 365 días, 2 sesiones simultáneas y 15 minutos de inactividad.
+
+![Usuarios](capturas/B7_08_02_usuarios.png)
+
+Los 4 usuarios abiertos, con el perfil y la clave que expira en 60 días. Cada uno tiene su rol, pero no activo al conectarse. Su único privilegio de sistema es `CREATE SESSION`; sus únicos privilegios de objeto directos son `EXECUTE` sobre los packages que activan el rol.
+
+![Roles](capturas/B7_08_03_roles.png)
+
+Los 4 roles están protegidos con contraseña y solo tienen privilegios de objeto (0 de sistema): consultas, inserciones y actualizaciones según su función, `EXECUTE` sobre los packages de su área y ningún `DELETE`.
+
+![Claves cifradas](capturas/B7_08_04_claves_cifradas.png)
+
+Las claves de los 4 roles guardadas cifradas (AES-256) en `SGS_PARAMETRO`; el valor almacenado no es la clave legible.
+
+![Digitador](capturas/B7_08_05_digitador.png)
+
+![Jefe de departamento](capturas/B7_08_06_jefe_depto.png)
+
+![Jefe de proveeduría](capturas/B7_08_07_jefe_proveeduria.png)
+
+![Gerente](capturas/B7_08_08_gerente.png)
+
+Cada usuario intenta las mismas acciones. Sin activar su rol, Oracle rechaza todo; tampoco puede activar el rol de otro (`ORA-20132`). Al activar su rol con `SGS_PKG_ACCESO.activar_rol`, que lee la clave cifrada, puede hacer solo lo de su función: el digitador vende, el jefe de departamento además administra descuentos, el jefe de proveeduría compra y modifica proveedores, y el gerente consulta las operaciones críticas, asigna crédito y ejecuta procesos. Ninguno puede borrar.
+
+![Bloqueo automático](capturas/B7_08_09_bloqueo.png)
+
+Tres intentos con clave incorrecta (`ORA-01017`) y al cuarto la cuenta queda bloqueada (`ORA-28000`).
+
+![Reutilización](capturas/B7_08_10_reutilizacion.png)
+
+El perfil impide volver a usar la misma contraseña (`ORA-28007`).

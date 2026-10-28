@@ -240,6 +240,17 @@ El enunciado pide cargar el padrón con la información actual, enlazarlo con cl
 9. **P3 (premiación).** Cada `PREMIO_FRECUENCIA_MESES` meses, el día 1 a las 08:00. Período = los últimos `PREMIO_FRECUENCIA_MESES` meses hasta hoy (el enunciado fija la frecuencia; cada premiación mira ese mismo período). Compras netas: facturas no anuladas menos sus notas de crédito, sin el cliente por defecto. Los `PREMIO_CANTIDAD_CLIENTES` mejores reciben una orden de `PREMIO_MONTO_ORDEN`; correo al coordinador. Si cambia la frecuencia, se vuelve a ejecutar el bloque de jobs.
 10. **P4 (cierre diario).** 00:05, cierra el día anterior (el procedimiento recibe la fecha para cerrar otro día a demanda). Facturas no anuladas y monto vendido, devoluciones (notas de crédito) y monto devuelto, total = vendido − devuelto, y detalle por cajero (quien facturó o hizo la devolución). Si el cierre de esa fecha ya existe se **recalcula y reemplaza**. Se guarda antes de enviar el correo a gerente y coordinador, para no perder el cierre si el correo falla. Se envía aunque el día no tenga ventas.
 
+### B7 — Seguridad
+
+**Definiciones de B7** · 2026-10-27
+
+1. **Usuarios por rol, no por persona** (confirmado por el profesor: mismo enfoque del laboratorio #3): `SGS_GERENTE`, `SGS_JEFE_DEPTO`, `SGS_JEFE_PROVEEDURIA`, `SGS_DIGITADOR`. Los usuarios del sistema (`SGS_USUARIO`) siguen siendo datos del negocio; el enunciado no les asigna roles.
+2. **Roles con clave** `SGS_ROL_*` (`IDENTIFIED BY`). La clave se guarda cifrada en `SGS_PARAMETRO` (`CLAVE_ROL_*`). Procedimientos: `SGS_PKG_SEGURIDAD.asignar_clave_rol` (administración: cambia la clave del rol y la guarda cifrada) y `SGS_PKG_ACCESO.activar_rol` (cada usuario: lee la clave con `SGS_PKG_ROLES.clave_rol`, que solo la entrega si el usuario tiene ese rol, y la activa con `DBMS_SESSION.SET_ROLE`; derechos del invocador porque `SET ROLE` no se permite con derechos del dueño).
+3. **Usuarios con `DEFAULT ROLE NONE`:** al conectarse no tienen permisos; deben activar su rol con la clave. Privilegios directos: solo `CREATE SESSION` (sistema) y `EXECUTE` sobre los tres packages necesarios para activar el rol (objeto). Todo lo demás, privilegios de objeto a través del rol. Ningún rol tiene `DELETE`.
+4. **Permisos por rol:** Digitador = ventas, pagos y devoluciones de clientes, registro de clientes y consultas de venta. Jefe Departamento = lo del digitador + promociones, descuentos, utilidad y descuento máximo por sucursal. Jefe Proveeduría = compras, devoluciones y pagos a proveedores, traslados, proveedores y productos. Gerente = consulta todo (menos `SGS_USUARIO` y tablas externas, incluida la bitácora), crédito, parámetros y procesos a demanda.
+5. **`asignar_credito` pasa a `SGS_PKG_CREDITO`** (antes en `SGS_PKG_CLIENTES`): los permisos de `EXECUTE` son por package, y el registro de clientes lo usa el digitador.
+6. **Perfil `SGS_PERFIL_USUARIO`** para los 4 usuarios: 3 intentos fallidos, bloqueo de 30 minutos, contraseña de 60 días con 7 de gracia, sin repetir las últimas 5 ni las de 365 días, 2 sesiones y 15 minutos de inactividad. `SGS_ADMIN` queda con el perfil por defecto.
+
 ## Carril S — Servidores
 
 *(Se completa a medida que avanza Andrés.)*

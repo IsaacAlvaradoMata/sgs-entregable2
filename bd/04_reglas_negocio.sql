@@ -113,9 +113,6 @@ CREATE OR REPLACE PACKAGE SGS_PKG_CLIENTES AS
                                  p_email             IN  VARCHAR2 DEFAULT NULL,
                                  p_pais_residencia   IN  VARCHAR2 DEFAULT 'CRI',
                                  p_id_cliente        OUT NUMBER);
-
-    -- Cambia el limite de credito; con limite mayor a 0 el cliente queda como preferencial
-    PROCEDURE asignar_credito (p_id_cliente IN NUMBER, p_limite IN NUMBER);
 END;
 /
 
@@ -239,6 +236,18 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_CLIENTES AS
             RAISE;
     END;
 
+END;
+/
+
+-- El credito va en un package aparte para darle permiso solo a la gerencia (el registro de clientes lo usan los digitadores)
+CREATE OR REPLACE PACKAGE SGS_PKG_CREDITO AS
+    -- Cambia el limite de credito; con limite mayor a 0 el cliente queda como preferencial
+    PROCEDURE asignar_credito (p_id_cliente IN NUMBER, p_limite IN NUMBER);
+END;
+/
+
+CREATE OR REPLACE PACKAGE BODY SGS_PKG_CREDITO AS
+
     -- Bloquea la cuenta con NOWAIT: si otra sesion la esta usando (ej. facturando), falla de inmediato
     PROCEDURE asignar_credito (p_id_cliente IN NUMBER, p_limite IN NUMBER) IS
         v_saldo     SGS_CUENTA_COBRAR.CXC_SALDO%TYPE;
@@ -269,11 +278,11 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_CLIENTES AS
     EXCEPTION
         WHEN e_bloqueado THEN
             ROLLBACK TO sp_asignar_credito;
-            SGS_PKG_ERRORES.registrar('SGS_PKG_CLIENTES.asignar_credito');
+            SGS_PKG_ERRORES.registrar('SGS_PKG_CREDITO.asignar_credito');
             RAISE_APPLICATION_ERROR(-20045, 'La cuenta del cliente ' || p_id_cliente || ' la esta usando otra sesion');
         WHEN OTHERS THEN
             ROLLBACK TO sp_asignar_credito;
-            SGS_PKG_ERRORES.registrar('SGS_PKG_CLIENTES.asignar_credito');
+            SGS_PKG_ERRORES.registrar('SGS_PKG_CREDITO.asignar_credito');
             RAISE;
     END;
 

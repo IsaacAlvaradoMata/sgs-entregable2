@@ -388,12 +388,12 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 **Definir antes de empezar:** qué puede hacer cada rol (Gerente, Jefe Departamento, Jefe Proveeduría, Digitador) y qué usuarios de prueba se crean.
 
 **Implementaciones:**
-- [ ] Perfiles de contraseña: expiración, intentos fallidos, bloqueo automático, reutilización.
-- [ ] Roles mínimos con solo los privilegios necesarios (sin `DBA`, `CONNECT`, `RESOURCE`).
-- [ ] Distinción clara entre privilegios de sistema y de objeto.
-- [ ] Roles protegidos con clave; claves cifradas en la tabla de parámetros.
-- [ ] Procedimientos que activan los roles con su clave.
-- [ ] Usuarios de prueba por rol.
+- [x] Perfiles de contraseña: expiración, intentos fallidos, bloqueo automático, reutilización.
+- [x] Roles mínimos con solo los privilegios necesarios (sin `DBA`, `CONNECT`, `RESOURCE`).
+- [x] Distinción clara entre privilegios de sistema y de objeto.
+- [x] Roles protegidos con clave; claves cifradas en la tabla de parámetros.
+- [x] Procedimientos que activan los roles con su clave.
+- [x] Usuarios de prueba por rol.
 
 **Cuidados:** activar roles con clave desde un procedimiento tiene restricciones en Oracle; probarlo temprano dentro de la etapa.
 
@@ -673,8 +673,8 @@ Estado: ⬜ pendiente · 🟨 en progreso · ✅ listo
 
 | Código | Requerimiento | Etapa | Rúbrica | Estado |
 |---|---|---|---|---|
-| SEG1 | Perfiles, roles mínimos, usuarios | B7 | Usuarios, roles, perfiles, privilegios (8 %) | ⬜ |
-| SEG2 | Roles con clave cifrada y procedimientos que la asignan | B7 | Contraseñas (4 %), admin. de privilegios (3 %) | ⬜ |
+| SEG1 | Perfiles, roles mínimos, usuarios | B7 | Usuarios, roles, perfiles, privilegios (8 %) | ✅ |
+| SEG2 | Roles con clave cifrada y procedimientos que la asignan | B7 | Contraseñas (4 %), admin. de privilegios (3 %) | ✅ |
 
 ### Notificaciones
 
@@ -710,7 +710,7 @@ Estado: ⬜ pendiente · 🟨 en progreso · ✅ listo
 | RB3 | Manejo de excepciones | Transversal | Excepciones (2,5 %), bitácora de errores (3 %) | ⬜ |
 | RB4 | Auditoría con triggers | B4 | Triggers (2,5 %), auditoría (5 % / 3 %) | ✅ |
 | RB5 | Todo con `DBMS_SCHEDULER` | Transversal | Automatizaciones (5 %), procesos programados (5 %) | ⬜ |
-| RB6 | Password profile, roles mínimos, privilegios | B7 | Seguridad (5 %) | ⬜ |
+| RB6 | Password profile, roles mínimos, privilegios | B7 | Seguridad (5 %) | ✅ |
 | RB7 | `DBMS_CRYPTO` | B2 | Seguridad / contraseñas | ⬜ |
 | RB8 | `EXPLAIN PLAN` | B8 | Proc/func almacenadas | ⬜ |
 | RB9 | Vistas materializadas (2) | B8 | Proc/func almacenadas | ⬜ |

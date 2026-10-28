@@ -13,7 +13,7 @@ BEGIN
     -- Clienta nacional registrada desde el padron, con credito
     SGS_PKG_CLIENTES.registrar_nacional(p_cedula => '199990005', p_sexo => 'F', p_estado_civil => 'S',
                                         p_email => 'sgs.notificaciones.una+laura@gmail.com', p_id_cliente => v_id);
-    SGS_PKG_CLIENTES.asignar_credito(v_id, 150000);
+    SGS_PKG_CREDITO.asignar_credito(v_id, 150000);
 
     -- Cambio directo del costo del arroz (queda en el historial de precios)
     UPDATE SGS_PRODUCTO SET PRO_PRECIO_COSTO = 1550 WHERE PRO_CODIGO = 'ABA-001';

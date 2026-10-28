@@ -21,7 +21,7 @@ BEGIN
       FROM SGS_CLIENTE c
       JOIN SGS_CUENTA_COBRAR x ON x.CXC_ID_CLIENTE = c.CLI_ID
      WHERE c.CLI_CEDULA = '199990002';
-    SGS_PKG_CLIENTES.asignar_credito(v_cliente, v_limite + 50000);
+    SGS_PKG_CREDITO.asignar_credito(v_cliente, v_limite + 50000);
     -- Facturacion y clientes: venta a credito a Carlos y un abono
     SGS_PKG_VENTAS.registrar_venta(p_sucursal => 'Sucursal San Isidro', p_usuario => 'mcastro', p_cliente => '199990002', p_es_credito => 'S',
         p_lineas => SGS_PKG_VENTAS.t_lineas(1 => SGS_PKG_VENTAS.t_linea(codigo => 'BEB-002', cantidad => 6)),
