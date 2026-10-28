@@ -230,7 +230,7 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 *d) Lo que acompaña al modelo*
 - [x] Tablespaces, secuencias, índices (incluidos los que necesitarán las consultas de los requerimientos), comentarios y datos de prueba.
 - [x] Datos de prueba pensados para demostrar los requerimientos (clientes cerca del 85 %, productos por vencer, lotes antiguos, morosos, etc.). *Catálogos en B1; operaciones después de B3, cargadas con los packages (ver `docs/decisiones.md`).*
-- [ ] Diagrama relacional actualizado.
+- [x] Diagrama relacional actualizado.
 - [ ] Diccionario de datos actualizado.
 
 **Cuidados:**
