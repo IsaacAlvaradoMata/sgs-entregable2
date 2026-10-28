@@ -121,3 +121,19 @@ SELECT * FROM system.prueba_rman;
 ```
 
 > **Restore vs. recovery:** si se intenta poner el tablespace en línea solo con el `RESTORE`, Oracle responde `ORA-01113: file 13 needs media recovery`: el archivo quedó en el estado del respaldo y le faltan los cambios posteriores. El `RECOVER` los aplica desde los archivos de redo.
+
+## 6. Llaves SSH entre los servidores (sin contraseña)
+
+Los procesos automáticos no pueden escribir contraseñas, así que el usuario `oracle` de cada servidor entra al otro con una llave SSH. Se hace en los dos sentidos para que siga funcionando después de un switchover.
+
+```
+# En SGSPRI (como oracle)
+ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
+ssh-copy-id oracle@sgsstb          # pide la contraseña de oracle por única vez
+ssh oracle@sgsstb hostname         # sgsstb.localdomain, sin contraseña
+
+# En SGSSTB (como oracle)
+ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
+ssh-copy-id oracle@sgspri
+ssh oracle@sgspri hostname         # sgspri.localdomain, sin contraseña
+```
