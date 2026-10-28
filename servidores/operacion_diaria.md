@@ -7,44 +7,50 @@ Rutina para cada sesión de trabajo y para la defensa. Las bases **no arrancan s
 
 ## Encender (primero la principal, después la standby)
 
-1. VirtualBox: encender `SGSPRI` y luego `SGSSTB`. Entrar por SSH desde la HP:
+Desde que existe el broker y se hacen switchovers, **el rol de cada servidor puede cambiar**. Por eso primero se monta la base y se pregunta el rol, y después se abre en el orden correcto.
+
+1. VirtualBox: encender `SGSPRI` y `SGSSTB`. Entrar por SSH desde la HP:
    ```
    ssh root@192.168.56.101
    ssh root@192.168.56.102
    ```
 
-2. **`SGSPRI`** (como `oracle`):
+2. En **cada** servidor (como `oracle`):
    ```
    su - oracle
    lsnrctl start
    sqlplus / as sysdba
-   STARTUP;
-   SELECT name, database_role, open_mode FROM v$database;   -- SGS  PRIMARY  READ WRITE
+   STARTUP MOUNT;
+   SELECT db_unique_name, database_role FROM v$database;
+   ```
+
+3. En el que diga **`PRIMARY`** (normalmente `SGSPRI`), primero:
+   ```
+   ALTER DATABASE OPEN;
+   SELECT name, database_role, open_mode FROM v$database;   -- PRIMARY  READ WRITE
    SHOW PDBS                                                 -- SGSPDB  READ WRITE (abre sola por SAVE STATE)
    ```
 
-3. **`SGSSTB`** (como `oracle`):
+4. En el que diga **`PHYSICAL STANDBY`** (normalmente `SGSSTB`):
    ```
-   su - oracle
-   lsnrctl start
-   sqlplus / as sysdba
-   STARTUP;
+   ALTER DATABASE OPEN READ ONLY;
    ALTER PLUGGABLE DATABASE SGSPDB OPEN READ ONLY;
-   ALTER DATABASE RECOVER MANAGED STANDBY DATABASE DISCONNECT FROM SESSION;
-   SELECT name, database_role, open_mode FROM v$database;   -- SGS  PHYSICAL STANDBY  READ ONLY WITH APPLY
+   SELECT database_role, open_mode FROM v$database;   -- PHYSICAL STANDBY  READ ONLY WITH APPLY
    ```
+   El **broker arranca solo** la aplicación de cambios; puede tardar hasta un minuto en pasar de `READ ONLY` a `READ ONLY WITH APPLY`. Si no pasa, desde `dgmgrl sys@SGSPRI`: `EDIT DATABASE SGSSTB SET STATE='APPLY-ON';` (con el broker activo no se usa `RECOVER MANAGED STANDBY DATABASE`).
+
+5. Revisar la configuración: `dgmgrl sys@SGSPRI` → `SHOW CONFIGURATION;` → `SUCCESS`.
 
 Justo después de `lsnrctl start`, los servicios estáticos aparecen con `status UNKNOWN`; es normal.
 
 ## Apagar (primero la standby, después la principal)
 
-1. **`SGSSTB`** (como `oracle`, `sqlplus / as sysdba`):
+1. **Standby** (normalmente `SGSSTB`; como `oracle`, `sqlplus / as sysdba`):
    ```
-   ALTER DATABASE RECOVER MANAGED STANDBY DATABASE CANCEL;
    SHUTDOWN IMMEDIATE;
    exit
    ```
-2. **`SGSPRI`** (como `oracle`, `sqlplus / as sysdba`):
+2. **Principal** (normalmente `SGSPRI`; como `oracle`, `sqlplus / as sysdba`):
    ```
    SHUTDOWN IMMEDIATE;
    exit
