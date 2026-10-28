@@ -4,7 +4,7 @@ Guía de trabajo para Isaac y Andrés. Ordena **qué se hace, en qué orden y po
 
 > **Qué NO es esta guía:** no explica *cómo* se implementa cada cosa (código, comandos). Eso se define al llegar a cada etapa, con lo que realmente se necesite en ese momento.
 >
-> **Es una guía viva:** cuando se tome una decisión o algo cambie, se actualiza aquí y se anota en [`notas/decisiones.md`](../notas/decisiones.md).
+> **Es una guía viva:** cuando se tome una decisión o algo cambie, se actualiza aquí y se anota en [`docs/decisiones.md`](docs/decisiones.md).
 
 ---
 
@@ -158,7 +158,7 @@ flowchart TD
 - [x] Cuenta de correo del proyecto creada (remitente de las notificaciones).
 - [ ] Preguntas al profesor enviadas (ver [pendientes](#pendientes-de-confirmar-con-el-profesor)).
 
-**Terminado cuando…** todo lo anterior está anotado en `notas/decisiones.md`.
+**Terminado cuando…** todo lo anterior está anotado en `docs/decisiones.md`.
 
 ---
 
@@ -198,37 +198,39 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 - Cómo se enlaza el padrón con los clientes (relación opcional: extranjeros y empresas no están en el padrón).
 - Cómo se modelan los lotes (separados de la existencia y ligados a la compra).
 
+✅ Las 6 definiciones quedaron cerradas el 2026-10-26 (decisiones 1 a 6 de B1 en [`docs/decisiones.md`](docs/decisiones.md)).
+
 **Implementaciones:**
 
 *a) Correcciones del profesor al E1*
-- [ ] Tabla de países; nacionalidad y residencia del cliente pasan a referenciarla.
-- [ ] Ningún `CLOB`: pasar a `VARCHAR2(250)`.
-- [ ] Todos los estados como `VARCHAR2(1)` con `CHECK` de valores permitidos.
-- [ ] Género como `VARCHAR2(1)` con `CHECK`; mismo criterio para otros atributos codificados.
-- [ ] Usuario dueño `SGS_ADMIN` con privilegios explícitos (sin `CONNECT`, `RESOURCE` ni `DBA`).
+- [x] Tabla de países; nacionalidad y residencia del cliente pasan a referenciarla.
+- [x] Ningún `CLOB`: pasar a `VARCHAR2(250)`.
+- [x] Todos los estados como `VARCHAR2(1)` con `CHECK` de valores permitidos.
+- [x] Género como `VARCHAR2(1)` con `CHECK`; mismo criterio para otros atributos codificados.
+- [x] Usuario dueño `SGS_ADMIN` con privilegios explícitos (sin `CONNECT`, `RESOURCE` ni `DBA`).
 
 *b) Integración de lo fuerte del esquema de Andrés*
-- [ ] Cuentas por cobrar y por pagar con sus abonos y estado.
-- [ ] Condición (contado/crédito) y estado en las facturas de venta y de proveedor.
-- [ ] Lote separado de la existencia, ligado al detalle de compra y con fecha de vencimiento.
-- [ ] Descuento con días desde ingreso / días para vencer y su validación por tipo de criterio.
+- [x] Cuentas por cobrar y por pagar con sus abonos y estado.
+- [x] Condición (contado/crédito) y estado en las facturas de venta y de proveedor.
+- [x] Lote separado de la existencia, ligado al detalle de compra y con fecha de vencimiento.
+- [x] Descuento con días desde ingreso / días para vencer y su validación por tipo de criterio.
 
 *c) Estructuras nuevas que pide el E2*
-- [ ] Tabla de parámetros (incluye espacio para claves cifradas de roles y correo).
-- [ ] Configuración de correo y destinatarios de notificaciones (gerente, coordinador, DBA).
-- [ ] Bitácora de errores.
-- [ ] Bitácoras de auditoría de las 7 áreas (según la estrategia decidida).
-- [ ] Movimientos de inventario.
-- [ ] Tipos de promoción y acciones otorgadas por factura.
-- [ ] Detalle de productos incluidos en un descuento.
-- [ ] Padrón nacional y su enlace con clientes.
-- [ ] Cierre diario (encabezado) y su detalle por cajero.
-- [ ] Órdenes de compra para clientes premiados.
+- [x] Tabla de parámetros (incluye espacio para claves cifradas de roles y correo).
+- [x] Configuración de correo y destinatarios de notificaciones (gerente, coordinador, DBA).
+- [x] Bitácora de errores.
+- [x] Bitácoras de auditoría de las 7 áreas (según la estrategia decidida).
+- [x] Movimientos de inventario.
+- [x] Tipos de promoción y acciones otorgadas por factura.
+- [x] Detalle de productos incluidos en un descuento.
+- [x] Padrón nacional y su enlace con clientes.
+- [x] Cierre diario (encabezado) y su detalle por cajero.
+- [x] Órdenes de compra para clientes premiados.
 
 *d) Lo que acompaña al modelo*
-- [ ] Tablespaces, secuencias, índices (incluidos los que necesitarán las consultas de los requerimientos), comentarios y datos de prueba.
-- [ ] Datos de prueba pensados para demostrar los requerimientos (clientes cerca del 85 %, productos por vencer, lotes antiguos, morosos, etc.).
-- [ ] Diagrama relacional actualizado.
+- [x] Tablespaces, secuencias, índices (incluidos los que necesitarán las consultas de los requerimientos), comentarios y datos de prueba.
+- [x] Datos de prueba pensados para demostrar los requerimientos (clientes cerca del 85 %, productos por vencer, lotes antiguos, morosos, etc.). *Catálogos en B1; operaciones después de B3, cargadas con los packages (ver `docs/decisiones.md`).*
+- [x] Diagrama relacional actualizado.
 - [ ] Diccionario de datos actualizado.
 
 **Cuidados:**
@@ -256,11 +258,11 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 - Qué datos se cifran (clave del correo, claves de roles, otras configuraciones).
 
 **Implementaciones:**
-- [ ] Package de parámetros: leer y actualizar valores de forma centralizada.
-- [ ] Package de errores: registrar en la bitácora de errores desde cualquier procedimiento.
-- [ ] Package de cifrado con `DBMS_CRYPTO`: cifrar y descifrar datos sensibles.
-- [ ] Package de correo: enviar un correo leyendo remitente, clave (descifrada), servidor y destinatarios desde parámetros.
-- [ ] Prueba real: llega un correo a una bandeja externa.
+- [x] Package de parámetros: leer y actualizar valores de forma centralizada.
+- [x] Package de errores: registrar en la bitácora de errores desde cualquier procedimiento.
+- [x] Package de cifrado con `DBMS_CRYPTO`: cifrar y descifrar datos sensibles.
+- [x] Package de correo: enviar un correo leyendo remitente, clave (descifrada), servidor y destinatarios desde parámetros.
+- [x] Prueba real: llega un correo a una bandeja externa.
 
 **Cuidados:**
 - **El correo es lo de mayor riesgo técnico del carril B**: probarlo lo antes posible.
@@ -284,18 +286,20 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 - Criterio para elegir de qué lote se descuenta en una venta (por ejemplo, el que vence primero).
 - Qué cuenta como "producto con precio de costo diferente" (compra con costo distinto, cambio directo, o ambos).
 
+✅ Las 4 definiciones (incluida la arquitectura packages + triggers) quedaron cerradas el 2026-10-26; ver `docs/decisiones.md`.
+
 **Implementaciones:**
-- [ ] Factura de venta pendiente → sube el saldo del cliente y entra a cuentas por cobrar.
-- [ ] Factura de proveedor pendiente → sube el saldo adeudado y entra a cuentas por pagar.
-- [ ] Validación de límites de crédito (clientes y proveedores): si se supera, no se guarda como pendiente.
-- [ ] Pagos/abonos → bajan el saldo; si se cancela completo, la factura pasa a cancelada.
-- [ ] Compras → crean lote y suben el inventario.
-- [ ] Ventas → bajan el inventario.
-- [ ] Devoluciones (de cliente y a proveedor) → ajustan el inventario.
-- [ ] Cada movimiento de inventario queda registrado.
-- [ ] Cambio de precio de costo → historial de precios.
-- [ ] Promociones → cálculo automático de acciones según productos patrocinadores.
-- [ ] Concurrencia con `SELECT FOR UPDATE` (`NOWAIT`/`WAIT`) al aplicar pagos y descontar existencias.
+- [x] Factura de venta pendiente → sube el saldo del cliente y entra a cuentas por cobrar.
+- [x] Factura de proveedor pendiente → sube el saldo adeudado y entra a cuentas por pagar.
+- [x] Validación de límites de crédito (clientes y proveedores): si se supera, no se guarda como pendiente.
+- [x] Pagos/abonos → bajan el saldo; si se cancela completo, la factura pasa a cancelada.
+- [x] Compras → crean lote y suben el inventario.
+- [x] Ventas → bajan el inventario.
+- [x] Devoluciones (de cliente y a proveedor) → ajustan el inventario.
+- [x] Cada movimiento de inventario queda registrado.
+- [x] Cambio de precio de costo → historial de precios.
+- [x] Promociones → cálculo automático de acciones según productos patrocinadores.
+- [x] Concurrencia con `SELECT FOR UPDATE` (`NOWAIT`/`WAIT`) al aplicar pagos y descontar existencias.
 
 **Cuidados:**
 - Varias reglas se disparan con la misma operación: definir bien el orden y que todo ocurra en una sola transacción.
@@ -314,9 +318,9 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 **Depende de:** B2
 
 **Implementaciones:**
-- [ ] Triggers de auditoría para: facturación, cambio de precios, movimientos de inventario, clientes, proveedores, promociones, descuentos.
-- [ ] Cada registro guarda quién, cuándo, qué operación y valores anterior/nuevo.
-- [ ] Auditoría de operaciones críticas (pagos, anulaciones, cambios de límites, etc.).
+- [x] Triggers de auditoría para: facturación, cambio de precios, movimientos de inventario, clientes, proveedores, promociones, descuentos.
+- [x] Cada registro guarda quién, cuándo, qué operación y valores anterior/nuevo.
+- [x] Auditoría de operaciones críticas (pagos, anulaciones, cambios de límites, etc.).
 
 **Cuidados:** las bitácoras van en el tablespace de auditoría; no deben bloquear la operación si el registro falla.
 
@@ -335,8 +339,8 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 **Definir antes de empezar:** fuente y formato del padrón vigente, y cómo se "carga automáticamente" (desde archivo, programado o a demanda).
 
 **Implementaciones:**
-- [ ] Procedimiento de carga automática del padrón con registro de errores.
-- [ ] Enlace cliente ↔ padrón para obtener los datos básicos de la persona.
+- [x] Procedimiento de carga automática del padrón con registro de errores.
+- [x] Enlace cliente ↔ padrón para obtener los datos básicos de la persona.
 - [ ] Ubicación del archivo en el servidor acordada con Andrés.
 
 **Cuidados:**
@@ -356,16 +360,16 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 **Depende de:** B3 (y B2 para el correo)
 
 **Implementaciones:**
-- [ ] Semanal: productos por vencer y productos con más de 6 meses en bodega → coordinador.
-- [ ] Semanal: descuentos planeados → incluir productos al detalle del descuento.
-- [ ] Semestral: top 10 clientes → orden de compra → coordinador.
-- [ ] Diario: cierre diario (totales y detalle por cajero) → coordinador y gerente.
-- [ ] Clientes al 85 % de su límite → correo al propio cliente.
-- [ ] Lista del 85 % → coordinador (ver pendiente N2).
-- [ ] Cuentas por pagar al 70 % → **un solo correo** al gerente con todos los proveedores.
-- [ ] Morosos (saldo pendiente y último pago con más de un mes) → gerente y coordinador.
-- [ ] Productos vencidos con total → coordinador.
-- [ ] Cada proceso se puede ejecutar **a demanda** para la revisión.
+- [x] Semanal: productos por vencer y productos con más de 6 meses en bodega → coordinador.
+- [x] Semanal: descuentos planeados → incluir productos al detalle del descuento.
+- [x] Semestral: top 10 clientes → orden de compra → coordinador.
+- [x] Diario: cierre diario (totales y detalle por cajero) → coordinador y gerente.
+- [x] Clientes al 85 % de su límite → correo al propio cliente.
+- [x] Lista del 85 % → coordinador (ver pendiente N2).
+- [x] Cuentas por pagar al 70 % → **un solo correo** al gerente con todos los proveedores.
+- [x] Morosos (saldo pendiente y último pago con más de un mes) → gerente y coordinador.
+- [x] Productos vencidos con total → coordinador.
+- [x] Cada proceso se puede ejecutar **a demanda** para la revisión.
 
 **Cuidados:** frecuencias y umbrales desde parámetros; los correos agrupados también se evalúan ("notificaciones agrupadas correctamente").
 
@@ -384,12 +388,12 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 **Definir antes de empezar:** qué puede hacer cada rol (Gerente, Jefe Departamento, Jefe Proveeduría, Digitador) y qué usuarios de prueba se crean.
 
 **Implementaciones:**
-- [ ] Perfiles de contraseña: expiración, intentos fallidos, bloqueo automático, reutilización.
-- [ ] Roles mínimos con solo los privilegios necesarios (sin `DBA`, `CONNECT`, `RESOURCE`).
-- [ ] Distinción clara entre privilegios de sistema y de objeto.
-- [ ] Roles protegidos con clave; claves cifradas en la tabla de parámetros.
-- [ ] Procedimientos que activan los roles con su clave.
-- [ ] Usuarios de prueba por rol.
+- [x] Perfiles de contraseña: expiración, intentos fallidos, bloqueo automático, reutilización.
+- [x] Roles mínimos con solo los privilegios necesarios (sin `DBA`, `CONNECT`, `RESOURCE`).
+- [x] Distinción clara entre privilegios de sistema y de objeto.
+- [x] Roles protegidos con clave; claves cifradas en la tabla de parámetros.
+- [x] Procedimientos que activan los roles con su clave.
+- [x] Usuarios de prueba por rol.
 
 **Cuidados:** activar roles con clave desde un procedimiento tiene restricciones en Oracle; probarlo temprano dentro de la etapa.
 
@@ -406,13 +410,13 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 **Depende de:** B2 (correo) y B3 (datos para las vistas y consultas)
 
 **Implementaciones:**
-- [ ] Package de monitoreo: crecimiento de la base, uso de tablespaces, sesiones y errores.
-- [ ] Diario: tablespaces por encima del 85 % → notificar.
-- [ ] Diario: objetos inválidos → notificar.
-- [ ] Diario: índices dañados → notificar.
-- [ ] Vista materializada de ventas mensuales.
-- [ ] Vista materializada de inventario consolidado.
-- [ ] `EXPLAIN PLAN` sobre las consultas de los requerimientos (costos e índices usados), con conclusiones.
+- [x] Package de monitoreo: crecimiento de la base, uso de tablespaces, sesiones y errores.
+- [x] Diario: tablespaces por encima del 85 % → notificar.
+- [x] Diario: objetos inválidos → notificar.
+- [x] Diario: índices dañados → notificar.
+- [x] Vista materializada de ventas mensuales.
+- [x] Vista materializada de inventario consolidado.
+- [x] `EXPLAIN PLAN` sobre las consultas de los requerimientos (costos e índices usados), con conclusiones.
 
 **Terminado cuando…** las revisiones diarias notifican al provocar el problema a propósito, y las vistas se refrescan solas.
 
@@ -652,16 +656,16 @@ Estado: ⬜ pendiente · 🟨 en progreso · ✅ listo
 | F01 | Cuentas por cobrar automáticas | B3 | Act. automática de CxC (4 %) | ⬜ |
 | F02 | Cuentas por pagar automáticas | B3 | Act. automática de CxP (4 %) | ⬜ |
 | F03 | Cambio automático de estado de factura | B3 | Cambio automático del estado (3 %) | ⬜ |
-| F04 | Padrón nacional y adaptación del modelo | B1 + B5 | Integración del padrón (6 %) | ⬜ |
+| F04 | Padrón nacional y adaptación del modelo | B1 + B5 | Integración del padrón (6 %) | ✅ |
 | F05 | Inventario automático en compras y ventas | B3 | Act. automática del inventario (5 %) | ⬜ |
 | F06 | Inventario automático en devoluciones | B3 | Act. automática del inventario (5 %) | ⬜ |
 | F07 | Historial automático de precios | B3 | Historial de precios (3 %) | ⬜ |
 | F08 | Límites al facturar como pendiente | B3 | Validación de límites de crédito (4 %) | ⬜ |
-| F09 | Semanal: por vencer y más de 6 meses | B6 | Próximos a vencer (3 %), antigüedad (3 %) | ⬜ |
+| F09 | Semanal: por vencer y más de 6 meses | B6 | Próximos a vencer (3 %), antigüedad (3 %) | ✅ |
 | F10 | Tipos de promoción y acciones automáticas | B1 + B3 | Admin. automática de promociones (4 %) | ⬜ |
-| F11 | Descuentos planeados semanales | B6 | Admin. de descuentos programados (3 %) | ⬜ |
-| F12 | Top 10 clientes y orden de compra | B6 | Clientes premiados (4 %) | ⬜ |
-| F13 | Bitácoras de las 7 áreas | B4 | Bitácora de cambios (4 %) | ⬜ |
+| F11 | Descuentos planeados semanales | B6 | Admin. de descuentos programados (3 %) | ✅ |
+| F12 | Top 10 clientes y orden de compra | B6 | Clientes premiados (4 %) | ✅ |
+| F13 | Bitácoras de las 7 áreas | B4 | Bitácora de cambios (4 %) | ✅ |
 | F14 | Notificaciones parametrizadas, clave cifrada | B2 | Notificaciones / cifrado | ⬜ |
 | F15 | Correo directo desde Oracle, sin VPN | B2 + I3 | Notificaciones | ⬜ |
 
@@ -669,22 +673,22 @@ Estado: ⬜ pendiente · 🟨 en progreso · ✅ listo
 
 | Código | Requerimiento | Etapa | Rúbrica | Estado |
 |---|---|---|---|---|
-| SEG1 | Perfiles, roles mínimos, usuarios | B7 | Usuarios, roles, perfiles, privilegios (8 %) | ⬜ |
-| SEG2 | Roles con clave cifrada y procedimientos que la asignan | B7 | Contraseñas (4 %), admin. de privilegios (3 %) | ⬜ |
+| SEG1 | Perfiles, roles mínimos, usuarios | B7 | Usuarios, roles, perfiles, privilegios (8 %) | ✅ |
+| SEG2 | Roles con clave cifrada y procedimientos que la asignan | B7 | Contraseñas (4 %), admin. de privilegios (3 %) | ✅ |
 
 ### Notificaciones
 
 | Código | Requerimiento | Etapa | Rúbrica | Estado |
 |---|---|---|---|---|
-| N1 | Cliente al 85 % de su límite | B6 | Clientes con límite de crédito (2 %) | ⬜ |
-| N2 | Lista del 85 % al coordinador *(confirmar)* | B6 | Proveedores con límite de crédito (2 %) | ⬜ |
-| N3 | Gerente al 70 % de CxP, un solo correo | B6 | Notificaciones agrupadas (2 %) | ⬜ |
-| N4 | Clientes morosos | B6 | Clientes morosos (2 %) | ⬜ |
-| N5 | Productos vencidos con total | B6 | Productos vencidos (2 %) | ⬜ |
-| N6 | Cierre diario automático | B1 + B6 | Cierre diario automático (4 %) | ⬜ |
-| N7 | Tablespaces sobre el 85 % | B8 | Verificación de tablespaces (3 %) | ⬜ |
-| N8 | Objetos inválidos | B8 | Verificación de objetos inválidos (2 %) | ⬜ |
-| N9 | Índices dañados | B8 | Verificación del estado de índices (2 %) | ⬜ |
+| N1 | Cliente al 85 % de su límite | B6 | Clientes con límite de crédito (2 %) | ✅ |
+| N2 | Lista del 85 % al coordinador *(confirmar)* | B6 | Proveedores con límite de crédito (2 %) | ✅ |
+| N3 | Gerente al 70 % de CxP, un solo correo | B6 | Notificaciones agrupadas (2 %) | ✅ |
+| N4 | Clientes morosos | B6 | Clientes morosos (2 %) | ✅ |
+| N5 | Productos vencidos con total | B6 | Productos vencidos (2 %) | ✅ |
+| N6 | Cierre diario automático | B1 + B6 | Cierre diario automático (4 %) | ✅ |
+| N7 | Tablespaces sobre el 85 % | B8 | Verificación de tablespaces (3 %) | ✅ |
+| N8 | Objetos inválidos | B8 | Verificación de objetos inválidos (2 %) | ✅ |
+| N9 | Índices dañados | B8 | Verificación del estado de índices (2 %) | ✅ |
 
 ### Standby
 
@@ -704,16 +708,16 @@ Estado: ⬜ pendiente · 🟨 en progreso · ✅ listo
 | RB1 | Arquitectura en packages | Transversal | Arquitectura (8 %) | ⬜ |
 | RB2 | Commit, rollback, savepoint | Transversal | Manejo transaccional (2,5 %) | ⬜ |
 | RB3 | Manejo de excepciones | Transversal | Excepciones (2,5 %), bitácora de errores (3 %) | ⬜ |
-| RB4 | Auditoría con triggers | B4 | Triggers (2,5 %), auditoría (5 % / 3 %) | ⬜ |
+| RB4 | Auditoría con triggers | B4 | Triggers (2,5 %), auditoría (5 % / 3 %) | ✅ |
 | RB5 | Todo con `DBMS_SCHEDULER` | Transversal | Automatizaciones (5 %), procesos programados (5 %) | ⬜ |
-| RB6 | Password profile, roles mínimos, privilegios | B7 | Seguridad (5 %) | ⬜ |
+| RB6 | Password profile, roles mínimos, privilegios | B7 | Seguridad (5 %) | ✅ |
 | RB7 | `DBMS_CRYPTO` | B2 | Seguridad / contraseñas | ⬜ |
-| RB8 | `EXPLAIN PLAN` | B8 | Proc/func almacenadas | ⬜ |
-| RB9 | Vistas materializadas (2) | B8 | Proc/func almacenadas | ⬜ |
+| RB8 | `EXPLAIN PLAN` | B8 | Proc/func almacenadas | ✅ |
+| RB9 | Vistas materializadas (2) | B8 | Proc/func almacenadas | ✅ |
 | RB10 | Parametrización en tablas | B2 + transversal | Varios | ⬜ |
 | RB11 | Concurrencia | B3 | Proc/func almacenadas | ⬜ |
 | RB12 | Integridad por package o trigger | Transversal | Triggers | ⬜ |
-| RB13 | Package de monitoreo | B8 | Monitoreo (5 %), sesiones (3 %) | ⬜ |
+| RB13 | Package de monitoreo | B8 | Monitoreo (5 %), sesiones (3 %) | ✅ |
 | RB14 | Failover, switchover, recuperación, sincronización | S3 + S6 | Recuperación, failover y switchover (5 %) | ⬜ |
 | RB15 | RMAN: full, incremental, restore, recovery | S5 | Estrategia de respaldo (5 %) | ⬜ |
 
