@@ -410,13 +410,13 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 **Depende de:** B2 (correo) y B3 (datos para las vistas y consultas)
 
 **Implementaciones:**
-- [ ] Package de monitoreo: crecimiento de la base, uso de tablespaces, sesiones y errores.
-- [ ] Diario: tablespaces por encima del 85 % → notificar.
-- [ ] Diario: objetos inválidos → notificar.
-- [ ] Diario: índices dañados → notificar.
-- [ ] Vista materializada de ventas mensuales.
-- [ ] Vista materializada de inventario consolidado.
-- [ ] `EXPLAIN PLAN` sobre las consultas de los requerimientos (costos e índices usados), con conclusiones.
+- [x] Package de monitoreo: crecimiento de la base, uso de tablespaces, sesiones y errores.
+- [x] Diario: tablespaces por encima del 85 % → notificar.
+- [x] Diario: objetos inválidos → notificar.
+- [x] Diario: índices dañados → notificar.
+- [x] Vista materializada de ventas mensuales.
+- [x] Vista materializada de inventario consolidado.
+- [x] `EXPLAIN PLAN` sobre las consultas de los requerimientos (costos e índices usados), con conclusiones.
 
 **Terminado cuando…** las revisiones diarias notifican al provocar el problema a propósito, y las vistas se refrescan solas.
 
@@ -686,9 +686,9 @@ Estado: ⬜ pendiente · 🟨 en progreso · ✅ listo
 | N4 | Clientes morosos | B6 | Clientes morosos (2 %) | ✅ |
 | N5 | Productos vencidos con total | B6 | Productos vencidos (2 %) | ✅ |
 | N6 | Cierre diario automático | B1 + B6 | Cierre diario automático (4 %) | ✅ |
-| N7 | Tablespaces sobre el 85 % | B8 | Verificación de tablespaces (3 %) | ⬜ |
-| N8 | Objetos inválidos | B8 | Verificación de objetos inválidos (2 %) | ⬜ |
-| N9 | Índices dañados | B8 | Verificación del estado de índices (2 %) | ⬜ |
+| N7 | Tablespaces sobre el 85 % | B8 | Verificación de tablespaces (3 %) | ✅ |
+| N8 | Objetos inválidos | B8 | Verificación de objetos inválidos (2 %) | ✅ |
+| N9 | Índices dañados | B8 | Verificación del estado de índices (2 %) | ✅ |
 
 ### Standby
 
@@ -712,12 +712,12 @@ Estado: ⬜ pendiente · 🟨 en progreso · ✅ listo
 | RB5 | Todo con `DBMS_SCHEDULER` | Transversal | Automatizaciones (5 %), procesos programados (5 %) | ⬜ |
 | RB6 | Password profile, roles mínimos, privilegios | B7 | Seguridad (5 %) | ✅ |
 | RB7 | `DBMS_CRYPTO` | B2 | Seguridad / contraseñas | ⬜ |
-| RB8 | `EXPLAIN PLAN` | B8 | Proc/func almacenadas | ⬜ |
-| RB9 | Vistas materializadas (2) | B8 | Proc/func almacenadas | ⬜ |
+| RB8 | `EXPLAIN PLAN` | B8 | Proc/func almacenadas | ✅ |
+| RB9 | Vistas materializadas (2) | B8 | Proc/func almacenadas | ✅ |
 | RB10 | Parametrización en tablas | B2 + transversal | Varios | ⬜ |
 | RB11 | Concurrencia | B3 | Proc/func almacenadas | ⬜ |
 | RB12 | Integridad por package o trigger | Transversal | Triggers | ⬜ |
-| RB13 | Package de monitoreo | B8 | Monitoreo (5 %), sesiones (3 %) | ⬜ |
+| RB13 | Package de monitoreo | B8 | Monitoreo (5 %), sesiones (3 %) | ✅ |
 | RB14 | Failover, switchover, recuperación, sincronización | S3 + S6 | Recuperación, failover y switchover (5 %) | ⬜ |
 | RB15 | RMAN: full, incremental, restore, recovery | S5 | Estrategia de respaldo (5 %) | ⬜ |
 

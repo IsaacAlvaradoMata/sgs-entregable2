@@ -791,3 +791,57 @@ Tres intentos con clave incorrecta (`ORA-01017`) y al cuarto la cuenta queda blo
 ![Reutilización](capturas/B7_08_10_reutilizacion.png)
 
 El perfil impide volver a usar la misma contraseña (`ORA-28007`).
+
+# B8 — Monitoreo y complementos (`bd/09_monitoreo.sql`)
+
+El package `SGS_PKG_MONITOREO` revisa a diario los tablespaces, los objetos inválidos y los índices del proyecto, avisa de sesiones bloqueadas cada 15 minutos y guarda un registro diario del estado de la base. Además se crearon las dos vistas materializadas y se analizaron los planes de ejecución.
+
+![Instalación](capturas/B8_09_01_instalacion.png)
+
+El package válido, los 6 jobs de monitoreo habilitados, las dos vistas materializadas con datos, el parámetro nuevo `MINUTOS_SESION_BLOQUEADA` y la columna de errores en `SGS_MONITOREO`, sin objetos inválidos en el esquema.
+
+![Jobs del sistema](capturas/B8_09_02_jobs.png)
+
+Los 15 jobs de `DBMS_SCHEDULER` del sistema, todos habilitados, con su frecuencia y su próxima ejecución en hora de Costa Rica.
+
+![Reporte diario](capturas/B8_09_03_correo_reporte.png)
+
+El reporte diario al DBA: tamaño de la base y crecimiento desde la revisión anterior, sesiones, objetos inválidos, índices dañados, errores de las últimas 24 horas, uso de cada tablespace y los programas con más errores.
+
+![Registro de monitoreo](capturas/B8_09_04_registro.png)
+
+Cada revisión queda guardada en `SGS_MONITOREO` y `SGS_MONITOREO_TABLESPACE`; la vista `SGS_VW_CRECIMIENTO` calcula el crecimiento entre una revisión y la anterior.
+
+![Tablespaces](capturas/B8_09_05_correo_tablespaces.png)
+
+Con el umbral bajado a propósito, la revisión de tablespaces avisa al DBA cuáles superan el porcentaje permitido y sugiere la acción.
+
+![Objetos inválidos](capturas/B8_09_06_correo_objetos.png)
+
+Un procedimiento de prueba creado con un error queda inválido y la revisión diaria lo reporta.
+
+![Índices dañados](capturas/B8_09_07_correo_indices.png)
+
+Un índice de prueba marcado como `UNUSABLE` se reporta con la sentencia para reconstruirlo. Al terminar las tres pruebas, el umbral vuelve a 85 % y el procedimiento y el índice de prueba se borran.
+
+![Sesión bloqueada](capturas/B8_09_08_correo_bloqueos.png)
+
+Dos sesiones modifican el mismo registro: la segunda queda esperando (`enq: TX - row lock contention`) y el monitoreo avisa al DBA cuál sesión espera y cuál la bloquea.
+
+![Ventas mensuales](capturas/B8_09_09_vista_ventas.png)
+
+La vista materializada de ventas mensuales: facturas, monto vendido, devuelto y neto por mes y sucursal.
+
+![Inventario consolidado](capturas/B8_09_10_vista_inventario.png)
+
+La vista materializada de inventario consolidado: existencia, valor al costo, cantidad de lotes y primer vencimiento de cada producto en cada sucursal.
+
+![Resumen de planes](capturas/B8_09_11_explain_resumen.png)
+
+Costo, índices usados y recorridos completos de las consultas analizadas con `EXPLAIN PLAN` (conclusiones en `docs/optimizacion.md`).
+
+![Padrón por cédula](capturas/B8_09_12_explain_padron_cedula.png)
+
+![Padrón por nombre](capturas/B8_09_13_explain_padron_nombre.png)
+
+En el padrón de 3,7 millones de personas, buscar por cédula usa el índice único y cuesta 3; buscar por nombre recorre la tabla completa y cuesta 8 453.

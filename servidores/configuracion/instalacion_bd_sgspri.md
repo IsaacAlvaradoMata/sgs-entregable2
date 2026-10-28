@@ -15,6 +15,10 @@ Los scripts de `bd/` se prueban en Docker (Oracle Free 23ai, PDB `FREEPDB1`) esc
 | `03_base_interna.sql` | `CORREO_CLAVE` | `SGS_PKG_CIFRADO.guardar_parametro` | igual, después de instalar el package |
 | `06_padron.sql` | `<RUTA_PADRON>` | `/opt/oracle/oradata/padron` | carpeta acordada (propuesta `/u01/app/oracle/sgs/padron`) |
 
+## SQL*Plus
+
+Antes de ejecutar los scripts con SQL*Plus: `export NLS_LANG=AMERICAN_AMERICA.AL32UTF8`. Los scripts están en UTF-8 y los textos de los correos llevan tildes y Ñ; sin esa variable quedan dañados dentro de los packages.
+
 ## Orden
 
 1. `01_infraestructura.sql` como SYSTEM en `SGSPDB`.

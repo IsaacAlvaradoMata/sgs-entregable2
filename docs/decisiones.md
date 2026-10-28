@@ -251,6 +251,16 @@ El enunciado pide cargar el padrón con la información actual, enlazarlo con cl
 5. **`asignar_credito` pasa a `SGS_PKG_CREDITO`** (antes en `SGS_PKG_CLIENTES`): los permisos de `EXECUTE` son por package, y el registro de clientes lo usa el digitador.
 6. **Perfil `SGS_PERFIL_USUARIO`** para los 4 usuarios: 3 intentos fallidos, bloqueo de 30 minutos, contraseña de 60 días con 7 de gracia, sin repetir las últimas 5 ni las de 365 días, 2 sesiones y 15 minutos de inactividad. `SGS_ADMIN` queda con el perfil por defecto.
 
+### B8 — Monitoreo y complementos
+
+**Definiciones de B8** · 2026-10-28
+
+1. **Alcance:** lo del proyecto: objetos e índices del esquema `SGS_ADMIN` y los tablespaces `SGS_DATA`, `SGS_IDX` y `SGS_AUD`.
+2. **`SGS_PKG_MONITOREO`** con tres revisiones diarias separadas, como las redacta el enunciado (tablespaces sobre `PCT_MAX_TABLESPACE` a las 06:00, objetos inválidos a las 06:05, índices `UNUSABLE` a las 06:10), cada una con correo al DBA solo si encuentra un problema; aviso de **sesiones bloqueadas** cada 15 minutos (parámetro nuevo `MINUTOS_SESION_BLOQUEADA` = 5); y un **registro diario** a las 23:55 en `SGS_MONITOREO` y `SGS_MONITOREO_TABLESPACE` (tamaño, sesiones, inválidos, índices, errores) con reporte al DBA y el crecimiento contra la revisión anterior (vista `SGS_VW_CRECIMIENTO`).
+3. **Errores:** columna nueva `MON_ERRORES` en `SGS_MONITOREO` (errores de `SGS_BITACORA_ERROR` en las 24 horas anteriores); el reporte diario lista los programas con más errores.
+4. **Vistas materializadas** `SGS_MV_VENTAS_MENSUALES` (mes y sucursal: facturas, vendido, devuelto, neto) y `SGS_MV_INVENTARIO_CONSOLIDADO` (producto y sucursal: existencia, valor al costo, lotes, primer vencimiento), `REFRESH COMPLETE ON DEMAND` con un job diario a las 00:30, después del cierre.
+5. **`EXPLAIN PLAN`** sobre 6 consultas que implementan requerimientos funcionales del E1 (y procesos del E2): precio de venta (RF 8, 25), padrón por cédula y por nombre (RF 17, padrón), lotes por vencer y antiguos (RF 9), morosos (RF 18, 24), ventas del día para el cierre (RF 15) y mejores clientes (RF 17, 18). Estadísticas del esquema al día antes de analizar.
+
 ## Carril S — Servidores
 
 *(Se completa a medida que avanza Andrés.)*
