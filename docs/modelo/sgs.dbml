@@ -1,0 +1,948 @@
+// Sistema de Gestion de Supermercados (SGS) - modelo relacional generado de bd/02_modelo.sql
+Project SGS {
+  database_type: 'Oracle'
+  Note: 'Esquema SGS_ADMIN: 57 tablas en SGS_DATA y SGS_AUD, indices en SGS_IDX'
+}
+
+Table SGS_PAIS {
+  PAI_ID number [pk, note: 'Identificador del pais (SEQ_PAIS)']
+  PAI_CODIGO "varchar2(3)" [not null, note: 'Codigo ISO 3166-1 alfa-3 (ej. CRI)']
+  PAI_NOMBRE "varchar2(100)" [not null, note: 'Nombre del pais']
+
+  indexes {
+    PAI_CODIGO [unique]
+    PAI_NOMBRE [unique]
+  }
+
+  Note: 'Catalogo de paises para la nacionalidad y el pais de residencia de los clientes'
+}
+
+Table SGS_SUCURSAL {
+  SUC_ID number [pk, note: 'Identificador de la sucursal (SEQ_SUCURSAL)']
+  SUC_NOMBRE "varchar2(100)" [not null, note: 'Nombre de la sucursal']
+  SUC_DIRECCION "varchar2(200)" [note: 'Direccion de la sucursal']
+  SUC_TELEFONO "varchar2(50)" [note: 'Telefono de la sucursal']
+  SUC_ES_CENTRAL "varchar2(1)" [not null, default: 'N', note: 'S = bodega central, N = sucursal']
+
+  indexes {
+    SUC_NOMBRE [unique]
+  }
+
+  Note: 'Sucursales de la cadena; la bodega central es la sucursal marcada como central'
+}
+
+Table SGS_TIPO_NEGOCIO {
+  TNE_ID number [pk, note: 'Identificador del tipo de negocio (SEQ_TIPO_NEGOCIO)']
+  TNE_NOMBRE "varchar2(100)" [not null, note: 'Nombre del tipo de negocio']
+  TNE_DESCRIPCION "varchar2(200)" [note: 'Descripcion del tipo de negocio']
+  TNE_ES_ACTIVO "varchar2(1)" [not null, default: 'N', note: 'S = tipo de negocio de la instancia, N = no activo']
+
+  indexes {
+    TNE_NOMBRE [unique]
+  }
+
+  Note: 'Tipos de negocio configurables; los negocios son mutuamente excluyentes'
+}
+
+Table SGS_USUARIO {
+  USU_ID number [pk, note: 'Identificador del usuario (SEQ_USUARIO)']
+  USU_NOMBRE "varchar2(100)" [not null, note: 'Nombre completo del usuario']
+  USU_USERNAME "varchar2(50)" [not null, note: 'Nombre de usuario para inicio de sesion en el sistema']
+  USU_PASSWORD_HASH "varchar2(64)" [not null, note: 'Hash SHA-256 (DBMS_CRYPTO) de la sal + contrasena, en hexadecimal']
+  USU_SAL "varchar2(32)" [not null, note: 'Sal aleatoria del usuario, en hexadecimal']
+  USU_ESTADO "varchar2(1)" [not null, default: 'A', note: 'A = activo, I = inactivo']
+  USU_ID_SUCURSAL number [note: 'Sucursal asignada; nula para usuarios sin sucursal (ej. gerencia)']
+
+  indexes {
+    USU_USERNAME [unique]
+  }
+
+  Note: 'Usuarios del sistema (cajeros, gerentes); identifican al cajero de facturas y cierres'
+}
+
+Table SGS_FAMILIA_PRODUCTO {
+  FAM_ID number [pk, note: 'Identificador de la familia (SEQ_FAMILIA_PRODUCTO)']
+  FAM_NOMBRE "varchar2(100)" [not null, note: 'Nombre de la familia']
+  FAM_DESCRIPCION "varchar2(200)" [note: 'Descripcion de la familia']
+  FAM_ESTADO "varchar2(1)" [not null, default: 'A', note: 'A = activa, I = inactiva']
+
+  indexes {
+    FAM_NOMBRE [unique]
+  }
+
+  Note: 'Familias de productos'
+}
+
+Table SGS_TIPO_PAGO {
+  TPA_ID number [pk, note: 'Identificador del tipo de pago (SEQ_TIPO_PAGO)']
+  TPA_NOMBRE "varchar2(50)" [not null, note: 'Nombre del tipo de pago']
+  TPA_ESTADO "varchar2(1)" [not null, default: 'A', note: 'A = activo, I = inactivo']
+
+  indexes {
+    TPA_NOMBRE [unique]
+  }
+
+  Note: 'Medios de pago aceptados en facturas y abonos'
+}
+
+Table SGS_DISTRITO_ELECTORAL {
+  DIS_ID number [pk, note: 'Identificador del distrito (SEQ_DISTRITO_ELECTORAL)']
+  DIS_CODELEC "varchar2(6)" [not null, note: 'Codigo electoral del TSE']
+  DIS_PROVINCIA "varchar2(50)" [not null, note: 'Provincia']
+  DIS_CANTON "varchar2(50)" [not null, note: 'Canton']
+  DIS_DISTRITO "varchar2(50)" [not null, note: 'Distrito']
+
+  indexes {
+    DIS_CODELEC [unique]
+  }
+
+  Note: 'Distritos electorales del padron nacional (TSE)'
+}
+
+Table SGS_PADRON {
+  PAD_ID number [pk, note: 'Identificador de la persona (SEQ_PADRON); se conserva entre recargas']
+  PAD_CEDULA "varchar2(9)" [not null, note: 'Cedula de 9 digitos sin guiones']
+  PAD_NOMBRE "varchar2(50)" [not null, note: 'Nombre']
+  PAD_APELLIDO1 "varchar2(50)" [note: 'Primer apellido']
+  PAD_APELLIDO2 "varchar2(50)" [note: 'Segundo apellido']
+  PAD_FECHA_CADUCIDAD date [note: 'Fecha de caducidad de la cedula']
+  PAD_ID_DISTRITO number [not null, note: 'Distrito electoral de la persona']
+
+  indexes {
+    PAD_CEDULA [unique]
+  }
+
+  Note: 'Padron nacional del TSE; fuente de los datos basicos de los clientes nacionales'
+}
+
+Table SGS_PROVEEDOR {
+  PRV_ID number [pk, note: 'Identificador del proveedor (SEQ_PROVEEDOR)']
+  PRV_NOMBRE "varchar2(100)" [not null, note: 'Razon social']
+  PRV_CEDULA_JURIDICA "varchar2(30)" [not null, note: 'Cedula juridica']
+  PRV_DIRECCION "varchar2(200)" [note: 'Direccion']
+  PRV_TELEFONO "varchar2(50)" [note: 'Telefono']
+  PRV_EMAIL "varchar2(100)" [note: 'Correo electronico']
+  PRV_ESTADO "varchar2(1)" [not null, default: 'A', note: 'A = activo, I = inactivo']
+
+  indexes {
+    PRV_CEDULA_JURIDICA [unique]
+  }
+
+  Note: 'Proveedores (siempre empresas); su limite y saldo estan en la cuenta por pagar'
+}
+
+Table SGS_CLIENTE {
+  CLI_ID number [pk, note: 'Identificador del cliente (SEQ_CLIENTE)']
+  CLI_CEDULA "varchar2(30)" [not null, note: 'Cedula; 9 digitos sin guiones si es NACIONAL']
+  CLI_NOMBRE "varchar2(100)" [not null, note: 'Nombre de la persona o razon social de la empresa']
+  CLI_TIPO_PERSONA "varchar2(10)" [not null, note: 'NACIONAL, EXTRANJERO o EMPRESA']
+  CLI_DIRECCION_CASA "varchar2(200)" [note: 'Direccion de la casa']
+  CLI_DIRECCION_TRABAJO "varchar2(200)" [note: 'Direccion del trabajo']
+  CLI_TELEFONO "varchar2(50)" [note: 'Telefono']
+  CLI_ID_PAIS_NACIONALIDAD number [note: 'Pais de nacionalidad']
+  CLI_ID_PAIS_RESIDENCIA number [note: 'Pais de residencia']
+  CLI_FAX "varchar2(50)" [note: 'Fax']
+  CLI_EMAIL "varchar2(100)" [note: 'Correo electronico; recibe el aviso del 85 % del credito']
+  CLI_FECHA_INGRESO date [not null, default: `SYSDATE`, note: 'Fecha de ingreso como cliente']
+  CLI_ESTADO "varchar2(1)" [not null, default: 'A', note: 'A = activo, I = inactivo']
+  CLI_ES_PREFERENCIAL "varchar2(1)" [not null, default: 'N', note: 'S = puede comprar a credito, N = solo contado']
+  CLI_ES_DEFECTO "varchar2(1)" [not null, default: 'N', note: 'S = cliente por defecto de las facturas sin cliente registrado']
+
+  indexes {
+    CLI_CEDULA [unique]
+  }
+
+  Note: 'Clientes personas o empresas; su limite y saldo estan en la cuenta por cobrar'
+}
+
+Table SGS_CLIENTE_PERSONA {
+  CLP_ID number [pk, note: 'Identificador (SEQ_CLIENTE_PERSONA)']
+  CLP_ID_CLIENTE number [not null, note: 'Cliente al que pertenecen los datos']
+  CLP_APELLIDO1 "varchar2(100)" [note: 'Primer apellido']
+  CLP_APELLIDO2 "varchar2(100)" [note: 'Segundo apellido']
+  CLP_ESTADO_CIVIL "varchar2(1)" [note: 'S = soltero, C = casado, D = divorciado, V = viudo, U = union libre']
+  CLP_SEXO "varchar2(1)" [note: 'M = masculino, F = femenino']
+  CLP_FECHA_NAC date [note: 'Fecha de nacimiento']
+  CLP_PUESTO "varchar2(100)" [note: 'Puesto de trabajo']
+  CLP_EMPRESA_LABORA "varchar2(100)" [note: 'Empresa donde labora']
+  CLP_ASEGURADO "varchar2(1)" [note: 'S = asegurado, N = no asegurado']
+  CLP_ESCOLARIDAD "varchar2(50)" [note: 'Escolaridad']
+  CLP_ID_PADRON number [note: 'Persona del padron (solo clientes NACIONAL); nula para extranjeros']
+
+  indexes {
+    CLP_ID_CLIENTE [unique]
+    CLP_ID_PADRON [unique]
+  }
+
+  Note: 'Datos de los clientes persona fisica; los nacionales se enlazan al padron'
+}
+
+Table SGS_ARTICULO_FACTURABLE {
+  ART_ID number [pk, note: 'Identificador del articulo (SEQ_ARTICULO_FACTURABLE)']
+  ART_NOMBRE "varchar2(100)" [not null, note: 'Nombre del articulo']
+  ART_EXENTO_IMPUESTO "varchar2(1)" [not null, default: 'N', note: 'S = exento de impuesto, N = gravado']
+  ART_PCT_IMPUESTO "number(5,4)" [not null, default: 0, note: 'Impuesto como fraccion (0.13 = 13 %); 0 si es exento']
+  ART_ESTADO "varchar2(1)" [not null, default: 'A', note: 'A = activo, I = inactivo']
+
+  Note: 'Todo lo que se puede facturar: supertipo de productos y servicios'
+}
+
+Table SGS_PRODUCTO {
+  PRO_ID number [pk, note: 'Identificador del producto (SEQ_PRODUCTO)']
+  PRO_ID_ARTICULO number [not null, note: 'Articulo facturable del producto']
+  PRO_ID_PROVEEDOR number [not null, note: 'Proveedor del producto']
+  PRO_ID_FAMILIA number [not null, note: 'Familia del producto']
+  PRO_CODIGO "varchar2(30)" [not null, note: 'Codigo interno del producto']
+  PRO_PRECIO_COSTO "number(14,2)" [not null, note: 'Precio de costo actual; sus cambios quedan en SGS_HISTORICO_PRECIO']
+
+  indexes {
+    PRO_ID_ARTICULO [unique]
+    PRO_CODIGO [unique]
+  }
+
+  Note: 'Productos del inventario'
+}
+
+Table SGS_SERVICIO {
+  SER_ID number [pk, note: 'Identificador del servicio (SEQ_SERVICIO)']
+  SER_ID_ARTICULO number [not null, note: 'Articulo facturable del servicio']
+  SER_PRECIO "number(14,2)" [not null, note: 'Precio del servicio']
+  SER_DESCRIPCION "varchar2(200)" [note: 'Descripcion del servicio']
+
+  indexes {
+    SER_ID_ARTICULO [unique]
+  }
+
+  Note: 'Servicios facturables'
+}
+
+Table SGS_CODIGO_BARRAS {
+  COB_ID number [pk, note: 'Identificador (SEQ_CODIGO_BARRAS)']
+  COB_ID_PRODUCTO number [not null, note: 'Producto al que pertenece el codigo']
+  COB_CODIGO "varchar2(30)" [not null, note: 'Codigo de barras']
+
+  indexes {
+    COB_CODIGO [unique]
+  }
+
+  Note: 'Codigos de barras de los productos'
+}
+
+Table SGS_PRODUCTO_SUCURSAL {
+  PS_ID number [pk, note: 'Identificador (SEQ_PRODUCTO_SUCURSAL)']
+  PS_ID_PRODUCTO number [not null, note: 'Producto']
+  PS_ID_SUCURSAL number [not null, note: 'Sucursal']
+  PS_PCT_UTILIDAD "number(5,4)" [not null, note: 'Utilidad como fraccion (0.15 = 15 %)']
+  PS_PCT_DESCUENTO_MAXIMO "number(5,4)" [not null, default: 0, note: 'Descuento maximo permitido como fraccion (0.10 = 10 %)']
+
+  indexes {
+    (PS_ID_PRODUCTO, PS_ID_SUCURSAL) [unique]
+  }
+
+  Note: 'Porcentaje de utilidad y descuento maximo de cada producto por sucursal'
+}
+
+Table SGS_HISTORICO_PRECIO {
+  HPR_ID number [pk, note: 'Identificador (SEQ_HISTORICO_PRECIO)']
+  HPR_ID_PRODUCTO number [not null, note: 'Producto cuyo costo cambio']
+  HPR_PRECIO_ANT "number(14,2)" [note: 'Costo anterior; nulo en el primer registro']
+  HPR_PRECIO_NUE "number(14,2)" [not null, note: 'Costo nuevo']
+  HPR_FECHA date [not null, default: `SYSDATE`, note: 'Fecha del cambio']
+  HPR_USUARIO "varchar2(128)" [not null, default: `SYS_CONTEXT('USERENV', 'SESSION_USER')`, note: 'Cuenta de Oracle que hizo el cambio']
+
+  Note: 'Historial de cambios del precio de costo de los productos'
+}
+
+Table SGS_CUENTA_PAGAR {
+  CXP_ID number [pk, note: 'Identificador de la cuenta (SEQ_CUENTA_PAGAR)']
+  CXP_ID_PROVEEDOR number [not null, note: 'Proveedor dueno de la cuenta']
+  CXP_LIMITE_CREDITO "number(14,2)" [not null, default: 0, note: 'Limite de credito con el proveedor']
+  CXP_SALDO "number(14,2)" [not null, default: 0, note: 'Saldo total pendiente; lo mantienen los triggers']
+
+  indexes {
+    CXP_ID_PROVEEDOR [unique]
+  }
+
+  Note: 'Cuenta por pagar por proveedor; se bloquea con FOR UPDATE al facturar a credito'
+}
+
+Table SGS_FACTURA_PROVEEDOR {
+  FP_ID number [pk, note: 'Identificador de la factura (SEQ_FACTURA_PROVEEDOR)']
+  FP_ID_PROVEEDOR number [not null, note: 'Proveedor que emite la factura']
+  FP_ID_USUARIO number [not null, note: 'Usuario del sistema que registro la compra']
+  FP_NUMERO "varchar2(50)" [not null, note: 'Numero de factura del proveedor']
+  FP_FECHA date [not null, default: `SYSDATE`, note: 'Fecha de la factura']
+  FP_SUBTOTAL "number(14,2)" [not null, note: 'Subtotal']
+  FP_DESCUENTO "number(14,2)" [not null, default: 0, note: 'Descuento total']
+  FP_IMPUESTO "number(14,2)" [not null, default: 0, note: 'Impuesto total']
+  FP_TOTAL "number(14,2)" [not null, note: 'Total de la factura']
+  FP_ES_CREDITO "varchar2(1)" [not null, default: 'N', note: 'S = credito (cuenta por pagar), N = contado']
+  FP_ESTADO "varchar2(1)" [not null, default: 'C', note: 'P = pendiente, C = cancelada, N = anulada']
+
+  indexes {
+    (FP_ID_PROVEEDOR, FP_NUMERO) [unique]
+  }
+
+  Note: 'Facturas de compra a proveedores; ingresan a la bodega central'
+}
+
+Table SGS_DETALLE_FACTURA_PROVEEDOR {
+  DFP_ID number [pk, note: 'Identificador de la linea (SEQ_DETALLE_FACTURA_PROVEEDOR)']
+  DFP_ID_FACTURA number [not null, note: 'Factura de proveedor']
+  DFP_ID_PRODUCTO number [not null, note: 'Producto comprado']
+  DFP_CANTIDAD "number(10,3)" [not null, note: 'Cantidad comprada']
+  DFP_PRECIO_UNITARIO "number(14,2)" [not null, note: 'Costo unitario de compra']
+  DFP_DESCUENTO "number(14,2)" [not null, default: 0, note: 'Descuento de la linea']
+  DFP_IMPUESTO "number(14,2)" [not null, default: 0, note: 'Impuesto de la linea']
+  DFP_SUBTOTAL "number(14,2)" [not null, note: 'Total de la linea']
+
+  Note: 'Productos comprados en cada factura de proveedor; cada linea origina un lote'
+}
+
+Table SGS_PAGO_FACTURA_PROVEEDOR {
+  PFP_ID number [pk, note: 'Identificador del pago (SEQ_PAGO_FACTURA_PROVEEDOR)']
+  PFP_ID_FACTURA number [not null, note: 'Factura pagada']
+  PFP_ID_TIPO_PAGO number [not null, note: 'Medio de pago']
+  PFP_MONTO "number(14,2)" [not null, note: 'Monto pagado']
+  PFP_FECHA date [not null, default: `SYSDATE`, note: 'Fecha del pago']
+
+  Note: 'Pagos de contado y abonos parciales a facturas de proveedor'
+}
+
+Table SGS_DETALLE_CUENTA_PAGAR {
+  DCP_ID number [pk, note: 'Identificador (SEQ_DETALLE_CUENTA_PAGAR)']
+  DCP_ID_CUENTA number [not null, note: 'Cuenta por pagar del proveedor']
+  DCP_ID_FACTURA number [not null, note: 'Factura de proveedor a credito']
+  DCP_MONTO_ORIGINAL "number(14,2)" [not null, note: 'Total de la factura al registrarse']
+  DCP_SALDO "number(14,2)" [not null, note: 'Saldo pendiente de la factura; lo mantienen los triggers']
+
+  indexes {
+    DCP_ID_FACTURA [unique]
+  }
+
+  Note: 'Facturas de proveedor a credito que forman la cuenta por pagar'
+}
+
+Table SGS_CUENTA_COBRAR {
+  CXC_ID number [pk, note: 'Identificador de la cuenta (SEQ_CUENTA_COBRAR)']
+  CXC_ID_CLIENTE number [not null, note: 'Cliente dueno de la cuenta']
+  CXC_LIMITE_CREDITO "number(14,2)" [not null, default: 0, note: 'Monto maximo de credito permitido; 0 si no tiene credito']
+  CXC_SALDO "number(14,2)" [not null, default: 0, note: 'Saldo total pendiente; lo mantienen los triggers']
+
+  indexes {
+    CXC_ID_CLIENTE [unique]
+  }
+
+  Note: 'Cuenta por cobrar por cliente; se bloquea con FOR UPDATE al facturar a credito'
+}
+
+Table SGS_FACTURA_VENTA {
+  FV_ID number [pk, note: 'Identificador y numero de la factura (SEQ_FACTURA_VENTA)']
+  FV_ID_CLIENTE number [not null, note: 'Cliente; el cliente por defecto si no hay uno registrado']
+  FV_ID_SUCURSAL number [not null, note: 'Sucursal donde se vendio']
+  FV_ID_USUARIO number [not null, note: 'Cajero que atendio la venta']
+  FV_FECHA date [not null, default: `SYSDATE`, note: 'Fecha de la factura']
+  FV_SUBTOTAL "number(14,2)" [not null, note: 'Subtotal']
+  FV_DESCUENTO "number(14,2)" [not null, default: 0, note: 'Descuento total']
+  FV_IMPUESTO "number(14,2)" [not null, default: 0, note: 'Impuesto total']
+  FV_TOTAL "number(14,2)" [not null, note: 'Total de la factura']
+  FV_ES_CREDITO "varchar2(1)" [not null, default: 'N', note: 'S = credito (cuenta por cobrar), N = contado']
+  FV_ESTADO "varchar2(1)" [not null, default: 'C', note: 'P = pendiente, C = cancelada, N = anulada']
+
+  Note: 'Facturas de venta a clientes'
+}
+
+Table SGS_DETALLE_FACTURA_VENTA {
+  DFV_ID number [pk, note: 'Identificador de la linea (SEQ_DETALLE_FACTURA_VENTA)']
+  DFV_ID_FACTURA number [not null, note: 'Factura de venta']
+  DFV_ID_ARTICULO number [not null, note: 'Producto o servicio vendido']
+  DFV_CANTIDAD "number(10,3)" [not null, note: 'Cantidad vendida']
+  DFV_PRECIO_UNITARIO "number(14,2)" [not null, note: 'Precio unitario de venta']
+  DFV_DESCUENTO "number(14,2)" [not null, default: 0, note: 'Descuento de la linea']
+  DFV_IMPUESTO "number(14,2)" [not null, default: 0, note: 'Impuesto de la linea']
+  DFV_SUBTOTAL "number(14,2)" [not null, note: 'Total de la linea']
+
+  Note: 'Productos o servicios cobrados en cada factura de venta'
+}
+
+Table SGS_PAGO_FACTURA_VENTA {
+  PFV_ID number [pk, note: 'Identificador del pago (SEQ_PAGO_FACTURA_VENTA)']
+  PFV_ID_FACTURA number [not null, note: 'Factura pagada']
+  PFV_ID_TIPO_PAGO number [not null, note: 'Medio de pago']
+  PFV_MONTO "number(14,2)" [not null, note: 'Monto pagado']
+  PFV_FECHA date [not null, default: `SYSDATE`, note: 'Fecha del pago']
+
+  Note: 'Pagos de contado y abonos parciales a facturas de venta'
+}
+
+Table SGS_DETALLE_CUENTA_COBRAR {
+  DCC_ID number [pk, note: 'Identificador (SEQ_DETALLE_CUENTA_COBRAR)']
+  DCC_ID_CUENTA number [not null, note: 'Cuenta por cobrar del cliente']
+  DCC_ID_FACTURA number [not null, note: 'Factura de venta a credito']
+  DCC_MONTO_ORIGINAL "number(14,2)" [not null, note: 'Total de la factura al registrarse']
+  DCC_SALDO "number(14,2)" [not null, note: 'Saldo pendiente de la factura; lo mantienen los triggers']
+
+  indexes {
+    DCC_ID_FACTURA [unique]
+  }
+
+  Note: 'Facturas de venta a credito que forman la cuenta por cobrar'
+}
+
+Table SGS_NOTA_CREDITO_VENTA {
+  NCV_ID number [pk, note: 'Identificador de la nota (SEQ_NOTA_CREDITO_VENTA)']
+  NCV_ID_FACTURA number [not null, note: 'Factura de venta devuelta']
+  NCV_ID_USUARIO number [not null, note: 'Cajero que proceso la devolucion']
+  NCV_FECHA date [not null, default: `SYSDATE`, note: 'Fecha de la devolucion']
+  NCV_MOTIVO "varchar2(200)" [note: 'Motivo de la devolucion']
+  NCV_MONTO "number(14,2)" [not null, note: 'Monto total de la nota']
+
+  Note: 'Notas de credito por devoluciones de clientes'
+}
+
+Table SGS_DETALLE_NOTA_CREDITO_VENTA {
+  DNCV_ID number [pk, note: 'Identificador (SEQ_DETALLE_NOTA_CREDITO_VENTA)']
+  DNCV_ID_NOTA number [not null, note: 'Nota de credito']
+  DNCV_ID_DETALLE_FACTURA number [not null, note: 'Linea de la factura que se devuelve']
+  DNCV_CANTIDAD "number(10,3)" [not null, note: 'Cantidad devuelta']
+  DNCV_SUBTOTAL "number(14,2)" [not null, note: 'Monto devuelto de la linea']
+
+  indexes {
+    (DNCV_ID_NOTA, DNCV_ID_DETALLE_FACTURA) [unique]
+  }
+
+  Note: 'Lineas de la factura de venta devueltas en cada nota de credito'
+}
+
+Table SGS_NOTA_CREDITO_PROVEEDOR {
+  NCP_ID number [pk, note: 'Identificador de la nota (SEQ_NOTA_CREDITO_PROVEEDOR)']
+  NCP_ID_FACTURA number [not null, note: 'Factura de proveedor devuelta']
+  NCP_ID_USUARIO number [not null, note: 'Usuario del sistema que registro la devolucion']
+  NCP_FECHA date [not null, default: `SYSDATE`, note: 'Fecha de la devolucion']
+  NCP_MOTIVO "varchar2(200)" [note: 'Motivo de la devolucion']
+  NCP_MONTO "number(14,2)" [not null, note: 'Monto total de la nota']
+
+  Note: 'Notas de credito por devoluciones a proveedores'
+}
+
+Table SGS_DETALLE_NOTA_CREDITO_PROVEEDOR {
+  DNCP_ID number [pk, note: 'Identificador (SEQ_DETALLE_NOTA_CREDITO_PROVEEDOR)']
+  DNCP_ID_NOTA number [not null, note: 'Nota de credito']
+  DNCP_ID_DETALLE_FACTURA number [not null, note: 'Linea de la factura que se devuelve']
+  DNCP_CANTIDAD "number(10,3)" [not null, note: 'Cantidad devuelta']
+  DNCP_SUBTOTAL "number(14,2)" [not null, note: 'Monto devuelto de la linea']
+
+  indexes {
+    (DNCP_ID_NOTA, DNCP_ID_DETALLE_FACTURA) [unique]
+  }
+
+  Note: 'Lineas de la factura de proveedor devueltas en cada nota de credito'
+}
+
+Table SGS_LOTE {
+  LOT_ID number [pk, note: 'Identificador del lote (SEQ_LOTE)']
+  LOT_ID_DETALLE_COMPRA number [not null, note: 'Linea de compra que origino el lote (de ahi el producto y el costo)']
+  LOT_FECHA_INGRESO date [not null, default: `SYSDATE`, note: 'Fecha de ingreso a la bodega; base para la antiguedad']
+  LOT_FECHA_VENCIMIENTO date [note: 'Fecha de vencimiento; nula si el producto no vence']
+
+  indexes {
+    LOT_ID_DETALLE_COMPRA [unique]
+  }
+
+  Note: 'Lotes de producto; cada linea de compra origina un lote'
+}
+
+Table SGS_EXISTENCIA {
+  EXI_ID number [pk, note: 'Identificador (SEQ_EXISTENCIA)']
+  EXI_ID_LOTE number [not null, note: 'Lote']
+  EXI_ID_SUCURSAL number [not null, note: 'Sucursal o bodega central']
+  EXI_CANTIDAD "number(10,3)" [not null, default: 0, note: 'Cantidad disponible; la mantienen los triggers']
+
+  indexes {
+    (EXI_ID_LOTE, EXI_ID_SUCURSAL) [unique]
+  }
+
+  Note: 'Cantidad disponible de cada lote en cada sucursal'
+}
+
+Table SGS_TRASLADO {
+  TRA_ID number [pk, note: 'Identificador del traslado (SEQ_TRASLADO)']
+  TRA_ID_SUCURSAL_ORIGEN number [not null, note: 'Sucursal de donde sale la mercaderia']
+  TRA_ID_SUCURSAL_DESTINO number [not null, note: 'Sucursal que recibe la mercaderia']
+  TRA_ID_USUARIO number [not null, note: 'Usuario del sistema que registro el traslado']
+  TRA_FECHA date [not null, default: `SYSDATE`, note: 'Fecha del traslado']
+
+  Note: 'Traslados de inventario entre la bodega central y las sucursales'
+}
+
+Table SGS_DETALLE_TRASLADO {
+  DTR_ID number [pk, note: 'Identificador (SEQ_DETALLE_TRASLADO)']
+  DTR_ID_TRASLADO number [not null, note: 'Traslado']
+  DTR_ID_LOTE number [not null, note: 'Lote trasladado']
+  DTR_CANTIDAD "number(10,3)" [not null, note: 'Cantidad trasladada']
+
+  indexes {
+    (DTR_ID_TRASLADO, DTR_ID_LOTE) [unique]
+  }
+
+  Note: 'Lotes y cantidades incluidos en cada traslado'
+}
+
+Table SGS_MOVIMIENTO_INVENTARIO {
+  MOV_ID number [pk, note: 'Identificador (SEQ_MOVIMIENTO_INVENTARIO)']
+  MOV_ID_LOTE number [not null, note: 'Lote que se movio']
+  MOV_ID_SUCURSAL number [not null, note: 'Sucursal donde ocurrio el movimiento']
+  MOV_TIPO "varchar2(20)" [not null, note: 'COMPRA, VENTA, DEVOLUCION_CLIENTE, DEVOLUCION_PROVEEDOR, TRASLADO_SALIDA o TRASLADO_ENTRADA']
+  MOV_CANTIDAD "number(10,3)" [not null, note: 'Cantidad movida, siempre positiva; el tipo indica si entra o sale']
+  MOV_FECHA date [not null, default: `SYSDATE`, note: 'Fecha del movimiento']
+  MOV_ID_DETALLE_COMPRA number [note: 'Linea de compra (tipo COMPRA)']
+  MOV_ID_DETALLE_VENTA number [note: 'Linea de venta (tipo VENTA)']
+  MOV_ID_DETALLE_NC_VENTA number [note: 'Linea de nota de credito de venta (tipo DEVOLUCION_CLIENTE)']
+  MOV_ID_DETALLE_NC_PROVEEDOR number [note: 'Linea de nota de credito de proveedor (tipo DEVOLUCION_PROVEEDOR)']
+  MOV_ID_DETALLE_TRASLADO number [note: 'Linea de traslado (tipos TRASLADO_SALIDA y TRASLADO_ENTRADA)']
+
+  Note: 'Entradas y salidas de inventario por lote y sucursal, con el documento que las causo'
+}
+
+Table SGS_TIPO_PROMOCION {
+  TPR_ID number [pk, note: 'Identificador del tipo (SEQ_TIPO_PROMOCION)']
+  TPR_NOMBRE "varchar2(100)" [not null, note: 'Nombre del tipo de promocion']
+  TPR_DESCRIPCION "varchar2(200)" [note: 'Descripcion del tipo de promocion']
+  TPR_ESTADO "varchar2(1)" [not null, default: 'A', note: 'A = activo, I = inactivo']
+
+  indexes {
+    TPR_NOMBRE [unique]
+  }
+
+  Note: 'Tipos de promocion (ej. acciones por cantidad de productos patrocinadores)'
+}
+
+Table SGS_PROMOCION {
+  PRM_ID number [pk, note: 'Identificador de la promocion (SEQ_PROMOCION)']
+  PRM_ID_TIPO number [not null, note: 'Tipo de promocion']
+  PRM_NOMBRE "varchar2(100)" [not null, note: 'Nombre de la promocion']
+  PRM_DESCRIPCION "varchar2(200)" [note: 'Descripcion de la promocion']
+  PRM_FECHA_INICIO date [not null, note: 'Inicio de vigencia']
+  PRM_FECHA_FIN date [note: 'Fin de vigencia; nula si no tiene fin definido']
+  PRM_CANTIDAD_REQUERIDA number [not null, note: 'Productos patrocinadores necesarios para ganar acciones']
+  PRM_CANTIDAD_ACCIONES number [not null, note: 'Acciones que se entregan por cada cantidad requerida']
+  PRM_ESTADO "varchar2(1)" [not null, default: 'A', note: 'A = activa, I = inactiva']
+
+  Note: 'Promociones del negocio'
+}
+
+Table SGS_PROMOCION_PRODUCTO {
+  PP_ID number [pk, note: 'Identificador (SEQ_PROMOCION_PRODUCTO)']
+  PP_ID_PROMOCION number [not null, note: 'Promocion']
+  PP_ID_PRODUCTO number [not null, note: 'Producto patrocinador']
+
+  indexes {
+    (PP_ID_PROMOCION, PP_ID_PRODUCTO) [unique]
+  }
+
+  Note: 'Productos patrocinadores de cada promocion'
+}
+
+Table SGS_PREMIO {
+  PRE_ID number [pk, note: 'Identificador del premio (SEQ_PREMIO)']
+  PRE_NOMBRE "varchar2(100)" [not null, note: 'Nombre del premio']
+  PRE_DESCRIPCION "varchar2(200)" [note: 'Descripcion del premio']
+
+  Note: 'Premios de las promociones'
+}
+
+Table SGS_PROMOCION_PREMIO {
+  PPR_ID number [pk, note: 'Identificador (SEQ_PROMOCION_PREMIO)']
+  PPR_ID_PROMOCION number [not null, note: 'Promocion']
+  PPR_ID_PREMIO number [not null, note: 'Premio']
+
+  indexes {
+    (PPR_ID_PROMOCION, PPR_ID_PREMIO) [unique]
+  }
+
+  Note: 'Premios que entrega cada promocion'
+}
+
+Table SGS_ACCION_OTORGADA {
+  ACO_ID number [pk, note: 'Identificador (SEQ_ACCION_OTORGADA)']
+  ACO_ID_FACTURA number [not null, note: 'Factura de venta']
+  ACO_ID_PROMOCION number [not null, note: 'Promocion que otorga las acciones']
+  ACO_CANTIDAD_PRODUCTOS "number(10,3)" [not null, note: 'Productos patrocinadores comprados en la factura']
+  ACO_CANTIDAD_ACCIONES number [not null, note: 'Acciones otorgadas']
+
+  indexes {
+    (ACO_ID_FACTURA, ACO_ID_PROMOCION) [unique]
+  }
+
+  Note: 'Acciones otorgadas a cada factura de venta por las promociones vigentes'
+}
+
+Table SGS_DESCUENTO {
+  DSC_ID number [pk, note: 'Identificador del descuento (SEQ_DESCUENTO)']
+  DSC_NOMBRE "varchar2(100)" [not null, note: 'Nombre del descuento']
+  DSC_TIPO_CRITERIO "varchar2(20)" [not null, note: 'FAMILIA, PROVEEDOR, INGRESO o VENCIMIENTO']
+  DSC_PORCENTAJE "number(5,4)" [not null, note: 'Descuento como fraccion (0.20 = 20 %)']
+  DSC_DIAS_DESDE_INGRESO "number(5)" [note: 'Solo INGRESO: dias en bodega a partir de los cuales aplica']
+  DSC_DIAS_PARA_VENCER "number(5)" [note: 'Solo VENCIMIENTO: dias antes del vencimiento a partir de los cuales aplica']
+  DSC_FECHA_INICIO date [not null, note: 'Inicio de vigencia']
+  DSC_FECHA_FIN date [note: 'Fin de vigencia; nula si no tiene fin definido']
+  DSC_ESTADO "varchar2(1)" [not null, default: 'A', note: 'A = activo, I = inactivo']
+
+  indexes {
+    DSC_NOMBRE [unique]
+  }
+
+  Note: 'Descuentos planeados por familia, proveedor, antiguedad o proximidad de vencimiento'
+}
+
+Table SGS_DESCUENTO_FAMILIA {
+  DSF_ID number [pk, note: 'Identificador (SEQ_DESCUENTO_FAMILIA)']
+  DSF_ID_DESCUENTO number [not null, note: 'Descuento']
+  DSF_ID_FAMILIA number [not null, note: 'Familia de producto']
+
+  indexes {
+    (DSF_ID_DESCUENTO, DSF_ID_FAMILIA) [unique]
+  }
+
+  Note: 'Familias incluidas en los descuentos de criterio FAMILIA'
+}
+
+Table SGS_DESCUENTO_PROVEEDOR {
+  DSP_ID number [pk, note: 'Identificador (SEQ_DESCUENTO_PROVEEDOR)']
+  DSP_ID_DESCUENTO number [not null, note: 'Descuento']
+  DSP_ID_PROVEEDOR number [not null, note: 'Proveedor']
+
+  indexes {
+    (DSP_ID_DESCUENTO, DSP_ID_PROVEEDOR) [unique]
+  }
+
+  Note: 'Proveedores incluidos en los descuentos de criterio PROVEEDOR'
+}
+
+Table SGS_DESCUENTO_DETALLE {
+  DDE_ID number [pk, note: 'Identificador (SEQ_DESCUENTO_DETALLE)']
+  DDE_ID_DESCUENTO number [not null, note: 'Descuento de criterio INGRESO o VENCIMIENTO']
+  DDE_ID_PRODUCTO number [not null, note: 'Producto incluido (tiene al menos un lote que cumple el criterio)']
+  DDE_FECHA_INCLUSION date [not null, default: `SYSDATE`, note: 'Fecha en que el proceso semanal lo incluyo']
+
+  indexes {
+    (DDE_ID_DESCUENTO, DDE_ID_PRODUCTO) [unique]
+  }
+
+  Note: 'Productos incluidos automaticamente en descuentos por antiguedad o vencimiento'
+}
+
+Table SGS_PARAMETRO {
+  PAR_ID number [pk, note: 'Identificador (SEQ_PARAMETRO)']
+  PAR_CODIGO "varchar2(50)" [not null, note: 'Codigo del parametro (ej. PCT_AVISO_CLIENTE)']
+  PAR_VALOR "varchar2(250)" [not null, note: 'Valor; si es cifrado, el resultado de DBMS_CRYPTO en hexadecimal']
+  PAR_DESCRIPCION "varchar2(200)" [note: 'Para que se usa el parametro']
+  PAR_ES_CIFRADO "varchar2(1)" [not null, default: 'N', note: 'S = valor cifrado con DBMS_CRYPTO, N = texto plano']
+
+  indexes {
+    PAR_CODIGO [unique]
+  }
+
+  Note: 'Parametros del sistema (correo, reglas de negocio, standby, claves de roles)'
+}
+
+Table SGS_DESTINATARIO {
+  DES_ID number [pk, note: 'Identificador (SEQ_DESTINATARIO)']
+  DES_TIPO "varchar2(20)" [not null, note: 'GERENTE, COORDINADOR o DBA']
+  DES_NOMBRE "varchar2(100)" [not null, note: 'Nombre del destinatario']
+  DES_EMAIL "varchar2(100)" [not null, note: 'Correo electronico']
+  DES_ESTADO "varchar2(1)" [not null, default: 'A', note: 'A = recibe notificaciones, I = no las recibe']
+
+  indexes {
+    (DES_TIPO, DES_EMAIL) [unique]
+  }
+
+  Note: 'Correos que reciben las notificaciones, por tipo de destinatario'
+}
+
+Table SGS_BITACORA {
+  BIT_ID number [pk, note: 'Identificador (SEQ_BITACORA)']
+  BIT_AREA "varchar2(20)" [not null, note: 'Area auditada: FACTURACION, PRECIOS, INVENTARIO, CLIENTES, PROVEEDORES, PROMOCIONES o DESCUENTOS']
+  BIT_TABLA "varchar2(128)" [not null, note: 'Tabla afectada']
+  BIT_OPERACION "varchar2(1)" [not null, note: 'I = insercion, U = actualizacion, D = borrado']
+  BIT_REGISTRO_ID number [note: 'Llave primaria del registro afectado']
+  BIT_USUARIO_BD "varchar2(128)" [not null, default: `SYS_CONTEXT('USERENV', 'SESSION_USER')`, note: 'Cuenta de Oracle que hizo la operacion']
+  BIT_USUARIO_SO "varchar2(256)" [default: `SYS_CONTEXT('USERENV', 'OS_USER')`, note: 'Usuario del sistema operativo de la sesion']
+  BIT_EQUIPO "varchar2(256)" [default: `SYS_CONTEXT('USERENV', 'HOST')`, note: 'Equipo desde donde se conecto la sesion']
+  BIT_FECHA timestamp [not null, default: `SYSTIMESTAMP`, note: 'Fecha y hora de la operacion']
+  BIT_ES_CRITICA "varchar2(1)" [not null, default: 'N', note: 'S = operacion critica (anulaciones, pagos, limites, etc.)']
+
+  Note: 'Bitacora de cambios: quien, cuando, donde y que operacion'
+}
+
+Table SGS_BITACORA_DETALLE {
+  BID_ID number [pk, note: 'Identificador (SEQ_BITACORA_DETALLE)']
+  BID_ID_BITACORA number [not null, note: 'Operacion de la bitacora']
+  BID_COLUMNA "varchar2(128)" [not null, note: 'Columna modificada']
+  BID_VALOR_ANTERIOR "varchar2(250)" [note: 'Valor antes del cambio; nulo en inserciones']
+  BID_VALOR_NUEVO "varchar2(250)" [note: 'Valor despues del cambio; nulo en borrados']
+
+  indexes {
+    (BID_ID_BITACORA, BID_COLUMNA) [unique]
+  }
+
+  Note: 'Valores anterior y nuevo de cada columna modificada'
+}
+
+Table SGS_BITACORA_ERROR {
+  BER_ID number [pk, note: 'Identificador (SEQ_BITACORA_ERROR)']
+  BER_PROGRAMA "varchar2(128)" [not null, note: 'Package y procedimiento donde ocurrio el error']
+  BER_CODIGO number [note: 'Codigo del error (SQLCODE)']
+  BER_MENSAJE "varchar2(512)" [note: 'Mensaje del error (SQLERRM)']
+  BER_TRAZA "varchar2(2000)" [note: 'Traza del error (DBMS_UTILITY.FORMAT_ERROR_BACKTRACE)']
+  BER_USUARIO_BD "varchar2(128)" [not null, default: `SYS_CONTEXT('USERENV', 'SESSION_USER')`, note: 'Cuenta de Oracle de la sesion']
+  BER_FECHA timestamp [not null, default: `SYSTIMESTAMP`, note: 'Fecha y hora del error']
+
+  Note: 'Errores capturados por los procedimientos y funciones'
+}
+
+Table SGS_CIERRE_DIARIO {
+  CIE_ID number [pk, note: 'Identificador (SEQ_CIERRE_DIARIO)']
+  CIE_FECHA date [not null, note: 'Dia que se cierra']
+  CIE_CANTIDAD_FACTURAS number [not null, default: 0, note: 'Cantidad de facturas de venta del dia']
+  CIE_MONTO_VENDIDO "number(14,2)" [not null, default: 0, note: 'Monto vendido en el dia']
+  CIE_CANTIDAD_DEVOLUCIONES number [not null, default: 0, note: 'Cantidad de notas de credito de venta del dia']
+  CIE_MONTO_DEVOLUCIONES "number(14,2)" [not null, default: 0, note: 'Monto devuelto en el dia']
+  CIE_TOTAL "number(14,2)" [not null, default: 0, note: 'Monto vendido menos monto devuelto']
+  CIE_FECHA_GENERACION timestamp [not null, default: `SYSTIMESTAMP`, note: 'Momento en que se genero el cierre']
+
+  indexes {
+    CIE_FECHA [unique]
+  }
+
+  Note: 'Cierre diario automatico; se notifica al coordinador y al gerente'
+}
+
+Table SGS_DETALLE_CIERRE {
+  DCI_ID number [pk, note: 'Identificador (SEQ_DETALLE_CIERRE)']
+  DCI_ID_CIERRE number [not null, note: 'Cierre diario']
+  DCI_ID_USUARIO number [not null, note: 'Cajero']
+  DCI_CANTIDAD_FACTURAS number [not null, default: 0, note: 'Facturas de venta del cajero']
+  DCI_MONTO_VENDIDO "number(14,2)" [not null, default: 0, note: 'Monto vendido por el cajero']
+  DCI_CANTIDAD_DEVOLUCIONES number [not null, default: 0, note: 'Devoluciones procesadas por el cajero']
+  DCI_MONTO_DEVOLUCIONES "number(14,2)" [not null, default: 0, note: 'Monto devuelto por el cajero']
+
+  indexes {
+    (DCI_ID_CIERRE, DCI_ID_USUARIO) [unique]
+  }
+
+  Note: 'Ventas y devoluciones de cada cajero en el cierre diario'
+}
+
+Table SGS_PREMIACION {
+  PMC_ID number [pk, note: 'Identificador (SEQ_PREMIACION)']
+  PMC_FECHA date [not null, default: `SYSDATE`, note: 'Fecha de la ejecucion']
+  PMC_PERIODO_INICIO date [not null, note: 'Inicio del periodo de compras evaluado']
+  PMC_PERIODO_FIN date [not null, note: 'Fin del periodo de compras evaluado']
+  PMC_MONTO_ORDEN "number(14,2)" [not null, note: 'Monto de cada orden de compra (parametro vigente al ejecutar)']
+
+  Note: 'Ejecuciones del proceso que premia a los mejores clientes'
+}
+
+Table SGS_ORDEN_COMPRA {
+  OCO_ID number [pk, note: 'Identificador de la orden (SEQ_ORDEN_COMPRA)']
+  OCO_ID_PREMIACION number [not null, note: 'Premiacion que emitio la orden']
+  OCO_ID_CLIENTE number [not null, note: 'Cliente premiado']
+  OCO_POSICION "number(3)" [not null, note: 'Lugar del cliente en el ranking de compras']
+  OCO_MONTO_COMPRADO "number(14,2)" [not null, note: 'Monto que el cliente compro en el periodo']
+
+  indexes {
+    (OCO_ID_PREMIACION, OCO_ID_CLIENTE) [unique]
+    (OCO_ID_PREMIACION, OCO_POSICION) [unique]
+  }
+
+  Note: 'Ordenes de compra emitidas a los mejores clientes de cada premiacion'
+}
+
+Table SGS_MONITOREO {
+  MON_ID number [pk, note: 'Identificador (SEQ_MONITOREO)']
+  MON_FECHA timestamp [not null, default: `SYSTIMESTAMP`, note: 'Fecha y hora de la revision']
+  MON_TAMANO_BD_MB "number(12,2)" [not null, note: 'Tamano total ocupado por la base, en MB']
+  MON_SESIONES_TOTALES number [not null, note: 'Sesiones abiertas al momento de la revision']
+  MON_SESIONES_ACTIVAS number [not null, note: 'Sesiones ejecutando al momento de la revision']
+  MON_OBJETOS_INVALIDOS number [not null, default: 0, note: 'Objetos invalidos encontrados']
+  MON_INDICES_DANADOS number [not null, default: 0, note: 'Indices inutilizables encontrados']
+  MON_ERRORES number [not null, default: 0, note: 'Errores registrados en SGS_BITACORA_ERROR en las 24 horas anteriores']
+
+  Note: 'Revisiones de monitoreo: tamano de la base, sesiones, objetos invalidos, indices danados y errores'
+}
+
+Table SGS_MONITOREO_TABLESPACE {
+  MOT_ID number [pk, note: 'Identificador (SEQ_MONITOREO_TABLESPACE)']
+  MOT_ID_MONITOREO number [not null, note: 'Revision de monitoreo']
+  MOT_TABLESPACE "varchar2(128)" [not null, note: 'Nombre del tablespace']
+  MOT_USADO_MB "number(12,2)" [not null, note: 'Espacio usado en MB']
+  MOT_MAXIMO_MB "number(12,2)" [not null, note: 'Tamano maximo (MAXSIZE) en MB']
+
+  indexes {
+    (MOT_ID_MONITOREO, MOT_TABLESPACE) [unique]
+  }
+
+  Note: 'Uso de cada tablespace en cada revision de monitoreo'
+}
+
+Ref: SGS_USUARIO.USU_ID_SUCURSAL > SGS_SUCURSAL.SUC_ID
+Ref: SGS_PADRON.PAD_ID_DISTRITO > SGS_DISTRITO_ELECTORAL.DIS_ID
+Ref: SGS_CLIENTE.CLI_ID_PAIS_NACIONALIDAD > SGS_PAIS.PAI_ID
+Ref: SGS_CLIENTE.CLI_ID_PAIS_RESIDENCIA > SGS_PAIS.PAI_ID
+Ref: SGS_CLIENTE_PERSONA.CLP_ID_CLIENTE > SGS_CLIENTE.CLI_ID
+Ref: SGS_CLIENTE_PERSONA.CLP_ID_PADRON > SGS_PADRON.PAD_ID
+Ref: SGS_PRODUCTO.PRO_ID_ARTICULO > SGS_ARTICULO_FACTURABLE.ART_ID
+Ref: SGS_PRODUCTO.PRO_ID_PROVEEDOR > SGS_PROVEEDOR.PRV_ID
+Ref: SGS_PRODUCTO.PRO_ID_FAMILIA > SGS_FAMILIA_PRODUCTO.FAM_ID
+Ref: SGS_SERVICIO.SER_ID_ARTICULO > SGS_ARTICULO_FACTURABLE.ART_ID
+Ref: SGS_CODIGO_BARRAS.COB_ID_PRODUCTO > SGS_PRODUCTO.PRO_ID
+Ref: SGS_PRODUCTO_SUCURSAL.PS_ID_PRODUCTO > SGS_PRODUCTO.PRO_ID
+Ref: SGS_PRODUCTO_SUCURSAL.PS_ID_SUCURSAL > SGS_SUCURSAL.SUC_ID
+Ref: SGS_HISTORICO_PRECIO.HPR_ID_PRODUCTO > SGS_PRODUCTO.PRO_ID
+Ref: SGS_CUENTA_PAGAR.CXP_ID_PROVEEDOR > SGS_PROVEEDOR.PRV_ID
+Ref: SGS_FACTURA_PROVEEDOR.FP_ID_PROVEEDOR > SGS_PROVEEDOR.PRV_ID
+Ref: SGS_FACTURA_PROVEEDOR.FP_ID_USUARIO > SGS_USUARIO.USU_ID
+Ref: SGS_DETALLE_FACTURA_PROVEEDOR.DFP_ID_FACTURA > SGS_FACTURA_PROVEEDOR.FP_ID
+Ref: SGS_DETALLE_FACTURA_PROVEEDOR.DFP_ID_PRODUCTO > SGS_PRODUCTO.PRO_ID
+Ref: SGS_PAGO_FACTURA_PROVEEDOR.PFP_ID_FACTURA > SGS_FACTURA_PROVEEDOR.FP_ID
+Ref: SGS_PAGO_FACTURA_PROVEEDOR.PFP_ID_TIPO_PAGO > SGS_TIPO_PAGO.TPA_ID
+Ref: SGS_DETALLE_CUENTA_PAGAR.DCP_ID_CUENTA > SGS_CUENTA_PAGAR.CXP_ID
+Ref: SGS_DETALLE_CUENTA_PAGAR.DCP_ID_FACTURA > SGS_FACTURA_PROVEEDOR.FP_ID
+Ref: SGS_CUENTA_COBRAR.CXC_ID_CLIENTE > SGS_CLIENTE.CLI_ID
+Ref: SGS_FACTURA_VENTA.FV_ID_CLIENTE > SGS_CLIENTE.CLI_ID
+Ref: SGS_FACTURA_VENTA.FV_ID_SUCURSAL > SGS_SUCURSAL.SUC_ID
+Ref: SGS_FACTURA_VENTA.FV_ID_USUARIO > SGS_USUARIO.USU_ID
+Ref: SGS_DETALLE_FACTURA_VENTA.DFV_ID_FACTURA > SGS_FACTURA_VENTA.FV_ID
+Ref: SGS_DETALLE_FACTURA_VENTA.DFV_ID_ARTICULO > SGS_ARTICULO_FACTURABLE.ART_ID
+Ref: SGS_PAGO_FACTURA_VENTA.PFV_ID_FACTURA > SGS_FACTURA_VENTA.FV_ID
+Ref: SGS_PAGO_FACTURA_VENTA.PFV_ID_TIPO_PAGO > SGS_TIPO_PAGO.TPA_ID
+Ref: SGS_DETALLE_CUENTA_COBRAR.DCC_ID_CUENTA > SGS_CUENTA_COBRAR.CXC_ID
+Ref: SGS_DETALLE_CUENTA_COBRAR.DCC_ID_FACTURA > SGS_FACTURA_VENTA.FV_ID
+Ref: SGS_NOTA_CREDITO_VENTA.NCV_ID_FACTURA > SGS_FACTURA_VENTA.FV_ID
+Ref: SGS_NOTA_CREDITO_VENTA.NCV_ID_USUARIO > SGS_USUARIO.USU_ID
+Ref: SGS_DETALLE_NOTA_CREDITO_VENTA.DNCV_ID_NOTA > SGS_NOTA_CREDITO_VENTA.NCV_ID
+Ref: SGS_DETALLE_NOTA_CREDITO_VENTA.DNCV_ID_DETALLE_FACTURA > SGS_DETALLE_FACTURA_VENTA.DFV_ID
+Ref: SGS_NOTA_CREDITO_PROVEEDOR.NCP_ID_FACTURA > SGS_FACTURA_PROVEEDOR.FP_ID
+Ref: SGS_NOTA_CREDITO_PROVEEDOR.NCP_ID_USUARIO > SGS_USUARIO.USU_ID
+Ref: SGS_DETALLE_NOTA_CREDITO_PROVEEDOR.DNCP_ID_NOTA > SGS_NOTA_CREDITO_PROVEEDOR.NCP_ID
+Ref: SGS_DETALLE_NOTA_CREDITO_PROVEEDOR.DNCP_ID_DETALLE_FACTURA > SGS_DETALLE_FACTURA_PROVEEDOR.DFP_ID
+Ref: SGS_LOTE.LOT_ID_DETALLE_COMPRA > SGS_DETALLE_FACTURA_PROVEEDOR.DFP_ID
+Ref: SGS_EXISTENCIA.EXI_ID_LOTE > SGS_LOTE.LOT_ID
+Ref: SGS_EXISTENCIA.EXI_ID_SUCURSAL > SGS_SUCURSAL.SUC_ID
+Ref: SGS_TRASLADO.TRA_ID_SUCURSAL_ORIGEN > SGS_SUCURSAL.SUC_ID
+Ref: SGS_TRASLADO.TRA_ID_SUCURSAL_DESTINO > SGS_SUCURSAL.SUC_ID
+Ref: SGS_TRASLADO.TRA_ID_USUARIO > SGS_USUARIO.USU_ID
+Ref: SGS_DETALLE_TRASLADO.DTR_ID_TRASLADO > SGS_TRASLADO.TRA_ID
+Ref: SGS_DETALLE_TRASLADO.DTR_ID_LOTE > SGS_LOTE.LOT_ID
+Ref: SGS_MOVIMIENTO_INVENTARIO.MOV_ID_LOTE > SGS_LOTE.LOT_ID
+Ref: SGS_MOVIMIENTO_INVENTARIO.MOV_ID_SUCURSAL > SGS_SUCURSAL.SUC_ID
+Ref: SGS_MOVIMIENTO_INVENTARIO.MOV_ID_DETALLE_COMPRA > SGS_DETALLE_FACTURA_PROVEEDOR.DFP_ID
+Ref: SGS_MOVIMIENTO_INVENTARIO.MOV_ID_DETALLE_VENTA > SGS_DETALLE_FACTURA_VENTA.DFV_ID
+Ref: SGS_MOVIMIENTO_INVENTARIO.MOV_ID_DETALLE_NC_VENTA > SGS_DETALLE_NOTA_CREDITO_VENTA.DNCV_ID
+Ref: SGS_MOVIMIENTO_INVENTARIO.MOV_ID_DETALLE_NC_PROVEEDOR > SGS_DETALLE_NOTA_CREDITO_PROVEEDOR.DNCP_ID
+Ref: SGS_MOVIMIENTO_INVENTARIO.MOV_ID_DETALLE_TRASLADO > SGS_DETALLE_TRASLADO.DTR_ID
+Ref: SGS_PROMOCION.PRM_ID_TIPO > SGS_TIPO_PROMOCION.TPR_ID
+Ref: SGS_PROMOCION_PRODUCTO.PP_ID_PROMOCION > SGS_PROMOCION.PRM_ID
+Ref: SGS_PROMOCION_PRODUCTO.PP_ID_PRODUCTO > SGS_PRODUCTO.PRO_ID
+Ref: SGS_PROMOCION_PREMIO.PPR_ID_PROMOCION > SGS_PROMOCION.PRM_ID
+Ref: SGS_PROMOCION_PREMIO.PPR_ID_PREMIO > SGS_PREMIO.PRE_ID
+Ref: SGS_ACCION_OTORGADA.ACO_ID_FACTURA > SGS_FACTURA_VENTA.FV_ID
+Ref: SGS_ACCION_OTORGADA.ACO_ID_PROMOCION > SGS_PROMOCION.PRM_ID
+Ref: SGS_DESCUENTO_FAMILIA.DSF_ID_DESCUENTO > SGS_DESCUENTO.DSC_ID
+Ref: SGS_DESCUENTO_FAMILIA.DSF_ID_FAMILIA > SGS_FAMILIA_PRODUCTO.FAM_ID
+Ref: SGS_DESCUENTO_PROVEEDOR.DSP_ID_DESCUENTO > SGS_DESCUENTO.DSC_ID
+Ref: SGS_DESCUENTO_PROVEEDOR.DSP_ID_PROVEEDOR > SGS_PROVEEDOR.PRV_ID
+Ref: SGS_DESCUENTO_DETALLE.DDE_ID_DESCUENTO > SGS_DESCUENTO.DSC_ID
+Ref: SGS_DESCUENTO_DETALLE.DDE_ID_PRODUCTO > SGS_PRODUCTO.PRO_ID
+Ref: SGS_BITACORA_DETALLE.BID_ID_BITACORA > SGS_BITACORA.BIT_ID
+Ref: SGS_DETALLE_CIERRE.DCI_ID_CIERRE > SGS_CIERRE_DIARIO.CIE_ID
+Ref: SGS_DETALLE_CIERRE.DCI_ID_USUARIO > SGS_USUARIO.USU_ID
+Ref: SGS_ORDEN_COMPRA.OCO_ID_PREMIACION > SGS_PREMIACION.PMC_ID
+Ref: SGS_ORDEN_COMPRA.OCO_ID_CLIENTE > SGS_CLIENTE.CLI_ID
+Ref: SGS_MONITOREO_TABLESPACE.MOT_ID_MONITOREO > SGS_MONITOREO.MON_ID
+
+TableGroup Catalogos_base {
+  SGS_PAIS
+  SGS_SUCURSAL
+  SGS_TIPO_NEGOCIO
+  SGS_USUARIO
+  SGS_FAMILIA_PRODUCTO
+  SGS_TIPO_PAGO
+}
+
+TableGroup Personas {
+  SGS_DISTRITO_ELECTORAL
+  SGS_PADRON
+  SGS_PROVEEDOR
+  SGS_CLIENTE
+  SGS_CLIENTE_PERSONA
+}
+
+TableGroup Producto {
+  SGS_ARTICULO_FACTURABLE
+  SGS_PRODUCTO
+  SGS_SERVICIO
+  SGS_CODIGO_BARRAS
+  SGS_PRODUCTO_SUCURSAL
+  SGS_HISTORICO_PRECIO
+}
+
+TableGroup Compras_y_cuentas_por_pagar {
+  SGS_CUENTA_PAGAR
+  SGS_FACTURA_PROVEEDOR
+  SGS_DETALLE_FACTURA_PROVEEDOR
+  SGS_PAGO_FACTURA_PROVEEDOR
+  SGS_DETALLE_CUENTA_PAGAR
+}
+
+TableGroup Ventas_y_cuentas_por_cobrar {
+  SGS_CUENTA_COBRAR
+  SGS_FACTURA_VENTA
+  SGS_DETALLE_FACTURA_VENTA
+  SGS_PAGO_FACTURA_VENTA
+  SGS_DETALLE_CUENTA_COBRAR
+}
+
+TableGroup Devoluciones {
+  SGS_NOTA_CREDITO_VENTA
+  SGS_DETALLE_NOTA_CREDITO_VENTA
+  SGS_NOTA_CREDITO_PROVEEDOR
+  SGS_DETALLE_NOTA_CREDITO_PROVEEDOR
+}
+
+TableGroup Inventario {
+  SGS_LOTE
+  SGS_EXISTENCIA
+  SGS_TRASLADO
+  SGS_DETALLE_TRASLADO
+  SGS_MOVIMIENTO_INVENTARIO
+}
+
+TableGroup Promociones_y_descuentos {
+  SGS_TIPO_PROMOCION
+  SGS_PROMOCION
+  SGS_PROMOCION_PRODUCTO
+  SGS_PREMIO
+  SGS_PROMOCION_PREMIO
+  SGS_ACCION_OTORGADA
+  SGS_DESCUENTO
+  SGS_DESCUENTO_FAMILIA
+  SGS_DESCUENTO_PROVEEDOR
+  SGS_DESCUENTO_DETALLE
+}
+
+TableGroup Administracion {
+  SGS_PARAMETRO
+  SGS_DESTINATARIO
+  SGS_BITACORA
+  SGS_BITACORA_DETALLE
+  SGS_BITACORA_ERROR
+  SGS_CIERRE_DIARIO
+  SGS_DETALLE_CIERRE
+  SGS_PREMIACION
+  SGS_ORDEN_COMPRA
+  SGS_MONITOREO
+  SGS_MONITOREO_TABLESPACE
+}
+
