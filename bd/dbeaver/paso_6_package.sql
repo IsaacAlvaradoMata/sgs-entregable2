@@ -2,6 +2,7 @@ CREATE OR REPLACE PACKAGE SGS_PKG_PROCESOS AS
     PROCEDURE avisar_clientes_limite;
     PROCEDURE avisar_coordinador_limite;
     PROCEDURE avisar_gerente_proveedores;
+    PROCEDURE avisar_morosos;
 END;
 
 CREATE OR REPLACE PACKAGE BODY SGS_PKG_PROCESOS AS
@@ -28,6 +29,19 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_PROCESOS AS
     FUNCTION hoy RETURN VARCHAR2 IS
     BEGIN
         RETURN TO_CHAR(SYSTIMESTAMP AT TIME ZONE 'America/Costa_Rica', 'DD/MM/YYYY');
+    END;
+    FUNCTION correos_de (p_tipo1 IN VARCHAR2, p_tipo2 IN VARCHAR2) RETURN VARCHAR2 IS
+        v_correos VARCHAR2(4000);
+    BEGIN
+        SELECT LISTAGG(DES_EMAIL, ',') WITHIN GROUP (ORDER BY DES_TIPO, DES_ID)
+          INTO v_correos
+          FROM SGS_DESTINATARIO
+         WHERE DES_TIPO IN (p_tipo1, p_tipo2)
+           AND DES_ESTADO = 'A';
+        IF v_correos IS NULL THEN
+            RAISE_APPLICATION_ERROR(-20121, 'No hay destinatarios activos de tipo ' || p_tipo1 || ' ni ' || p_tipo2);
+        END IF;
+        RETURN v_correos;
     END;
     PROCEDURE avisar_clientes_limite IS
         v_pct       NUMBER := SGS_PKG_PARAMETROS.obtener_numero('PCT_AVISO_CLIENTE');
@@ -129,6 +143,62 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_PROCESOS AS
     EXCEPTION
         WHEN OTHERS THEN
             SGS_PKG_ERRORES.registrar('SGS_PKG_PROCESOS.avisar_gerente_proveedores');
+            RAISE;
+    END;
+    PROCEDURE avisar_morosos IS
+        v_dias    NUMBER := SGS_PKG_PARAMETROS.obtener_numero('DIAS_MOROSIDAD');
+        v_lista   VARCHAR2(32000);
+        v_cuenta  PLS_INTEGER := 0;
+        v_total   NUMBER := 0;
+    BEGIN
+        FOR r IN (SELECT *
+                    FROM (SELECT m.*, TRUNC(SYSDATE) - TRUNC(NVL(m.ULTIMO_PAGO, m.FACTURA_MAS_VIEJA)) AS DIAS
+                            FROM (SELECT TRIM(c.CLI_NOMBRE || ' ' || p.CLP_APELLIDO1) AS NOMBRE,
+                                         x.CXC_SALDO AS SALDO,
+                                         (SELECT MAX(pf.PFV_FECHA)
+                                            FROM SGS_PAGO_FACTURA_VENTA pf
+                                            JOIN SGS_FACTURA_VENTA f ON f.FV_ID = pf.PFV_ID_FACTURA
+                                           WHERE f.FV_ID_CLIENTE = c.CLI_ID AND f.FV_ES_CREDITO = 'S') AS ULTIMO_PAGO,
+                                         (SELECT MAX(pf.PFV_MONTO) KEEP (DENSE_RANK LAST ORDER BY pf.PFV_FECHA, pf.PFV_ID)
+                                            FROM SGS_PAGO_FACTURA_VENTA pf
+                                            JOIN SGS_FACTURA_VENTA f ON f.FV_ID = pf.PFV_ID_FACTURA
+                                           WHERE f.FV_ID_CLIENTE = c.CLI_ID AND f.FV_ES_CREDITO = 'S') AS MONTO_ULTIMO_PAGO,
+                                         (SELECT MIN(f.FV_FECHA)
+                                            FROM SGS_FACTURA_VENTA f
+                                           WHERE f.FV_ID_CLIENTE = c.CLI_ID AND f.FV_ES_CREDITO = 'S' AND f.FV_ESTADO = 'P') AS FACTURA_MAS_VIEJA,
+                                         (SELECT COUNT(*)
+                                            FROM SGS_FACTURA_VENTA f
+                                           WHERE f.FV_ID_CLIENTE = c.CLI_ID AND f.FV_ES_CREDITO = 'S' AND f.FV_ESTADO = 'P') AS PENDIENTES
+                                    FROM SGS_CUENTA_COBRAR x
+                                    JOIN SGS_CLIENTE c ON c.CLI_ID = x.CXC_ID_CLIENTE
+                                    LEFT JOIN SGS_CLIENTE_PERSONA p ON p.CLP_ID_CLIENTE = c.CLI_ID
+                                   WHERE x.CXC_SALDO > 0) m)
+                   WHERE DIAS > v_dias
+                   ORDER BY DIAS DESC) LOOP
+            v_cuenta := v_cuenta + 1;
+            v_total  := v_total + r.SALDO;
+            v_lista  := v_lista || v_cuenta || '. ' || r.NOMBRE || CHR(10)
+                        || '   Saldo: ' || monto(r.SALDO) || ' en ' || r.PENDIENTES || ' factura(s) pendiente(s)' || CHR(10)
+                        || CASE WHEN r.ULTIMO_PAGO IS NOT NULL
+                                THEN '   Último pago: ' || TO_CHAR(r.ULTIMO_PAGO, 'DD/MM/YYYY') || ' por ' || monto(r.MONTO_ULTIMO_PAGO)
+                                ELSE '   Último pago: sin pagos (factura pendiente más vieja: '
+                                     || TO_CHAR(r.FACTURA_MAS_VIEJA, 'DD/MM/YYYY') || ')'
+                           END
+                        || ' | Días sin pagar: ' || r.DIAS || CHR(10);
+        END LOOP;
+        IF v_cuenta > 0 THEN
+            SGS_PKG_CORREO.enviar(
+                correos_de('GERENTE', 'COORDINADOR'),
+                'Clientes morosos (' || hoy || ')',
+                'Clientes con saldo pendiente y más de ' || v_dias || ' días sin pagar al ' || hoy || ':'
+                || CHR(10) || CHR(10) || v_lista || CHR(10)
+                || 'Total de clientes morosos: ' || v_cuenta || CHR(10)
+                || 'Saldo total adeudado por los clientes morosos: ' || monto(v_total) || CHR(10) || CHR(10)
+                || 'Mensaje automático del Sistema de Gestión de Supermercados.');
+        END IF;
+    EXCEPTION
+        WHEN OTHERS THEN
+            SGS_PKG_ERRORES.registrar('SGS_PKG_PROCESOS.avisar_morosos');
             RAISE;
     END;
 END;

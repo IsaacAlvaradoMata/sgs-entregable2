@@ -234,6 +234,7 @@ El enunciado pide cargar el padrón con la información actual, enlazarlo con cl
 3. **Hora de los jobs.** La fecha de inicio de cada job se fija en `America/Costa_Rica`, así el scheduler calcula la hora en Costa Rica aunque el servidor esté en otra zona (Docker está en UTC).
 4. **N2 (lista al coordinador).** El enunciado dice "clientes" y "cuentas por pagar"; se toma como **clientes**: un solo correo al coordinador con todos los clientes al 85 % o más de su límite (`PCT_AVISO_COORDINADOR`). N1 y N2 comparten la consulta. Pregunta enviada al profesor; si responde que son proveedores, solo cambia esa consulta.
 5. **N3 (proveedores al 70 %).** Sobre el límite **de cada proveedor** (`SGS_CUENTA_PAGAR`), con saldo ≥ 70 % (`PCT_AVISO_GERENTE_CXP`); "cerca de" se toma como "70 % o más". Un solo correo al gerente con los proveedores que llegaron al umbral y, para cumplir "que incluya a todos los proveedores", el estado de todos los proveedores con crédito y el total adeudado.
+6. **N4 (morosos).** Cliente con saldo y más de `DIAS_MOROSIDAD` días (30) desde su **último abono a una factura a crédito** (las compras de contado no cuentan como abono a la deuda); si nunca abonó, desde su factura a crédito pendiente más vieja. Mismo parámetro para los dos casos. Un solo correo a gerente y coordinador.
 
 ## Carril S — Servidores
 

@@ -711,3 +711,13 @@ El coordinador recibe un solo correo con todos los clientes que deben el 85 % o 
 ![Correo al gerente](capturas/B6_07_06_correo_gerente_cxp.png)
 
 El gerente recibe un solo correo: primero los proveedores a los que se les debe el 70 % o más de su propio límite (parámetro `PCT_AVISO_GERENTE_CXP`), con lo disponible, y después el estado de todos los proveedores con crédito y el total adeudado.
+
+## Clientes morosos
+
+![Clientes con saldo](capturas/B6_07_07_morosos.png)
+
+Los clientes con saldo y los días desde su último abono a una factura a crédito (o desde su factura pendiente más vieja si nunca abonaron). Solo José supera los 30 días del parámetro `DIAS_MOROSIDAD`.
+
+![Correo de morosos](capturas/B6_07_08_correo_morosos.png)
+
+Un solo correo, dirigido a la vez al gerente y al coordinador, con cada moroso, su saldo, sus facturas pendientes, su último pago y los días sin pagar, más el total de morosos y lo que deben.
