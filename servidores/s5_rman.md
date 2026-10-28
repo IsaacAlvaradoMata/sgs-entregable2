@@ -137,3 +137,20 @@ ssh-keygen -t rsa -b 4096 -N "" -f ~/.ssh/id_rsa
 ssh-copy-id oracle@sgspri
 ssh oracle@sgspri hostname         # sgspri.localdomain, sin contraseña
 ```
+
+## 7. Copia de los respaldos a SGSSTB
+
+`rsync` instalado como `root` en los dos servidores (`dnf install -y rsync`). En `SGSSTB` (como `oracle`): `mkdir -p /opt/oracle/respaldos_sgspri`.
+
+Desde `SGSPRI` (como `oracle`), sin contraseña gracias a la llave SSH:
+
+```
+rsync -av --delete-excluded --exclude='control*.ctl' --exclude='flashback/' --exclude='onlinelog/' \
+      /opt/oracle/fast_recovery_area/SGSPRI/ oracle@sgsstb:/opt/oracle/respaldos_sgspri/
+```
+
+- Se excluyen el control file vivo (`dbca` dejó `control02.ctl` en la FRA; copiarlo con la base abierta da un archivo inconsistente), los logs de flashback y los redo en línea: solo sirven en el propio servidor.
+- `--delete-excluded` mantiene la carpeta de `SGSSTB` igual a los respaldos vigentes de `SGSPRI`.
+- `rsync` solo envía lo nuevo: la primera copia fueron ~1,9 GB; las siguientes, apenas los respaldos nuevos.
+
+En `SGSSTB` quedan `archivelog`, `autobackup`, `backupset` y las carpetas de las PDB (por GUID).
