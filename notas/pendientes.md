@@ -20,7 +20,7 @@ Qué falta y quién lo tiene. Se actualiza al cerrar cada sesión de trabajo.
 - [x] Rutina de arranque y apagado probada (2026-10-27): [`servidores/operacion_diaria.md`](../servidores/operacion_diaria.md).
 - [x] Hora sincronizada con `chronyd` en los dos servidores.
 - [ ] S4: administración parametrizada del standby (necesita la tabla de parámetros de Isaac, I2).
-- [ ] S5: respaldos con RMAN.
+- [ ] S5: respaldos con RMAN (en curso: configuración lista, ver [`servidores/s5_rman.md`](../servidores/s5_rman.md)).
 - [ ] S6: switchover, failover y reincorporación (broker de Data Guard).
 - [ ] Borrar la tabla de prueba `system.prueba_dg` de `SGSPDB` cuando ya no se necesite.
 
