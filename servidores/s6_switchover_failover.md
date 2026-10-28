@@ -2,7 +2,7 @@
 
 Cambios de rol entre `SGSPRI` y `SGSSTB` con el broker de Data Guard (`dgmgrl`). Capturas en [`capturas/s6_switchover_failover/`](capturas/s6_switchover_failover/).
 
-Estado: **Broker configurado y switchover a `SGSSTB` probado.** Falta: regreso a `SGSPRI`, failover y reincorporación.
+Estado: **Broker configurado; switchover a `SGSSTB` y regreso a `SGSPRI` probados.** Falta: failover y reincorporación.
 
 ---
 
@@ -69,3 +69,5 @@ SELECT * FROM system.prueba_dg ORDER BY id;        -- aparece la fila 4
 Con los roles invertidos, los datos viajan de `SGSSTB` a `SGSPRI`.
 
 > Mientras `SGSSTB` es la principal, Isaac se conecta por la IP de Tailscale de `SGSSTB` (`100.69.133.78`), servicio `sgspdb`. El script de respaldo (`respaldo_rman.sh`) está pensado para `SGSPRI` como principal: no se ejecuta mientras los roles estén invertidos.
+
+**Regreso a los roles originales:** desde `dgmgrl sys@SGSPRI`, `SWITCHOVER TO SGSPRI;`. Después de reiniciar las VMs se verificó con `SHOW CONFIGURATION`: `sgspri` Primary, `sgsstb` Physical standby, `SUCCESS`.
