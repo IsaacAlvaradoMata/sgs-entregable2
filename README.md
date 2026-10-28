@@ -45,22 +45,25 @@ HP (Windows 11)
 | Servidor standby (`DB_UNIQUE_NAME`) | `SGSSTB` |
 | Prefijo de objetos | `SGS_` |
 
-Cualquier decisión nueva se anota en [`notas/decisiones.md`](notas/decisiones.md) antes de usarla.
+Cualquier decisión nueva se anota en [`docs/decisiones.md`](docs/decisiones.md) antes de usarla.
 
 ## Estructura del repositorio
 
 ```
 sgs-entregable2/
 ├── README.md              ← este archivo
+├── guia.md                ← guía de implementación por etapas
 ├── bd/                    ← scripts de base de datos (Isaac), numerados en orden de ejecución
 ├── servidores/
 │   ├── configuracion/     ← archivos de red de Oracle y ajustes de Linux
 │   ├── scripts/           ← scripts de Linux (traslados, limpieza, respaldos)
 │   └── rman/              ← scripts de respaldo y recuperación
 ├── notas/
-│   ├── decisiones.md      ← acuerdos tomados
 │   └── pendientes.md      ← qué falta y quién lo tiene
-└── docs/                  ← manuales finales
+├── docs/
+│   ├── decisiones.md      ← acuerdos tomados
+│   └── ...                ← enunciado y manuales finales
+└── entregable_1/          ← entregas del Entregable #1 (referencia)
 ```
 
 ## Cómo trabajamos con el repo
@@ -86,7 +89,7 @@ Se va completando a medida que avanzamos.
 
 | # | Script | Dónde se ejecuta | Conectado como | Estado |
 |---|---|---|---|---|
-| 01 | `bd/01_infraestructura.sql` | SGSPRI | SYS (PDB `SGSPDB`) | Pendiente |
+| 01 | `bd/01_infraestructura.sql` | SGSPRI | SYSTEM (PDB `SGSPDB`) | Pendiente |
 | 02 | `bd/02_modelo.sql` | SGSPRI | `SGS_ADMIN` | Pendiente |
 
 ## Estado del proyecto

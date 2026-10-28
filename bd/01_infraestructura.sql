@@ -1,18 +1,6 @@
-/* ================================================================
-   01_infraestructura.sql
-   SGS - Entregable #2 - Administracion de Bases de Datos (EIF-402)
-
-   Crea los tablespaces del proyecto y el usuario propietario SGS_ADMIN.
-
-   Ejecutar conectado a la PDB del ambiente con un usuario administrador
-   (SYSTEM):
-     - Desarrollo: FREEPDB1
-     - Oficial:    SGSPDB (servidor SGSPRI)
-   El script no depende del nombre de la PDB: usa la PDB de la sesion.
-
-   Antes de ejecutar: reemplazar <CLAVE_SGS_ADMIN> por la clave real
-   (la clave real no se sube al repositorio).
-   ================================================================ */
+-- 01_infraestructura.sql: crea los tablespaces del proyecto y el usuario propietario SGS_ADMIN.
+-- Se ejecuta como SYSTEM en la PDB del ambiente (desarrollo: FREEPDB1, oficial: SGSPDB en SGSPRI).
+-- Antes de ejecutar: reemplazar <CLAVE_SGS_ADMIN> por la clave real.
 
 -- 1. Validar que la sesion esta en una PDB y no en el CDB raiz
 DECLARE
@@ -24,13 +12,8 @@ BEGIN
 END;
 /
 
-/* ----------------------------------------------------------------
-   2. TABLESPACES
-   La ruta de los datafiles se toma del datafile SYSTEM de la PDB
-   actual, para que el script funcione igual en cualquier servidor.
-   MAXSIZE es finito para que el monitoreo de uso (umbral del 85 %)
-   tenga un limite real contra el cual medir.
-   ---------------------------------------------------------------- */
+-- 2. Tablespaces: la ruta se toma del datafile SYSTEM de la PDB actual para que funcione en cualquier servidor
+-- MAXSIZE finito para que el monitoreo de uso tenga un limite real contra el cual medir
 DECLARE
     v_datafile  VARCHAR2(500);
     v_directorio VARCHAR2(500);
@@ -57,9 +40,7 @@ BEGIN
 END;
 /
 
-/* ----------------------------------------------------------------
-   3. USUARIO PROPIETARIO DEL ESQUEMA
-   ---------------------------------------------------------------- */
+-- 3. Usuario propietario del esquema
 CREATE USER SGS_ADMIN
     IDENTIFIED BY "<CLAVE_SGS_ADMIN>"
     DEFAULT TABLESPACE SGS_DATA
@@ -68,13 +49,8 @@ CREATE USER SGS_ADMIN
     QUOTA UNLIMITED ON SGS_IDX
     QUOTA UNLIMITED ON SGS_AUD;
 
-/* ----------------------------------------------------------------
-   4. PRIVILEGIOS DE SISTEMA DEL PROPIETARIO
-   Solo los necesarios para crear y mantener sus propios objetos.
-   No se usan los roles CONNECT, RESOURCE ni DBA.
-   Los privilegios sobre paquetes del sistema (cifrado, correo,
-   archivos) se otorgan en los scripts de las etapas que los usan.
-   ---------------------------------------------------------------- */
+-- 4. Privilegios de sistema: solo los necesarios, sin CONNECT, RESOURCE ni DBA
+-- Los privilegios sobre paquetes del sistema (cifrado, correo, archivos) se otorgan en la etapa que los usa
 GRANT CREATE SESSION           TO SGS_ADMIN;
 GRANT CREATE TABLE             TO SGS_ADMIN;
 GRANT CREATE SEQUENCE          TO SGS_ADMIN;
@@ -84,17 +60,29 @@ GRANT CREATE PROCEDURE         TO SGS_ADMIN;
 GRANT CREATE TRIGGER           TO SGS_ADMIN;
 GRANT CREATE JOB               TO SGS_ADMIN;
 
-/* ----------------------------------------------------------------
-   5. VERIFICACION
-   ---------------------------------------------------------------- */
-SELECT tablespace_name, status, contents
-  FROM dba_tablespaces
- WHERE tablespace_name LIKE 'SGS%'
- ORDER BY tablespace_name;
+-- 5. Verificacion
+-- Tablespaces en linea con su tamano inicial y su MAXSIZE
+SELECT t.tablespace_name,
+       t.status,
+       d.bytes / 1024 / 1024    AS tamano_mb,
+       d.autoextensible,
+       d.maxbytes / 1024 / 1024 AS maxsize_mb
+  FROM dba_tablespaces t
+  JOIN dba_data_files d ON d.tablespace_name = t.tablespace_name
+ WHERE t.tablespace_name LIKE 'SGS%'
+ ORDER BY t.tablespace_name;
 
-SELECT username, account_status, default_tablespace, temporary_tablespace
-  FROM dba_users
- WHERE username = 'SGS_ADMIN';
+-- Usuario abierto, tablespaces por defecto y cuotas (-1 = ilimitada)
+SELECT u.username,
+       u.account_status,
+       u.default_tablespace,
+       u.temporary_tablespace,
+       q.tablespace_name AS tablespace_cuota,
+       DECODE(q.max_bytes, -1, 'ILIMITADA', TO_CHAR(q.max_bytes / 1024 / 1024) || ' MB') AS cuota
+  FROM dba_users u
+  JOIN dba_ts_quotas q ON q.username = u.username
+ WHERE u.username = 'SGS_ADMIN'
+ ORDER BY q.tablespace_name;
 
 SELECT privilege
   FROM dba_sys_privs
