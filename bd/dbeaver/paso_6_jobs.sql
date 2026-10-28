@@ -34,5 +34,18 @@ BEGIN
     programar('SGS_JOB_AVISO_VENCIDOS', 'SGS_PKG_PROCESOS.avisar_vencidos',
               'FREQ=DAILY;BYHOUR=7;BYMINUTE=0;BYSECOND=0',
               'Lista diaria al coordinador de los productos vencidos con existencia');
+    programar('SGS_JOB_REPORTE_INVENTARIO', 'SGS_PKG_PROCESOS.reportar_inventario',
+              'FREQ=WEEKLY;BYDAY=MON;BYHOUR=7;BYMINUTE=0;BYSECOND=0',
+              'Reporte semanal al coordinador de productos por vencer y con mas de 6 meses en inventario');
+    programar('SGS_JOB_DESCUENTOS', 'SGS_PKG_PROCESOS.incluir_descuentos',
+              'FREQ=WEEKLY;BYDAY=MON;BYHOUR=6;BYMINUTE=0;BYSECOND=0',
+              'Inclusion semanal de productos en los descuentos por antiguedad o por vencimiento');
+    programar('SGS_JOB_PREMIACION', 'SGS_PKG_PROCESOS.premiar_clientes',
+              'FREQ=MONTHLY;INTERVAL=' || SGS_PKG_PARAMETROS.obtener_numero('PREMIO_FRECUENCIA_MESES')
+              || ';BYMONTHDAY=1;BYHOUR=8;BYMINUTE=0;BYSECOND=0',
+              'Premiacion de los mejores clientes cada PREMIO_FRECUENCIA_MESES meses');
+    programar('SGS_JOB_CIERRE_DIARIO', 'SGS_PKG_PROCESOS.cerrar_dia',
+              'FREQ=DAILY;BYHOUR=0;BYMINUTE=5;BYSECOND=0',
+              'Cierre diario del dia anterior con detalle por cajero');
 END;
 

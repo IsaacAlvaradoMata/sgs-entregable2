@@ -731,3 +731,25 @@ Los lotes con fecha de vencimiento pasada que todavía tienen existencia: el ban
 ![Correo de vencidos](capturas/B6_07_10_correo_vencidos.png)
 
 El coordinador recibe la lista de lotes vencidos con su sucursal, fecha de vencimiento, cantidad y costo, y el total en lotes, unidades y valor al costo para decidir qué hacer con ellos.
+
+## Procesos de negocio programados
+
+![Jobs del scheduler](capturas/B6_07_11_jobs.png)
+
+Los 9 jobs de `DBMS_SCHEDULER` habilitados, con su frecuencia y su próxima ejecución en hora de Costa Rica: los 5 avisos diarios a las 07:00, el cierre diario a las 00:05, la inclusión de descuentos y el reporte de inventario los lunes a las 06:00 y 07:00, y la premiación cada `PREMIO_FRECUENCIA_MESES` meses (6) el día 1 a las 08:00.
+
+![Verificación de los procesos](capturas/B6_07_12_verificacion_procesos.png)
+
+Los 4 procesos corridos a demanda terminaron bien: la carne próxima a vencer y el detergente antiguo quedaron incluidos en sus descuentos, la premiación generó 6 órdenes de compra, el cierre del día cuadra (total = vendido − devuelto, y la suma por cajero coincide con el cierre) y no hubo errores.
+
+![Reporte semanal de inventario](capturas/B6_07_13_correo_inventario.png)
+
+El coordinador recibe, por separado, los lotes que vencen en los próximos 7 días y los lotes con más de 6 meses en inventario, con la sucursal y la cantidad de cada uno.
+
+![Clientes premiados](capturas/B6_07_14_correo_premiados.png)
+
+Los clientes con más compras netas del período reciben una orden de compra por el monto del parámetro `PREMIO_MONTO_ORDEN` (₡100.000); el coordinador recibe la lista ordenada y el total en órdenes.
+
+![Cierre diario](capturas/B6_07_15_correo_cierre.png)
+
+El gerente y el coordinador reciben el cierre del día: facturas y monto vendido, devoluciones y monto devuelto, total del día y el detalle por cajero.

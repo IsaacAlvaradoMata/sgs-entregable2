@@ -4,6 +4,10 @@ CREATE OR REPLACE PACKAGE SGS_PKG_PROCESOS AS
     PROCEDURE avisar_gerente_proveedores;
     PROCEDURE avisar_morosos;
     PROCEDURE avisar_vencidos;
+    PROCEDURE reportar_inventario;
+    PROCEDURE incluir_descuentos;
+    PROCEDURE premiar_clientes;
+    PROCEDURE cerrar_dia (p_fecha IN DATE DEFAULT NULL);
 END;
 
 CREATE OR REPLACE PACKAGE BODY SGS_PKG_PROCESOS AS
@@ -246,6 +250,209 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_PROCESOS AS
     EXCEPTION
         WHEN OTHERS THEN
             SGS_PKG_ERRORES.registrar('SGS_PKG_PROCESOS.avisar_vencidos');
+            RAISE;
+    END;
+    PROCEDURE reportar_inventario IS
+        v_dias       NUMBER := SGS_PKG_PARAMETROS.obtener_numero('DIAS_PROXIMO_VENCER');
+        v_meses      NUMBER := SGS_PKG_PARAMETROS.obtener_numero('MESES_ANTIGUEDAD_BODEGA');
+        v_vencer     VARCHAR2(32000);
+        v_antiguos   VARCHAR2(32000);
+        v_n_vencer   PLS_INTEGER := 0;
+        v_n_antiguos PLS_INTEGER := 0;
+    BEGIN
+        FOR r IN (SELECT s.SUC_NOMBRE AS SUCURSAL, pr.PRO_CODIGO AS CODIGO, a.ART_NOMBRE AS PRODUCTO, l.LOT_ID AS LOTE,
+                         l.LOT_FECHA_INGRESO AS INGRESO, l.LOT_FECHA_VENCIMIENTO AS VENCIMIENTO, e.EXI_CANTIDAD AS CANTIDAD
+                    FROM SGS_EXISTENCIA e
+                    JOIN SGS_LOTE l ON l.LOT_ID = e.EXI_ID_LOTE
+                    JOIN SGS_DETALLE_FACTURA_PROVEEDOR d ON d.DFP_ID = l.LOT_ID_DETALLE_COMPRA
+                    JOIN SGS_PRODUCTO pr ON pr.PRO_ID = d.DFP_ID_PRODUCTO
+                    JOIN SGS_ARTICULO_FACTURABLE a ON a.ART_ID = pr.PRO_ID_ARTICULO
+                    JOIN SGS_SUCURSAL s ON s.SUC_ID = e.EXI_ID_SUCURSAL
+                   WHERE e.EXI_CANTIDAD > 0
+                   ORDER BY l.LOT_FECHA_VENCIMIENTO, l.LOT_FECHA_INGRESO, s.SUC_NOMBRE) LOOP
+            IF r.VENCIMIENTO >= TRUNC(SYSDATE) AND r.VENCIMIENTO <= TRUNC(SYSDATE) + v_dias THEN
+                v_n_vencer := v_n_vencer + 1;
+                v_vencer := v_vencer || v_n_vencer || '. ' || r.CODIGO || ' ' || r.PRODUCTO || ' (lote ' || r.LOTE || ') en '
+                            || r.SUCURSAL || CHR(10) || '   Vence: ' || TO_CHAR(r.VENCIMIENTO, 'DD/MM/YYYY')
+                            || ' (en ' || (r.VENCIMIENTO - TRUNC(SYSDATE)) || ' días) | Cantidad: ' || r.CANTIDAD || CHR(10);
+            END IF;
+            IF r.INGRESO <= ADD_MONTHS(TRUNC(SYSDATE), -v_meses) THEN
+                v_n_antiguos := v_n_antiguos + 1;
+                v_antiguos := v_antiguos || v_n_antiguos || '. ' || r.CODIGO || ' ' || r.PRODUCTO || ' (lote ' || r.LOTE || ') en '
+                              || r.SUCURSAL || CHR(10) || '   Ingresó: ' || TO_CHAR(r.INGRESO, 'DD/MM/YYYY')
+                              || ' (' || TRUNC(MONTHS_BETWEEN(TRUNC(SYSDATE), TRUNC(r.INGRESO))) || ' meses) | Cantidad: '
+                              || r.CANTIDAD || CHR(10);
+            END IF;
+        END LOOP;
+        IF v_n_vencer + v_n_antiguos > 0 THEN
+            SGS_PKG_CORREO.enviar_a_tipo(
+                'COORDINADOR',
+                'Reporte semanal de inventario (' || hoy || ')',
+                'Productos por vencer en los próximos ' || v_dias || ' días:' || CHR(10) || CHR(10)
+                || NVL(v_vencer, 'Ninguno.' || CHR(10)) || CHR(10)
+                || 'Productos con más de ' || v_meses || ' meses en inventario:' || CHR(10) || CHR(10)
+                || NVL(v_antiguos, 'Ninguno.' || CHR(10)) || CHR(10)
+                || 'Mensaje automático del Sistema de Gestión de Supermercados.');
+        END IF;
+    EXCEPTION
+        WHEN OTHERS THEN
+            SGS_PKG_ERRORES.registrar('SGS_PKG_PROCESOS.reportar_inventario');
+            RAISE;
+    END;
+    PROCEDURE incluir_descuentos IS
+    BEGIN
+        SAVEPOINT sp_incluir_descuentos;
+        INSERT INTO SGS_DESCUENTO_DETALLE (DDE_ID, DDE_ID_DESCUENTO, DDE_ID_PRODUCTO)
+        SELECT SEQ_DESCUENTO_DETALLE.NEXTVAL, x.DSC_ID, x.PRO_ID
+          FROM (SELECT DISTINCT ds.DSC_ID, d.DFP_ID_PRODUCTO AS PRO_ID
+                  FROM SGS_DESCUENTO ds
+                 CROSS JOIN SGS_LOTE l
+                  JOIN SGS_EXISTENCIA e ON e.EXI_ID_LOTE = l.LOT_ID AND e.EXI_CANTIDAD > 0
+                  JOIN SGS_DETALLE_FACTURA_PROVEEDOR d ON d.DFP_ID = l.LOT_ID_DETALLE_COMPRA
+                 WHERE ds.DSC_ESTADO = 'A'
+                   AND (ds.DSC_FECHA_FIN IS NULL OR ds.DSC_FECHA_FIN >= TRUNC(SYSDATE))
+                   AND ((ds.DSC_TIPO_CRITERIO = 'INGRESO'
+                         AND TRUNC(SYSDATE) - TRUNC(l.LOT_FECHA_INGRESO) >= ds.DSC_DIAS_DESDE_INGRESO)
+                     OR (ds.DSC_TIPO_CRITERIO = 'VENCIMIENTO'
+                         AND l.LOT_FECHA_VENCIMIENTO >= TRUNC(SYSDATE)
+                         AND l.LOT_FECHA_VENCIMIENTO - TRUNC(SYSDATE) <= ds.DSC_DIAS_PARA_VENCER))) x
+         WHERE NOT EXISTS (SELECT 1
+                             FROM SGS_DESCUENTO_DETALLE dd
+                            WHERE dd.DDE_ID_DESCUENTO = x.DSC_ID
+                              AND dd.DDE_ID_PRODUCTO = x.PRO_ID);
+        DBMS_OUTPUT.PUT_LINE('Productos incluidos en descuentos: ' || SQL%ROWCOUNT);
+        COMMIT;
+    EXCEPTION
+        WHEN OTHERS THEN
+            ROLLBACK TO sp_incluir_descuentos;
+            SGS_PKG_ERRORES.registrar('SGS_PKG_PROCESOS.incluir_descuentos');
+            RAISE;
+    END;
+    PROCEDURE premiar_clientes IS
+        v_meses     NUMBER := SGS_PKG_PARAMETROS.obtener_numero('PREMIO_FRECUENCIA_MESES');
+        v_cantidad  NUMBER := SGS_PKG_PARAMETROS.obtener_numero('PREMIO_CANTIDAD_CLIENTES');
+        v_monto     NUMBER := SGS_PKG_PARAMETROS.obtener_numero('PREMIO_MONTO_ORDEN');
+        v_inicio    DATE   := ADD_MONTHS(TRUNC(SYSDATE), -v_meses);
+        v_fin       DATE   := TRUNC(SYSDATE);
+        v_id        SGS_PREMIACION.PMC_ID%TYPE;
+        v_lista     VARCHAR2(32000);
+        v_posicion  PLS_INTEGER := 0;
+        v_guardado  BOOLEAN := FALSE;
+    BEGIN
+        SAVEPOINT sp_premiar_clientes;
+        INSERT INTO SGS_PREMIACION (PMC_ID, PMC_PERIODO_INICIO, PMC_PERIODO_FIN, PMC_MONTO_ORDEN)
+        VALUES (SEQ_PREMIACION.NEXTVAL, v_inicio, v_fin, v_monto)
+        RETURNING PMC_ID INTO v_id;
+        FOR r IN (SELECT *
+                    FROM (SELECT c.CLI_ID, c.CLI_CEDULA AS CEDULA, TRIM(c.CLI_NOMBRE || ' ' || p.CLP_APELLIDO1) AS NOMBRE,
+                                 SUM(f.NETO) AS COMPRADO
+                            FROM (SELECT fv.FV_ID_CLIENTE, fv.FV_FECHA, fv.FV_ESTADO,
+                                         fv.FV_TOTAL - NVL((SELECT SUM(n.NCV_MONTO)
+                                                              FROM SGS_NOTA_CREDITO_VENTA n
+                                                             WHERE n.NCV_ID_FACTURA = fv.FV_ID), 0) AS NETO
+                                    FROM SGS_FACTURA_VENTA fv) f
+                            JOIN SGS_CLIENTE c ON c.CLI_ID = f.FV_ID_CLIENTE
+                            LEFT JOIN SGS_CLIENTE_PERSONA p ON p.CLP_ID_CLIENTE = c.CLI_ID
+                           WHERE c.CLI_ES_DEFECTO = 'N'
+                             AND c.CLI_ESTADO = 'A'
+                             AND f.FV_ESTADO <> 'N'
+                             AND f.FV_FECHA >= v_inicio
+                             AND f.FV_FECHA < v_fin + 1
+                           GROUP BY c.CLI_ID, c.CLI_CEDULA, c.CLI_NOMBRE, p.CLP_APELLIDO1)
+                   WHERE COMPRADO > 0
+                   ORDER BY COMPRADO DESC, CLI_ID
+                   FETCH FIRST v_cantidad ROWS ONLY) LOOP
+            v_posicion := v_posicion + 1;
+            INSERT INTO SGS_ORDEN_COMPRA (OCO_ID, OCO_ID_PREMIACION, OCO_ID_CLIENTE, OCO_POSICION, OCO_MONTO_COMPRADO)
+            VALUES (SEQ_ORDEN_COMPRA.NEXTVAL, v_id, r.CLI_ID, v_posicion, r.COMPRADO);
+            v_lista := v_lista || v_posicion || '. ' || r.NOMBRE || ' (' || r.CEDULA || ')' || CHR(10)
+                       || '   Compras del periodo: ' || monto(r.COMPRADO) || ' | Orden de compra: ' || monto(v_monto) || CHR(10);
+        END LOOP;
+        IF v_posicion = 0 THEN
+            ROLLBACK TO sp_premiar_clientes;
+            RETURN;
+        END IF;
+        COMMIT;
+        v_guardado := TRUE;
+        SGS_PKG_CORREO.enviar_a_tipo(
+            'COORDINADOR',
+            'Clientes premiados (' || hoy || ')',
+            'Los ' || v_posicion || ' clientes que más compraron del ' || TO_CHAR(v_inicio, 'DD/MM/YYYY')
+            || ' al ' || TO_CHAR(v_fin, 'DD/MM/YYYY') || ' reciben una orden de compra por ' || monto(v_monto) || ':'
+            || CHR(10) || CHR(10) || v_lista || CHR(10)
+            || 'Total en órdenes de compra: ' || monto(v_posicion * v_monto) || CHR(10) || CHR(10)
+            || 'Mensaje automático del Sistema de Gestión de Supermercados.');
+    EXCEPTION
+        WHEN OTHERS THEN
+            IF NOT v_guardado THEN
+                ROLLBACK TO sp_premiar_clientes;
+            END IF;
+            SGS_PKG_ERRORES.registrar('SGS_PKG_PROCESOS.premiar_clientes');
+            RAISE;
+    END;
+    PROCEDURE cerrar_dia (p_fecha IN DATE DEFAULT NULL) IS
+        v_fecha      DATE := NVL(TRUNC(p_fecha), TRUNC(SYSDATE) - 1);
+        v_id         SGS_CIERRE_DIARIO.CIE_ID%TYPE;
+        v_facturas   NUMBER;
+        v_vendido    NUMBER;
+        v_cant_dev   NUMBER;
+        v_monto_dev  NUMBER;
+        v_detalle    VARCHAR2(32000);
+        v_guardado   BOOLEAN := FALSE;
+    BEGIN
+        SAVEPOINT sp_cerrar_dia;
+        DELETE FROM SGS_DETALLE_CIERRE
+         WHERE DCI_ID_CIERRE IN (SELECT CIE_ID FROM SGS_CIERRE_DIARIO WHERE CIE_FECHA = v_fecha);
+        DELETE FROM SGS_CIERRE_DIARIO WHERE CIE_FECHA = v_fecha;
+        SELECT COUNT(*), NVL(SUM(FV_TOTAL), 0)
+          INTO v_facturas, v_vendido
+          FROM SGS_FACTURA_VENTA
+         WHERE FV_FECHA >= v_fecha AND FV_FECHA < v_fecha + 1
+           AND FV_ESTADO <> 'N';
+        SELECT COUNT(*), NVL(SUM(NCV_MONTO), 0)
+          INTO v_cant_dev, v_monto_dev
+          FROM SGS_NOTA_CREDITO_VENTA
+         WHERE NCV_FECHA >= v_fecha AND NCV_FECHA < v_fecha + 1;
+        INSERT INTO SGS_CIERRE_DIARIO (CIE_ID, CIE_FECHA, CIE_CANTIDAD_FACTURAS, CIE_MONTO_VENDIDO,
+                                       CIE_CANTIDAD_DEVOLUCIONES, CIE_MONTO_DEVOLUCIONES, CIE_TOTAL)
+        VALUES (SEQ_CIERRE_DIARIO.NEXTVAL, v_fecha, v_facturas, v_vendido, v_cant_dev, v_monto_dev, v_vendido - v_monto_dev)
+        RETURNING CIE_ID INTO v_id;
+        FOR r IN (SELECT m.USUARIO, u.USU_NOMBRE AS NOMBRE,
+                         SUM(m.FACTURAS) AS FACTURAS, SUM(m.VENDIDO) AS VENDIDO,
+                         SUM(m.DEVOLUCIONES) AS DEVOLUCIONES, SUM(m.DEVUELTO) AS DEVUELTO
+                    FROM (SELECT FV_ID_USUARIO AS USUARIO, 1 AS FACTURAS, FV_TOTAL AS VENDIDO, 0 AS DEVOLUCIONES, 0 AS DEVUELTO
+                            FROM SGS_FACTURA_VENTA
+                           WHERE FV_FECHA >= v_fecha AND FV_FECHA < v_fecha + 1 AND FV_ESTADO <> 'N'
+                          UNION ALL
+                          SELECT NCV_ID_USUARIO, 0, 0, 1, NCV_MONTO
+                            FROM SGS_NOTA_CREDITO_VENTA
+                           WHERE NCV_FECHA >= v_fecha AND NCV_FECHA < v_fecha + 1) m
+                    JOIN SGS_USUARIO u ON u.USU_ID = m.USUARIO
+                   GROUP BY m.USUARIO, u.USU_NOMBRE
+                   ORDER BY u.USU_NOMBRE) LOOP
+            INSERT INTO SGS_DETALLE_CIERRE (DCI_ID, DCI_ID_CIERRE, DCI_ID_USUARIO, DCI_CANTIDAD_FACTURAS, DCI_MONTO_VENDIDO,
+                                            DCI_CANTIDAD_DEVOLUCIONES, DCI_MONTO_DEVOLUCIONES)
+            VALUES (SEQ_DETALLE_CIERRE.NEXTVAL, v_id, r.USUARIO, r.FACTURAS, r.VENDIDO, r.DEVOLUCIONES, r.DEVUELTO);
+            v_detalle := v_detalle || '- ' || r.NOMBRE || ': ' || r.FACTURAS || ' factura(s) por ' || monto(r.VENDIDO)
+                         || ' | ' || r.DEVOLUCIONES || ' devolución(es) por ' || monto(r.DEVUELTO) || CHR(10);
+        END LOOP;
+        COMMIT;
+        v_guardado := TRUE;
+        SGS_PKG_CORREO.enviar(
+            correos_de('GERENTE', 'COORDINADOR'),
+            'Cierre diario del ' || TO_CHAR(v_fecha, 'DD/MM/YYYY'),
+            'Cierre del ' || TO_CHAR(v_fecha, 'DD/MM/YYYY') || ':' || CHR(10) || CHR(10)
+            || 'Facturas: ' || v_facturas || ' | Vendido: ' || monto(v_vendido) || CHR(10)
+            || 'Devoluciones: ' || v_cant_dev || ' | Devuelto: ' || monto(v_monto_dev) || CHR(10)
+            || 'Total del día: ' || monto(v_vendido - v_monto_dev) || CHR(10) || CHR(10)
+            || 'Detalle por cajero:' || CHR(10) || NVL(v_detalle, 'Sin movimientos.' || CHR(10)) || CHR(10)
+            || 'Mensaje automático del Sistema de Gestión de Supermercados.');
+    EXCEPTION
+        WHEN OTHERS THEN
+            IF NOT v_guardado THEN
+                ROLLBACK TO sp_cerrar_dia;
+            END IF;
+            SGS_PKG_ERRORES.registrar('SGS_PKG_PROCESOS.cerrar_dia');
             RAISE;
     END;
 END;

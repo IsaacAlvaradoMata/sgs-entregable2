@@ -360,16 +360,16 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 **Depende de:** B3 (y B2 para el correo)
 
 **Implementaciones:**
-- [ ] Semanal: productos por vencer y productos con más de 6 meses en bodega → coordinador.
-- [ ] Semanal: descuentos planeados → incluir productos al detalle del descuento.
-- [ ] Semestral: top 10 clientes → orden de compra → coordinador.
-- [ ] Diario: cierre diario (totales y detalle por cajero) → coordinador y gerente.
+- [x] Semanal: productos por vencer y productos con más de 6 meses en bodega → coordinador.
+- [x] Semanal: descuentos planeados → incluir productos al detalle del descuento.
+- [x] Semestral: top 10 clientes → orden de compra → coordinador.
+- [x] Diario: cierre diario (totales y detalle por cajero) → coordinador y gerente.
 - [x] Clientes al 85 % de su límite → correo al propio cliente.
 - [x] Lista del 85 % → coordinador (ver pendiente N2).
 - [x] Cuentas por pagar al 70 % → **un solo correo** al gerente con todos los proveedores.
 - [x] Morosos (saldo pendiente y último pago con más de un mes) → gerente y coordinador.
 - [x] Productos vencidos con total → coordinador.
-- [ ] Cada proceso se puede ejecutar **a demanda** para la revisión.
+- [x] Cada proceso se puede ejecutar **a demanda** para la revisión.
 
 **Cuidados:** frecuencias y umbrales desde parámetros; los correos agrupados también se evalúan ("notificaciones agrupadas correctamente").
 
@@ -661,10 +661,10 @@ Estado: ⬜ pendiente · 🟨 en progreso · ✅ listo
 | F06 | Inventario automático en devoluciones | B3 | Act. automática del inventario (5 %) | ⬜ |
 | F07 | Historial automático de precios | B3 | Historial de precios (3 %) | ⬜ |
 | F08 | Límites al facturar como pendiente | B3 | Validación de límites de crédito (4 %) | ⬜ |
-| F09 | Semanal: por vencer y más de 6 meses | B6 | Próximos a vencer (3 %), antigüedad (3 %) | ⬜ |
+| F09 | Semanal: por vencer y más de 6 meses | B6 | Próximos a vencer (3 %), antigüedad (3 %) | ✅ |
 | F10 | Tipos de promoción y acciones automáticas | B1 + B3 | Admin. automática de promociones (4 %) | ⬜ |
-| F11 | Descuentos planeados semanales | B6 | Admin. de descuentos programados (3 %) | ⬜ |
-| F12 | Top 10 clientes y orden de compra | B6 | Clientes premiados (4 %) | ⬜ |
+| F11 | Descuentos planeados semanales | B6 | Admin. de descuentos programados (3 %) | ✅ |
+| F12 | Top 10 clientes y orden de compra | B6 | Clientes premiados (4 %) | ✅ |
 | F13 | Bitácoras de las 7 áreas | B4 | Bitácora de cambios (4 %) | ✅ |
 | F14 | Notificaciones parametrizadas, clave cifrada | B2 | Notificaciones / cifrado | ⬜ |
 | F15 | Correo directo desde Oracle, sin VPN | B2 + I3 | Notificaciones | ⬜ |
@@ -685,7 +685,7 @@ Estado: ⬜ pendiente · 🟨 en progreso · ✅ listo
 | N3 | Gerente al 70 % de CxP, un solo correo | B6 | Notificaciones agrupadas (2 %) | ✅ |
 | N4 | Clientes morosos | B6 | Clientes morosos (2 %) | ✅ |
 | N5 | Productos vencidos con total | B6 | Productos vencidos (2 %) | ✅ |
-| N6 | Cierre diario automático | B1 + B6 | Cierre diario automático (4 %) | ⬜ |
+| N6 | Cierre diario automático | B1 + B6 | Cierre diario automático (4 %) | ✅ |
 | N7 | Tablespaces sobre el 85 % | B8 | Verificación de tablespaces (3 %) | ⬜ |
 | N8 | Objetos inválidos | B8 | Verificación de objetos inválidos (2 %) | ⬜ |
 | N9 | Índices dañados | B8 | Verificación del estado de índices (2 %) | ⬜ |

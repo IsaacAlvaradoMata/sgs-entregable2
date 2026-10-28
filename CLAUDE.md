@@ -111,7 +111,7 @@ bd/
 ├── 04_reglas_negocio.sql        ← B3  ✅
 ├── 05_bitacoras.sql             ← B4  ✅
 ├── 06_padron.sql                ← B5  ✅
-├── 07_procesos.sql              ← B6
+├── 07_procesos.sql              ← B6  ✅
 ├── 08_seguridad.sql             ← B7
 ├── 09_monitoreo.sql             ← B8
 └── 10_datos_operaciones.sql     ← datos de prueba de operaciones (con los packages; va al final)
@@ -196,7 +196,8 @@ Prohibido: `IF NOT EXISTS` en DDL, `BOOLEAN` en columnas, `SELECT` sin `FROM DUA
 - **B4 (bitácoras) completa:** `bd/05_bitacoras.sql` (`SGS_PKG_BITACORA`, 33 triggers `TRG_AUD_*` generados de las columnas del modelo, vistas `SGS_VW_BITACORA` y `SGS_VW_BITACORA_CRITICA`); críticas definidas en `docs/decisiones.md`. Probado: rastro en las 7 áreas, críticas bien marcadas y el `ROLLBACK` deshace el rastro.
 - **B5 (padrón) completa en Docker:** `bd/06_padron.sql` (directorio `SGS_DIR_PADRON` desde SYSDBA, tablas externas `SGS_EXT_DISTELEC` y `SGS_EXT_PADRON` sobre los TXT del TSE, `SGS_PKG_PADRON.cargar` con `MERGE` que nunca borra). Cargados 2179 distritos y 3 762 240 personas; recargar el mismo archivo no cambia nada. Sin job: el enunciado no lo pide. Falta acordar con Andrés la carpeta en las VMs.
 - Instalación en SGSPRI (valores por servidor, orden, verificaciones): `servidores/configuracion/instalacion_bd_sgspri.md`.
-- **Siguiente:** B6 (procesos programados y notificaciones).
+- **B6 (procesos y notificaciones) completa:** `bd/07_procesos.sql` con `SGS_PKG_PROCESOS` (N1 a N5 diarios a las 07:00; P1 inventario y P2 descuentos semanales; P3 premiación cada `PREMIO_FRECUENCIA_MESES` meses; P4 cierre diario a las 00:05 del día anterior) y 9 jobs de `DBMS_SCHEDULER` en hora de Costa Rica. Todos probados a demanda con su correo. Decisiones en `docs/decisiones.md`; N2 en espera de la respuesta del profesor.
+- **Siguiente:** B7 (seguridad: perfiles, roles con clave cifrada, usuarios).
 - Conexiones DBeaver: `Docker - SGS_ADMIN (FREEPDB1)`, SYSTEM y `free (SYSDBA)` (entra como SYS a `FREEPDB1`). Bloques PL/SQL con `Cmd + Enter`; varias sentencias con `Option + X`.
 - El Docker está en hora UTC (6 h adelante); en los servidores se configura `America/Costa_Rica` (pendiente de Andrés).
 
