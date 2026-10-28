@@ -288,6 +288,6 @@ ALTER SYSTEM SET local_listener='(ADDRESS=(PROTOCOL=TCP)(HOST=sgsstb.localdomain
 ALTER SYSTEM REGISTER;
 ```
 
-Después `lsnrctl status` muestra `SGSPRI`, `SGSPRIXDB` y `sgspdb` con `status READY`.
+Después `lsnrctl status` muestra en `SGSPRI`: `SGSPRI`, `SGSPRIXDB` y `sgspdb` con `status READY`; en `SGSSTB`: `SGSSTB`, `SGSSTBXDB` y `sgspdb` (solo lectura) con `status READY`.
 
 > Lección: para agregar entradas a `tnsnames.ora` usar `cat >>` (agrega), no `cat >` (reemplaza el archivo).
