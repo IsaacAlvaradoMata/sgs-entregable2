@@ -66,9 +66,7 @@ La consulta no devuelve filas: `SGS_ADMIN` no tiene roles, en particular `CONNEC
 
 ## B1 — Modelo (`bd/02_modelo.sql`)
 
-Ambiente: Docker, PDB `FREEPDB1`, conectado como `SGS_ADMIN`. Ejecución completa desde cero (`00` → `01` → `02`) el 2026-10-26.
-
-> **Pendiente:** las capturas 1 a 4 se retoman al cerrar el modelo. Después de tomarlas se agregaron `SGS_MONITOREO` y `SGS_MONITOREO_TABLESPACE` (57 tablas). Las capturas 5 y 6 siguen vigentes.
+Ambiente: Docker, PDB `FREEPDB1`, conectado como `SGS_ADMIN`. Las capturas 1 a 4 son de la instalación desde cero del 2026-10-28 (`00` → `10`), con el modelo definitivo; no cuentan las tablas externas del padrón ni las de las vistas materializadas, que no son tablas del modelo.
 
 ### 1. Resumen de objetos del esquema
 
@@ -81,7 +79,7 @@ UNION ALL SELECT 'Vistas', COUNT(*) FROM user_views;
 
 ![Resumen de objetos](capturas/B1_02_01_resumen_objetos.png)
 
-El esquema tiene 55 tablas, cada una con su secuencia (55), 163 índices y la vista del precio de venta.
+El esquema tiene 57 tablas, cada una con su secuencia (57), 167 índices y 4 vistas (precio de venta, bitácora, bitácora crítica y crecimiento de la base).
 
 ### 2. Tablas por tablespace
 
@@ -94,7 +92,7 @@ SELECT tablespace_name, COUNT(*) AS tablas
 
 ![Tablas por tablespace](capturas/B1_02_02_tablas_tablespace.png)
 
-Las tablas de auditoría (histórico de precios, bitácora, detalle de bitácora y bitácora de errores) están en `SGS_AUD`; las 51 restantes en `SGS_DATA`.
+Las 6 tablas de auditoría (histórico de precios, bitácora, detalle de bitácora, bitácora de errores, monitoreo y su detalle por tablespace) están en `SGS_AUD`; las 51 restantes en `SGS_DATA`.
 
 ### 3. Índices por tablespace
 
@@ -106,7 +104,7 @@ SELECT tablespace_name, COUNT(*) AS indices
 
 ![Índices por tablespace](capturas/B1_02_03_indices_tablespace.png)
 
-Los 163 índices (llaves primarias, únicas, índices únicos funcionales e índices secundarios) están en `SGS_IDX`, separados de los datos.
+Los 167 índices (llaves primarias, únicas, índices únicos funcionales e índices secundarios) están en `SGS_IDX`, separados de los datos.
 
 ### 4. Restricciones de integridad por tipo
 
@@ -123,7 +121,7 @@ SELECT DECODE(constraint_type, 'P', 'Llave primaria', 'R', 'Llave foranea',
 
 ![Restricciones](capturas/B1_02_04_restricciones.png)
 
-55 llaves primarias, 74 llaves foráneas, 43 restricciones únicas y 86 restricciones CHECK (sin contar los `NOT NULL`).
+57 llaves primarias, 75 llaves foráneas, 44 restricciones únicas y 90 restricciones CHECK (sin contar los `NOT NULL`).
 
 ### 5. Objetos inválidos
 
@@ -861,3 +859,19 @@ Cinco premiaciones semestrales, cada una con los clientes que más compraron en 
 ![Cierres](capturas/B6_10_02_cierres.png)
 
 Cinco cierres diarios: el de la venta a crédito de José, tres días sin ventas (el cierre se hace igual) y el día de las ventas de prueba con sus cuatro cajeros.
+
+# Instalación desde cero
+
+El sistema completo se reinstaló en el Docker con los scripts oficiales, en orden (`00` a `10`), con un script de terminal que pone las claves del ambiente, ejecuta cada parte con SQL*Plus y el usuario que corresponde (SYS o SGS_ADMIN) y se detiene ante cualquier error o problema de compilación.
+
+![Instalación desde cero](capturas/I0_instalacion_desde_cero.png)
+
+Las 16 partes de la instalación terminaron sin errores en 1 minuto 27 segundos, incluida la carga de los 3,7 millones de personas del padrón.
+
+![Verificación general](capturas/I0_verificacion_general.png)
+
+Después de instalar: 57 tablas, todas con 5 registros o más; 16 packages válidos; 50 triggers; 4 vistas y 2 vistas materializadas; ningún objeto inválido; 15 jobs programados; el padrón completo; la clave del correo y las de los 4 roles cifradas; 5 premiaciones y 5 cierres; y la bitácora con las operaciones auditadas.
+
+![Bitácora de errores](capturas/I0_bitacora_errores.png)
+
+Los datos de prueba incluyen seis operaciones que el sistema debe rechazar; cada rechazo queda en la bitácora de errores con el programa que lo detectó y su mensaje: venta a crédito sobre el límite, traslado sin existencia suficiente, cédula fuera del padrón, proveedor inexistente, límite de crédito menor a la deuda y venta en la bodega central.

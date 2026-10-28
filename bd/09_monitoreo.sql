@@ -112,10 +112,17 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_MONITOREO AS
         v_lista   VARCHAR2(32000);
         v_cuenta  PLS_INTEGER := 0;
     BEGIN
+        -- Una vista materializada queda INVALID solo por estar desactualizada (la refresca su job): se revisa si no compila
         FOR r IN (SELECT OBJECT_TYPE, OBJECT_NAME, LAST_DDL_TIME
                     FROM USER_OBJECTS
                    WHERE STATUS = 'INVALID'
-                   ORDER BY OBJECT_TYPE, OBJECT_NAME) LOOP
+                     AND OBJECT_TYPE <> 'MATERIALIZED VIEW'
+                  UNION ALL
+                  SELECT 'MATERIALIZED VIEW', m.MVIEW_NAME, o.LAST_DDL_TIME
+                    FROM USER_MVIEWS m
+                    JOIN USER_OBJECTS o ON o.OBJECT_NAME = m.MVIEW_NAME AND o.OBJECT_TYPE = 'MATERIALIZED VIEW'
+                   WHERE m.COMPILE_STATE = 'COMPILATION_ERROR'
+                   ORDER BY 1, 2) LOOP
             v_cuenta := v_cuenta + 1;
             v_lista  := v_lista || v_cuenta || '. ' || r.OBJECT_TYPE || ' ' || r.OBJECT_NAME
                         || ' (último cambio: ' || TO_CHAR(r.LAST_DDL_TIME, 'DD/MM/YYYY HH24:MI') || ')' || CHR(10);
@@ -223,7 +230,10 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_MONITOREO AS
           INTO v_totales, v_activas
           FROM SYS.V_$SESSION
          WHERE TYPE = 'USER';
-        SELECT COUNT(*) INTO v_invalidos FROM USER_OBJECTS WHERE STATUS = 'INVALID';
+        SELECT (SELECT COUNT(*) FROM USER_OBJECTS WHERE STATUS = 'INVALID' AND OBJECT_TYPE <> 'MATERIALIZED VIEW')
+               + (SELECT COUNT(*) FROM USER_MVIEWS WHERE COMPILE_STATE = 'COMPILATION_ERROR')
+          INTO v_invalidos
+          FROM DUAL;
         SELECT (SELECT COUNT(*) FROM USER_INDEXES WHERE STATUS = 'UNUSABLE')
                + (SELECT COUNT(*) FROM USER_IND_PARTITIONS WHERE STATUS = 'UNUSABLE')
           INTO v_indices

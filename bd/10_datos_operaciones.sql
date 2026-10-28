@@ -2,6 +2,7 @@
 -- Se ejecuta como SGS_ADMIN despues de los demas scripts. Los triggers mantienen saldos, existencias, movimientos e historial.
 -- Seccion A: operaciones hechas durante las pruebas de B3. Seccion B: el resto. Seccion C: simulacion de fechas para B6.
 -- Seccion D: historial de los procesos (premiaciones de semestres anteriores, cierres, descuentos y monitoreo).
+-- Seccion E: operaciones que el sistema debe rechazar (quedan en la bitacora de errores). Al final se refrescan las vistas materializadas.
 
 -- A. Operaciones de las pruebas de B3 (en una instalacion desde cero se ejecutan antes de la seccion B)
 DECLARE
@@ -277,5 +278,78 @@ BEGIN
     FOR i IN 1 .. 5 LOOP
         SGS_PKG_MONITOREO.registrar_estado;
     END LOOP;
+END;
+/
+
+-- E. Operaciones que el sistema debe rechazar: cada rechazo queda en SGS_BITACORA_ERROR con el programa que lo detecto
+DECLARE
+    v_id         NUMBER;
+    v_laura      NUMBER;
+    v_sin_pagos  SGS_PKG_VENTAS.t_pagos;
+BEGIN
+    -- Venta a credito que supera el limite de Laura (ya usa el 86 %)
+    BEGIN
+        SGS_PKG_VENTAS.registrar_venta(p_sucursal => 'Sucursal San Isidro', p_usuario => 'mcastro', p_cliente => '199990005',
+            p_es_credito => 'S', p_lineas => SGS_PKG_VENTAS.t_lineas(1 => SGS_PKG_VENTAS.t_linea(codigo => 'ABA-001', cantidad => 20)),
+            p_pagos => v_sin_pagos, p_id_factura => v_id);
+    EXCEPTION
+        WHEN OTHERS THEN
+            NULL;
+    END;
+
+    -- Traslado de mas unidades de las que hay en la bodega
+    BEGIN
+        SGS_PKG_INVENTARIO.trasladar('Bodega Central', 'Sucursal San Isidro', 'crodriguez',
+            SGS_PKG_INVENTARIO.t_lineas(1 => SGS_PKG_INVENTARIO.t_linea(codigo => 'BEB-001', cantidad => 100000)), v_id);
+    EXCEPTION
+        WHEN OTHERS THEN
+            NULL;
+    END;
+
+    -- Cliente nacional con una cedula que no esta en el padron
+    BEGIN
+        SGS_PKG_CLIENTES.registrar_nacional(p_cedula => '999999999', p_sexo => 'M', p_id_cliente => v_id);
+    EXCEPTION
+        WHEN OTHERS THEN
+            NULL;
+    END;
+
+    -- Compra a un proveedor que no existe
+    BEGIN
+        SGS_PKG_COMPRAS.registrar_compra(p_proveedor => '3109999999', p_numero => 'XX-0001', p_usuario => 'crodriguez',
+            p_es_credito => 'N',
+            p_lineas => SGS_PKG_COMPRAS.t_lineas(1 => SGS_PKG_COMPRAS.t_linea(codigo => 'ABA-001', cantidad => 10, costo => 1550,
+                                                                              vencimiento => NULL)),
+            p_id_factura => v_id);
+    EXCEPTION
+        WHEN OTHERS THEN
+            NULL;
+    END;
+
+    -- Limite de credito menor a lo que el cliente ya debe
+    SELECT CLI_ID INTO v_laura FROM SGS_CLIENTE WHERE CLI_CEDULA = '199990005';
+    BEGIN
+        SGS_PKG_CREDITO.asignar_credito(v_laura, 1000);
+    EXCEPTION
+        WHEN OTHERS THEN
+            NULL;
+    END;
+
+    -- Venta en la Bodega Central (solo abastece a las sucursales)
+    BEGIN
+        SGS_PKG_VENTAS.registrar_venta(p_sucursal => 'Bodega Central', p_usuario => 'crodriguez', p_cliente => NULL,
+            p_es_credito => 'N', p_lineas => SGS_PKG_VENTAS.t_lineas(1 => SGS_PKG_VENTAS.t_linea(codigo => 'ABA-001', cantidad => 1)),
+            p_pagos => SGS_PKG_VENTAS.t_pagos(1 => SGS_PKG_VENTAS.t_pago(tipo => 'Efectivo', monto => NULL)),
+            p_id_factura => v_id);
+    EXCEPTION
+        WHEN OTHERS THEN
+            NULL;
+    END;
+END;
+/
+
+-- Vistas materializadas al dia con todos los datos cargados (en operacion las refresca su job a las 00:30)
+BEGIN
+    DBMS_MVIEW.REFRESH('SGS_MV_VENTAS_MENSUALES,SGS_MV_INVENTARIO_CONSOLIDADO', 'CC');
 END;
 /
