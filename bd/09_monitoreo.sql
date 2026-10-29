@@ -63,6 +63,7 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_MONITOREO AS
          WHERE m.TABLESPACE_NAME IN ('SGS_DATA', 'SGS_IDX', 'SGS_AUD')
          ORDER BY m.TABLESPACE_NAME;
 
+    -- Formatos de los correos: tamaños en MB y porcentajes (1.234,50 MB y 85,00 %), fecha y hora de Costa Rica y el pie del mensaje
     FUNCTION mb (p_valor IN NUMBER) RETURN VARCHAR2 IS
     BEGIN
         RETURN TO_CHAR(p_valor, 'FM999G999G990D00', 'NLS_NUMERIC_CHARACTERS='',.''') || ' MB';

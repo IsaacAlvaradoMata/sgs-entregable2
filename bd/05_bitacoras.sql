@@ -18,12 +18,15 @@ END;
 -- La operacion es critica si es un borrado, si cambia una columna marcada como critica o si el trigger la marca.
 -- El registro va en la misma transaccion: si la operacion se deshace, su rastro tambien.
 CREATE OR REPLACE PACKAGE SGS_PKG_BITACORA AS
+    -- Limpia las columnas anotadas por la operacion anterior; cada trigger lo llama al empezar
     PROCEDURE iniciar;
+    -- Anota el valor anterior y el nuevo de una columna (texto, numero o fecha); p_es_critica = 'S' marca la operacion como critica
     PROCEDURE columna (p_columna IN VARCHAR2, p_anterior IN VARCHAR2, p_nuevo IN VARCHAR2, p_es_critica IN VARCHAR2 DEFAULT 'N');
     PROCEDURE columna (p_columna IN VARCHAR2, p_anterior IN NUMBER,   p_nuevo IN NUMBER,   p_es_critica IN VARCHAR2 DEFAULT 'N');
     PROCEDURE columna (p_columna IN VARCHAR2, p_anterior IN DATE,     p_nuevo IN DATE,     p_es_critica IN VARCHAR2 DEFAULT 'N');
     -- Indica si el cambio lo hace el programa indicado (un package o trigger que esta en la pila de llamadas)
     FUNCTION desde (p_programa IN VARCHAR2) RETURN BOOLEAN;
+    -- Graba el encabezado y el detalle de las columnas que cambiaron; una actualizacion que no cambio ninguna columna no se graba
     PROCEDURE guardar (p_area        IN VARCHAR2,
                        p_tabla       IN VARCHAR2,
                        p_operacion   IN VARCHAR2,

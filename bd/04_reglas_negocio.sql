@@ -74,6 +74,7 @@ EXCEPTION
 END;
 /
 
+-- Registro de clientes nacionales (desde el padron), extranjeros y empresas
 CREATE OR REPLACE PACKAGE SGS_PKG_CLIENTES AS
     -- Cliente nacional: nombre y apellidos se toman del padron con la cedula
     PROCEDURE registrar_nacional (p_cedula            IN  VARCHAR2,
@@ -105,6 +106,7 @@ CREATE OR REPLACE PACKAGE SGS_PKG_CLIENTES AS
                                     p_direccion_casa    IN  VARCHAR2 DEFAULT NULL,
                                     p_id_cliente        OUT NUMBER);
 
+    -- Cliente empresa: se identifica con la cedula juridica y no lleva datos de persona
     PROCEDURE registrar_empresa (p_cedula_juridica   IN  VARCHAR2,
                                  p_nombre            IN  VARCHAR2,
                                  p_direccion_trabajo IN  VARCHAR2 DEFAULT NULL,
@@ -118,6 +120,7 @@ END;
 
 CREATE OR REPLACE PACKAGE BODY SGS_PKG_CLIENTES AS
 
+    -- Id del pais por su codigo ISO (-20046 si no existe)
     FUNCTION id_pais (p_codigo IN VARCHAR2) RETURN NUMBER IS
         v_id SGS_PAIS.PAI_ID%TYPE;
     BEGIN
@@ -451,6 +454,7 @@ BEGIN
 END;
 /
 
+-- Cada cambio en el saldo de una factura de proveedor se refleja en la cuenta (el CHECK impide superar el limite); saldo en 0: pasa a cancelada
 CREATE OR REPLACE TRIGGER TRG_DCP_SALDO
 AFTER INSERT OR UPDATE OF DCP_SALDO ON SGS_DETALLE_CUENTA_PAGAR
 FOR EACH ROW
@@ -474,6 +478,7 @@ EXCEPTION
 END;
 /
 
+-- Un pago o abono a una factura de proveedor a credito baja su saldo
 CREATE OR REPLACE TRIGGER TRG_PFP_ABONO
 AFTER INSERT ON SGS_PAGO_FACTURA_PROVEEDOR
 FOR EACH ROW
@@ -490,6 +495,7 @@ EXCEPTION
 END;
 /
 
+-- Una nota de credito de proveedor rebaja el saldo pendiente de la factura, hasta dejarlo en 0
 CREATE OR REPLACE TRIGGER TRG_NCP_SALDO
 AFTER INSERT ON SGS_NOTA_CREDITO_PROVEEDOR
 FOR EACH ROW
@@ -547,6 +553,7 @@ EXCEPTION
 END;
 /
 
+-- Compras a proveedores, abonos y devoluciones; cada linea de compra crea su lote en la bodega central
 CREATE OR REPLACE PACKAGE SGS_PKG_COMPRAS AS
     -- Linea de compra: codigo del producto, cantidad, costo unitario y vencimiento del lote (nulo si no vence)
     TYPE t_linea IS RECORD (codigo VARCHAR2(30), cantidad NUMBER, costo NUMBER, vencimiento DATE);
@@ -593,6 +600,7 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_COMPRAS AS
             RAISE_APPLICATION_ERROR(-20072, 'No existe o no esta activo el usuario ' || p_username);
     END;
 
+    -- Id de un tipo de pago activo por nombre (-20073 si no existe)
     FUNCTION id_tipo_pago (p_nombre IN VARCHAR2) RETURN NUMBER IS
         v_id SGS_TIPO_PAGO.TPA_ID%TYPE;
     BEGIN
@@ -603,6 +611,7 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_COMPRAS AS
             RAISE_APPLICATION_ERROR(-20073, 'No existe el tipo de pago ' || p_nombre);
     END;
 
+    -- Id de la bodega central, donde entran todas las compras
     FUNCTION id_central RETURN NUMBER IS
         v_id SGS_SUCURSAL.SUC_ID%TYPE;
     BEGIN
@@ -929,6 +938,7 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_INVENTARIO AS
             RAISE_APPLICATION_ERROR(-20091, 'No existe la sucursal ' || p_nombre);
     END;
 
+    -- Id del producto por su codigo (-20092 si no existe)
     FUNCTION id_producto (p_codigo IN VARCHAR2) RETURN NUMBER IS
         v_id SGS_PRODUCTO.PRO_ID%TYPE;
     BEGIN
@@ -939,6 +949,7 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_INVENTARIO AS
             RAISE_APPLICATION_ERROR(-20092, 'No existe el producto ' || p_codigo);
     END;
 
+    -- Id de un usuario activo del sistema (-20095 si no existe)
     FUNCTION id_usuario (p_username IN VARCHAR2) RETURN NUMBER IS
         v_id SGS_USUARIO.USU_ID%TYPE;
     BEGIN
@@ -1098,6 +1109,7 @@ EXCEPTION
 END;
 /
 
+-- Ventas de contado y a credito en las sucursales, abonos y devoluciones de clientes
 CREATE OR REPLACE PACKAGE SGS_PKG_VENTAS AS
     -- Linea de venta: codigo del producto (o nombre del servicio) y cantidad
     TYPE t_linea IS RECORD (codigo VARCHAR2(100), cantidad NUMBER);
@@ -1151,6 +1163,7 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_VENTAS AS
             RAISE_APPLICATION_ERROR(-20112, 'No existe o no esta activo el usuario ' || p_username);
     END;
 
+    -- Id de un tipo de pago activo por nombre (-20113 si no existe)
     FUNCTION id_tipo_pago (p_nombre IN VARCHAR2) RETURN NUMBER IS
         v_id SGS_TIPO_PAGO.TPA_ID%TYPE;
     BEGIN

@@ -156,7 +156,7 @@ flowchart TD
 - [x] Repositorio creado, ambos con acceso y README en la raíz.
 - [x] **Lista de parámetros confirmada** (nombres y valores iniciales). En especial los que usa Andrés: tiempo máximo entre redo (5 min), tamaño de redo (50 MB), frecuencia de traslado (10 min), días antes de borrar (3), hora del respaldo diario.
 - [x] Cuenta de correo del proyecto creada (remitente de las notificaciones).
-- [ ] Preguntas al profesor enviadas (ver [pendientes](#pendientes-de-confirmar-con-el-profesor)).
+- [x] Preguntas al profesor: cerradas con decisiones propias (ver [pendientes](#pendientes-de-confirmar-con-el-profesor)).
 
 **Terminado cuando…** todo lo anterior está anotado en `docs/decisiones.md`.
 
@@ -613,7 +613,7 @@ Todo paso que funcione se anota de inmediato (con capturas) para el manual de in
 
 **Depende de:** C1
 
-- [ ] Documentación interna del código revisada.
+- [x] Documentación interna del código revisada (2026-10-29).
 - [ ] Manual de instalación y despliegue.
 - [ ] Manual de administración del standby.
 - [ ] Manual técnico de administración y mantenimiento.
@@ -728,7 +728,7 @@ Estado: ⬜ pendiente · 🟨 en progreso · ✅ listo. La columna «Dónde se d
 | NG1 | Manual paso a paso con conceptos y solución de cada requerimiento | C2 | Manual de instalación (3 %) | Manual de instalación y despliegue | ⬜ |
 | NG2 | Solución y manual ante acciones problemáticas en la standby | S7 + C2 | Manual del standby (2 %) | `servidores/s7_situaciones.md` (Andrés) y manual del standby | 🟨 |
 | NG3 | Implementación funcional presentada en vivo | C1 + C3 | Defensa (10 %) | C1 y ensayo | ⬜ |
-| NG4 | Documentación interna del código | Transversal | Documentación del código (3 %) | Comentarios en los scripts `bd/` y `servidores/scripts/` (falta la revisión final) | 🟨 |
+| NG4 | Documentación interna del código | Transversal | Documentación del código (3 %) | Comentarios en los scripts `bd/` y `servidores/scripts/` (revisados el 2026-10-29) | ✅ |
 | NG5 | Modelo relacional recalificado | B1 | Modelo relacional | B1; `docs/modelo/` (diagrama y diccionario de datos) | ✅ |
 | NG6 | Correo externo definido antes de la defensa | C3 | Notificaciones | Cambiar `SGS_DESTINATARIO` antes de la defensa | ⬜ |
 
@@ -737,9 +737,9 @@ Estado: ⬜ pendiente · 🟨 en progreso · ✅ listo. La columna «Dónde se d
 ## Pendientes de confirmar con el profesor
 
 - [x] **N2:** la notificación al coordinador del 85 % "en las cuentas por pagar", ¿es de clientes o de proveedores? (La escala de funcionamiento dice "Proveedores con límite de crédito".) Resuelto: clientes (cuentas por cobrar), como está en el modelo.
-- [ ] **N3:** el 70 % del gerente, ¿sobre el límite de cada proveedor o sobre un límite global de cuentas por pagar?
-- [ ] ¿Quién es "el coordinador"? (Define destinatarios y, quizás, un rol.)
-- [ ] **F04:** "cargar automáticamente el padrón", ¿incluye descargarlo o basta con cargarlo desde el archivo?
-- [ ] ¿Cómo se combinan las dos tablas de calificación (rúbrica principal y escala de funcionamiento)?
-- [ ] Formato de los manuales: ¿cuatro documentos separados o uno solo?
+- [x] **N3:** el 70 % del gerente, ¿sobre el límite de cada proveedor o sobre un límite global de cuentas por pagar? Cerrada: sobre el límite de cada proveedor (`docs/decisiones.md`, N3).
+- [x] ¿Quién es "el coordinador"? (Define destinatarios y, quizás, un rol.) Cerrada: un tipo de destinatario `COORDINADOR` en `SGS_DESTINATARIO`, con uno o varios correos.
+- [x] **F04:** "cargar automáticamente el padrón", ¿incluye descargarlo o basta con cargarlo desde el archivo? Cerrada: se carga desde los archivos oficiales del TSE con `SGS_PKG_PADRON.cargar` (tablas externas y `MERGE`).
+- [x] ¿Cómo se combinan las dos tablas de calificación (rúbrica principal y escala de funcionamiento)? Cerrada: no cambia lo que hay que hacer; se cumplen las dos.
+- [x] Formato de los manuales: ¿cuatro documentos separados o uno solo? Cerrada: cuatro documentos, uno por rubro de la rúbrica.
 - [x] ~~¿Dos VMs en una misma computadora cuentan como dos servidores?~~ Sí, confirmado.

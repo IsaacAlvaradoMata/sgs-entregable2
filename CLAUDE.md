@@ -213,12 +213,9 @@ Prohibido: `IF NOT EXISTS` en DDL, `BOOLEAN` en columnas, `SELECT` sin `FROM DUA
 
 **Pendiente de Andrés:** definir `RESP_HORA_DIARIO`; unir las VMs a Tailscale y abrir el listener en la IP `100.x`; zona horaria; wallet del correo y prueba de puertos en las dos VMs; decir si standby/RMAN necesitan alguna tabla. Ver `notas/pendientes.md`.
 
-**Preguntas abiertas al profesor:**
-- ¿El 70% del gerente es sobre el límite de cada proveedor o un límite global de CxP?
-- ¿Quién es "el coordinador"?
-- ¿"Cargar automáticamente el padrón" incluye descargarlo o basta cargarlo desde archivo?
-- ¿Cómo se combinan las dos tablas de calificación?
-- ¿Los manuales son cuatro documentos o uno?
+**Documentación del código (2026-10-29):** revisada en todos los scripts; se agregaron 19 comentarios en `03`, `04`, `05` y `09`. Solo son comentarios, así que no se recompiló nada en SGSPRI ni en Docker: el código guardado en esas bases no tiene esos comentarios nuevos, pero se comporta igual.
+
+**Preguntas al profesor:** cerradas con decisiones propias (2026-10-29): N2 con clientes, N3 sobre el límite de cada proveedor, el coordinador es un tipo de destinatario, el padrón se carga desde los archivos del TSE y los manuales son cuatro documentos (uno por rubro de la rúbrica). Ver `guia.md` y `docs/decisiones.md`.
 
 ---
 

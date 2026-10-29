@@ -208,6 +208,7 @@ COMMIT;
 -- Errores propios: -20020 no existe el parametro cifrado, -20021 el parametro existe sin cifrar, -20022 no se pudo descifrar
 CREATE OR REPLACE PACKAGE SGS_PKG_CIFRADO AS
     PROCEDURE guardar_parametro (p_codigo IN VARCHAR2, p_valor IN VARCHAR2, p_descripcion IN VARCHAR2 DEFAULT NULL);
+    -- Valor descifrado de un parametro cifrado (-20020 si no existe, -20022 si no se puede descifrar)
     FUNCTION obtener_parametro (p_codigo IN VARCHAR2) RETURN VARCHAR2;
     FUNCTION hash_clave (p_sal IN VARCHAR2, p_clave IN VARCHAR2) RETURN VARCHAR2;
     -- Devuelve 'S' si la clave del usuario del sistema es correcta y esta activo; 'N' en otro caso
@@ -233,6 +234,7 @@ CREATE OR REPLACE PACKAGE BODY SGS_PKG_CIFRADO AS
                                    typ => c_tipo, key => c_llave, iv => v_iv)));
     END;
 
+    -- Toma el vector inicial de los primeros 16 bytes y descifra el resto con la misma llave
     FUNCTION descifrar (p_hex IN VARCHAR2) RETURN VARCHAR2 IS
         v_raw RAW(2000) := HEXTORAW(p_hex);
     BEGIN
