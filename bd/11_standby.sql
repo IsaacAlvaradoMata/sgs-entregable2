@@ -74,23 +74,28 @@ CREATE OR REPLACE PACKAGE SGS_ADMIN.SGS_PKG_STANDBY AS
     -- Archivo de actualizacion cada STB_MINUTOS_ARCHIVO minutos (ArchiveLagTarget en las dos bases)
     -- y aviso al DBA si los redo logs no miden STB_MB_ARCHIVO
     PROCEDURE aplicar_archivo;
+    -- Cierra el archivo de redo actual para que viaje completo a la standby; si STB_MINUTOS_TRASLADO cambio,
+    -- reprograma su job con el valor nuevo
+    PROCEDURE trasladar;
 END;
 /
 
 CREATE OR REPLACE PACKAGE BODY SGS_ADMIN.SGS_PKG_STANDBY AS
 
     -- Ejecuta un script de /home/oracle/scripts como oracle con hasta dos argumentos
-    PROCEDURE ejecutar_script (p_script IN VARCHAR2, p_arg1 IN VARCHAR2, p_arg2 IN VARCHAR2 DEFAULT NULL) IS
+    PROCEDURE ejecutar_script (p_script IN VARCHAR2, p_arg1 IN VARCHAR2 DEFAULT NULL, p_arg2 IN VARCHAR2 DEFAULT NULL) IS
         v_job VARCHAR2(128) := DBMS_SCHEDULER.GENERATE_JOB_NAME('SGS_STB_');
     BEGIN
         DBMS_SCHEDULER.CREATE_JOB(
             job_name            => v_job,
             job_type            => 'EXECUTABLE',
             job_action          => '/home/oracle/scripts/' || p_script,
-            number_of_arguments => CASE WHEN p_arg2 IS NULL THEN 1 ELSE 2 END,
+            number_of_arguments => CASE WHEN p_arg2 IS NOT NULL THEN 2 WHEN p_arg1 IS NOT NULL THEN 1 ELSE 0 END,
             credential_name     => 'SGS_CRED_ORACLE',
             enabled             => FALSE);
-        DBMS_SCHEDULER.SET_JOB_ARGUMENT_VALUE(v_job, 1, p_arg1);
+        IF p_arg1 IS NOT NULL THEN
+            DBMS_SCHEDULER.SET_JOB_ARGUMENT_VALUE(v_job, 1, p_arg1);
+        END IF;
         IF p_arg2 IS NOT NULL THEN
             DBMS_SCHEDULER.SET_JOB_ARGUMENT_VALUE(v_job, 2, p_arg2);
         END IF;
@@ -113,6 +118,19 @@ CREATE OR REPLACE PACKAGE BODY SGS_ADMIN.SGS_PKG_STANDBY AS
         ejecutar_script('standby_archivo.sh',
                         TO_CHAR(SGS_PKG_PARAMETROS.obtener_numero('STB_MINUTOS_ARCHIVO')),
                         TO_CHAR(SGS_PKG_PARAMETROS.obtener_numero('STB_MB_ARCHIVO')));
+    END;
+
+    PROCEDURE trasladar IS
+        v_intervalo VARCHAR2(100) := 'FREQ=MINUTELY;INTERVAL=' || SGS_PKG_PARAMETROS.obtener_numero('STB_MINUTOS_TRASLADO');
+        v_actual    USER_SCHEDULER_JOBS.REPEAT_INTERVAL%TYPE;
+    BEGIN
+        ejecutar_script('standby_traslado.sh');
+        SELECT repeat_interval INTO v_actual
+          FROM user_scheduler_jobs
+         WHERE job_name = 'SGS_JOB_STB_TRASLADO';
+        IF v_actual <> v_intervalo THEN
+            DBMS_SCHEDULER.SET_ATTRIBUTE('SGS_JOB_STB_TRASLADO', 'repeat_interval', v_intervalo);
+        END IF;
     END;
 
 END;
@@ -140,6 +158,28 @@ BEGIN
 END;
 /
 
+-- Traslado al standby cada STB_MINUTOS_TRASLADO minutos
+-- A demanda: EXEC DBMS_SCHEDULER.RUN_JOB('SGS_ADMIN.SGS_JOB_STB_TRASLADO', use_current_session => TRUE);
+BEGIN
+    BEGIN
+        DBMS_SCHEDULER.DROP_JOB('SGS_ADMIN.SGS_JOB_STB_TRASLADO', force => TRUE);
+    EXCEPTION
+        WHEN OTHERS THEN
+            IF SQLCODE <> -27475 THEN
+                RAISE;
+            END IF;
+    END;
+    DBMS_SCHEDULER.CREATE_JOB(
+        job_name        => 'SGS_ADMIN.SGS_JOB_STB_TRASLADO',
+        job_type        => 'STORED_PROCEDURE',
+        job_action      => 'SGS_ADMIN.SGS_PKG_STANDBY.trasladar',
+        start_date      => SYSTIMESTAMP AT TIME ZONE 'America/Costa_Rica',
+        repeat_interval => 'FREQ=MINUTELY;INTERVAL=' || SGS_ADMIN.SGS_PKG_PARAMETROS.obtener_numero('STB_MINUTOS_TRASLADO'),
+        enabled         => TRUE,
+        comments        => 'Traslado de la informacion al standby cada STB_MINUTOS_TRASLADO minutos');
+END;
+/
+
 -- 5. Verificacion (vistas ALL_: SYS ve todo y SGS_ADMIN lo suyo): credencial, jobs y ultimas ejecuciones
 SELECT owner, credential_name, username, enabled
   FROM all_credentials
@@ -149,7 +189,7 @@ SELECT job_name, enabled, state, repeat_interval,
        TO_CHAR(next_run_date, 'YYYY-MM-DD HH24:MI TZR') AS proxima
   FROM all_scheduler_jobs
  WHERE owner = 'SGS_ADMIN'
-   AND job_name IN ('SGS_JOB_RESPALDO_DIARIO', 'SGS_JOB_STB_ARCHIVO');
+   AND job_name IN ('SGS_JOB_RESPALDO_DIARIO', 'SGS_JOB_STB_ARCHIVO', 'SGS_JOB_STB_TRASLADO');
 
 SELECT status, error#, TO_CHAR(actual_start_date, 'YYYY-MM-DD HH24:MI:SS') AS inicio, run_duration
   FROM all_scheduler_job_run_details
