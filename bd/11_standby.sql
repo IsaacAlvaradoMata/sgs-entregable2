@@ -77,6 +77,8 @@ CREATE OR REPLACE PACKAGE SGS_ADMIN.SGS_PKG_STANDBY AS
     -- Cierra el archivo de redo actual para que viaje completo a la standby; si STB_MINUTOS_TRASLADO cambio,
     -- reprograma su job con el valor nuevo
     PROCEDURE trasladar;
+    -- Borra en las dos bases los archivos de redo de mas de STB_DIAS_BORRADO dias ya trasladados y aplicados
+    PROCEDURE borrar_archivos;
 END;
 /
 
@@ -133,6 +135,11 @@ CREATE OR REPLACE PACKAGE BODY SGS_ADMIN.SGS_PKG_STANDBY AS
         END IF;
     END;
 
+    PROCEDURE borrar_archivos IS
+    BEGIN
+        ejecutar_script('standby_borrado.sh', TO_CHAR(SGS_PKG_PARAMETROS.obtener_numero('STB_DIAS_BORRADO')));
+    END;
+
 END;
 /
 
@@ -180,6 +187,28 @@ BEGIN
 END;
 /
 
+-- Borrado de archivos ya trasladados y aplicados: todos los dias a las 00:20 y a demanda
+-- A demanda: EXEC DBMS_SCHEDULER.RUN_JOB('SGS_ADMIN.SGS_JOB_STB_BORRADO', use_current_session => TRUE);
+BEGIN
+    BEGIN
+        DBMS_SCHEDULER.DROP_JOB('SGS_ADMIN.SGS_JOB_STB_BORRADO', force => TRUE);
+    EXCEPTION
+        WHEN OTHERS THEN
+            IF SQLCODE <> -27475 THEN
+                RAISE;
+            END IF;
+    END;
+    DBMS_SCHEDULER.CREATE_JOB(
+        job_name        => 'SGS_ADMIN.SGS_JOB_STB_BORRADO',
+        job_type        => 'STORED_PROCEDURE',
+        job_action      => 'SGS_ADMIN.SGS_PKG_STANDBY.borrar_archivos',
+        start_date      => SYSTIMESTAMP AT TIME ZONE 'America/Costa_Rica',
+        repeat_interval => 'FREQ=DAILY;BYHOUR=0;BYMINUTE=20;BYSECOND=0',
+        enabled         => TRUE,
+        comments        => 'Borrado de archivos de redo de mas de STB_DIAS_BORRADO dias ya trasladados y aplicados');
+END;
+/
+
 -- 5. Verificacion (vistas ALL_: SYS ve todo y SGS_ADMIN lo suyo): credencial, jobs y ultimas ejecuciones
 SELECT owner, credential_name, username, enabled
   FROM all_credentials
@@ -189,7 +218,7 @@ SELECT job_name, enabled, state, repeat_interval,
        TO_CHAR(next_run_date, 'YYYY-MM-DD HH24:MI TZR') AS proxima
   FROM all_scheduler_jobs
  WHERE owner = 'SGS_ADMIN'
-   AND job_name IN ('SGS_JOB_RESPALDO_DIARIO', 'SGS_JOB_STB_ARCHIVO', 'SGS_JOB_STB_TRASLADO');
+   AND job_name IN ('SGS_JOB_RESPALDO_DIARIO', 'SGS_JOB_STB_ARCHIVO', 'SGS_JOB_STB_TRASLADO', 'SGS_JOB_STB_BORRADO');
 
 SELECT status, error#, TO_CHAR(actual_start_date, 'YYYY-MM-DD HH24:MI:SS') AS inicio, run_duration
   FROM all_scheduler_job_run_details
