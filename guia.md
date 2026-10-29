@@ -231,7 +231,7 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 - [x] Tablespaces, secuencias, índices (incluidos los que necesitarán las consultas de los requerimientos), comentarios y datos de prueba.
 - [x] Datos de prueba pensados para demostrar los requerimientos (clientes cerca del 85 %, productos por vencer, lotes antiguos, morosos, etc.). *Catálogos en B1; operaciones después de B3, cargadas con los packages (ver `docs/decisiones.md`).*
 - [x] Diagrama relacional actualizado.
-- [ ] Diccionario de datos actualizado.
+- [x] Diccionario de datos actualizado (`docs/modelo/SGS_diccionario_datos.docx`, generado del catálogo de SGSPRI).
 
 **Cuidados:**
 - El modelo **se recalifica**: la normalización y las convenciones siguen contando.
@@ -365,7 +365,7 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 - [x] Semestral: top 10 clientes → orden de compra → coordinador.
 - [x] Diario: cierre diario (totales y detalle por cajero) → coordinador y gerente.
 - [x] Clientes al 85 % de su límite → correo al propio cliente.
-- [x] Lista del 85 % → coordinador (ver pendiente N2).
+- [x] Lista del 85 % → coordinador (clientes, cuentas por cobrar).
 - [x] Cuentas por pagar al 70 % → **un solo correo** al gerente con todos los proveedores.
 - [x] Morosos (saldo pendiente y último pago con más de un mes) → gerente y coordinador.
 - [x] Productos vencidos con total → coordinador.
@@ -617,7 +617,7 @@ Todo paso que funcione se anota de inmediato (con capturas) para el manual de in
 - [ ] Manual de instalación y despliegue.
 - [ ] Manual de administración del standby.
 - [ ] Manual técnico de administración y mantenimiento.
-- [ ] Diagrama relacional y diccionario finales.
+- [x] Diagrama relacional y diccionario finales (`docs/modelo/`).
 
 ### C3 — Defensa
 
@@ -681,7 +681,7 @@ Estado: ⬜ pendiente · 🟨 en progreso · ✅ listo
 | Código | Requerimiento | Etapa | Rúbrica | Estado |
 |---|---|---|---|---|
 | N1 | Cliente al 85 % de su límite | B6 | Clientes con límite de crédito (2 %) | ✅ |
-| N2 | Lista del 85 % al coordinador *(confirmar)* | B6 | Proveedores con límite de crédito (2 %) | ✅ |
+| N2 | Lista del 85 % al coordinador (clientes) | B6 | Proveedores con límite de crédito (2 %) | ✅ |
 | N3 | Gerente al 70 % de CxP, un solo correo | B6 | Notificaciones agrupadas (2 %) | ✅ |
 | N4 | Clientes morosos | B6 | Clientes morosos (2 %) | ✅ |
 | N5 | Productos vencidos con total | B6 | Productos vencidos (2 %) | ✅ |
@@ -736,7 +736,7 @@ Estado: ⬜ pendiente · 🟨 en progreso · ✅ listo
 
 ## Pendientes de confirmar con el profesor
 
-- [ ] **N2:** la notificación al coordinador del 85 % "en las cuentas por pagar", ¿es de clientes o de proveedores? (La escala de funcionamiento dice "Proveedores con límite de crédito".)
+- [x] **N2:** la notificación al coordinador del 85 % "en las cuentas por pagar", ¿es de clientes o de proveedores? (La escala de funcionamiento dice "Proveedores con límite de crédito".) Resuelto: clientes (cuentas por cobrar), como está en el modelo.
 - [ ] **N3:** el 70 % del gerente, ¿sobre el límite de cada proveedor o sobre un límite global de cuentas por pagar?
 - [ ] ¿Quién es "el coordinador"? (Define destinatarios y, quizás, un rol.)
 - [ ] **F04:** "cargar automáticamente el padrón", ¿incluye descargarlo o basta con cargarlo desde el archivo?
