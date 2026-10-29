@@ -63,7 +63,7 @@ Los parámetros se guardan como **filas** dentro de la tabla de parámetros (no 
 | `STB_MB_ARCHIVO` | 50 | 🔴 | Andrés |
 | `STB_MINUTOS_TRASLADO` | 10 | 🔴 | Andrés |
 | `STB_DIAS_BORRADO` | 3 | 🔴 | Andrés |
-| `RESP_HORA_DIARIO` | **pendiente (Andrés)** | 🟢 | Andrés |
+| `RESP_HORA_DIARIO` | `1` (1:00 a. m., hora de Costa Rica; se usa como `BYHOUR`) | 🟢 | Andrés |
 
 ### Claves de roles
 
@@ -263,4 +263,69 @@ El enunciado pide cargar el padrón con la información actual, enlazarlo con cl
 
 ## Carril S — Servidores
 
-*(Se completa a medida que avanza Andrés.)*
+### S1 — VMs y red
+
+**Infraestructura de las VMs** · 2026-10-17
+
+| Elemento | Valor |
+|---|---|
+| Hipervisor | VirtualBox 7.2 en la HP (Windows 11 Pro, 16 GB RAM) |
+| Sistema operativo | Oracle Linux 8.10, instalación "Server" (sin interfaz gráfica) |
+| Recursos por VM | 5 GB RAM, 2 CPU, disco 80 GB VDI dinámico |
+| Particiones | `/boot` 1 GiB, `swap` 5 GiB, `/` 74 GiB (sin `/home`) |
+| Red interna (Data Guard) | Solo-anfitrión `192.168.56.0/24`, sin DHCP; la HP es `192.168.56.1` |
+| Internet | Adaptador NAT en cada VM |
+
+| Servidor | Hostname | IP red interna | Estado |
+|---|---|---|---|
+| `SGSPRI` | `sgspri.localdomain` | `192.168.56.101` | Linux instalado, SSH desde la HP ✅ |
+| `SGSSTB` | `sgsstb.localdomain` | `192.168.56.102` | Standby física de `SGSPRI` (Data Guard) ✅ |
+
+Pasos detallados en [`servidores/s1_sgspri.md`](../servidores/s1_sgspri.md).
+
+### S2 — Oracle y SGSPRI
+
+**Nombres de la base para Data Guard** · 2026-10-26
+
+| Parámetro | `SGSPRI` | `SGSSTB` |
+|---|---|---|
+| `DB_NAME` | `SGS` (igual en ambos, requisito de Data Guard) | `SGS` |
+| `DB_UNIQUE_NAME` / SID | `SGSPRI` | `SGSSTB` |
+| PDB | `SGSPDB` | (llega por Data Guard) |
+
+**Instalación de Oracle** · 2026-10-17
+
+| Elemento | Valor |
+|---|---|
+| Software | Oracle Database 21c EE desde el RPM oficial |
+| `ORACLE_BASE` | `/opt/oracle` |
+| `ORACLE_HOME` | `/opt/oracle/product/21c/dbhome_1` |
+| Datafiles | `/opt/oracle/oradata` |
+| Fast Recovery Area | `/opt/oracle/fast_recovery_area` (20 GB) |
+| Modo | ARCHIVELOG |
+
+### S3 — Standby
+
+**Configuración de Data Guard** · 2026-10-26
+
+| Elemento | Valor |
+|---|---|
+| Tipo de standby | Física, abierta en solo lectura con aplicación en tiempo real (Active Data Guard) |
+| Transporte de redo | `ASYNC` por la red interna (`SERVICE=SGSSTB` / `SERVICE=SGSPRI`) |
+| Tamaño de redo y standby redo | 50 MB (requisito "cada 50 MB"); 3 grupos de redo y 4 de standby redo |
+| Creación de la standby | `RMAN DUPLICATE ... FOR STANDBY FROM ACTIVE DATABASE` |
+| Rutas de datafiles en `SGSSTB` | `/opt/oracle/oradata/SGSSTB/` (`db_file_name_convert`) |
+| Force logging / Flashback | Activados en ambos (el flashback de `SGSSTB` se activó en S6, tras el failover) |
+
+
+### S6 — Switchover y failover
+
+**Broker y cambios de rol** · 2026-10-28
+
+| Elemento | Valor |
+|---|---|
+| Configuración del broker | `sgs_dg`, MaxPerformance |
+| Fast-Start Failover | Deshabilitado: el failover se hace a mano (`FAILOVER TO 'SGSSTB'`) |
+| Reincorporación | `REINSTATE DATABASE` con flashback (sin recrear la standby) |
+| Nombres en comandos del broker | Entre comillas y en mayúscula (`'SGSSTB'`, `'SGSPRI'`): sin comillas el failover da `ORA-16600` |
+| Roles normales | `SGSPRI` principal, `SGSSTB` standby; tras cualquier prueba se regresa con switchover |
