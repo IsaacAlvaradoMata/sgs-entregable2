@@ -41,10 +41,23 @@ En los dos servidores: los 6 certificados `OK`; `display` muestra `GTS Root R1` 
 ```
 mkdir -p /opt/oracle/oradata/padron
 ls -ld /opt/oracle/oradata/padron     # drwxr-xr-x oracle oinstall
-df -h /opt                            # SGSPRI: 58 GB libres de 74 GB
+df -h /opt                            # SGSPRI: 58 GB libres de 74 GB; SGSSTB: 57 GB
 ```
 
-Ahí se copian `PADRON_COMPLETO.txt` y `distelec.txt` del TSE antes de `bd/06_padron.sql`.
+Los archivos del TSE se suben desde la HP (PowerShell) a las dos VMs:
+
+```
+scp "$env:USERPROFILE\Downloads\PADRON_COMPLETO.txt" "$env:USERPROFILE\Downloads\distelec.txt" oracle@192.168.56.101:/opt/oracle/oradata/padron/
+scp "$env:USERPROFILE\Downloads\PADRON_COMPLETO.txt" "$env:USERPROFILE\Downloads\distelec.txt" oracle@192.168.56.102:/opt/oracle/oradata/padron/
+```
+
+Comprobación desde `SGSSTB` (la segunda usa la llave SSH de `oracle` configurada en S5):
+
+```
+ls -lh /opt/oracle/oradata/padron/
+ssh oracle@sgspri ls -lh /opt/oracle/oradata/padron/
+# en las dos: PADRON_COMPLETO.txt 431M y distelec.txt 175K
+```
 
 ## 4. Revisión de la base y del servidor
 
@@ -59,4 +72,4 @@ En `SGSPRI` (`sqlplus / as sysdba`):
 | `job_queue_processes` | `40` |
 | `remote_login_passwordfile` | `EXCLUSIVE` |
 
-En `SGSSTB` se revisan solo los parámetros del servidor (lo demás es de la base, que es la misma): `resource_limit` = `TRUE`, `job_queue_processes` = `4000`, `remote_login_passwordfile` = `EXCLUSIVE`. `job_queue_processes` es distinto en cada servidor pero en los dos es mayor que cero, así que los jobs corren en cualquiera que sea el principal.
+En `SGSSTB`: `timedatectl` muestra `America/Costa_Rica (CST, -0600)` sincronizado; la FRA tiene límite 20 GB con 0,55 GB usados; y los parámetros del servidor: `resource_limit` = `TRUE`, `job_queue_processes` = `4000`, `remote_login_passwordfile` = `EXCLUSIVE`. `job_queue_processes` es distinto en cada servidor pero en los dos es mayor que cero, así que los jobs corren en cualquiera que sea el principal.
