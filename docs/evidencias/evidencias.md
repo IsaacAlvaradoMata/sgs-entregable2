@@ -913,3 +913,29 @@ En la standby no se ejecutó ningún script: todo llegó por el redo.
 ![Broker tras la instalación](capturas/I1_04_broker_tras_instalacion.jpeg)
 
 Después de la instalación, incluida la carga del padrón, el broker muestra a `SGSSTB` al día: retraso de transporte y de aplicación en 0 segundos, consulta en tiempo real activa y estado `SUCCESS`.
+
+# Pruebas en Oracle 21c (SGSPRI)
+
+Las pruebas que dependen del motor se repitieron en el servidor principal, sobre Oracle 21c.
+
+![Bitácora en 21c](capturas/I4_01_bitacora_21c.png)
+
+Una operación normal por área (compra con costo nuevo, traslado, aumento de crédito, venta a crédito con abono y cambios en proveedor, promoción y descuento) deja rastro en las 7 áreas, y la detección por pila de llamadas marca igual que en desarrollo qué es crítico: el costo que cambia una compra, las existencias que mueven los movimientos y el saldo que sube por una venta no lo son; los pagos y el cambio del límite de crédito sí.
+
+![Digitador en 21c](capturas/I4_02_rol_digitador_21c.png)
+
+![Gerente en 21c](capturas/I4_03_rol_gerente_21c.png)
+
+Sin activar su rol, cada usuario no ve los objetos del esquema (`ORA-00942`, `PLS-00201`) y no puede activar un rol ajeno (`ORA-20132`). Con su rol activo hace solo lo de su función, y lo que el rol no permite Oracle 21c lo rechaza con `ORA-01031: insufficient privileges`. Ninguno puede borrar.
+
+![Jobs en SGSPRI](capturas/I4_04_jobs_sgspri.png)
+
+Los 15 jobs quedaron programados en hora de Costa Rica y sin fallos; la revisión de sesiones bloqueadas ya corre sola cada 15 minutos.
+
+![Avisos a demanda](capturas/I4_05_avisos_a_demanda.png)
+
+Los 5 jobs de avisos ejecutados a demanda con `DBMS_SCHEDULER.RUN_JOB` (como los corre el scheduler) terminaron en `SUCCEEDED`.
+
+![Correos de los avisos](capturas/I4_06_correos_avisos.png)
+
+Cada aviso llegó por correo desde `SGSPRI`: proveedores al 70 % para el gerente, clientes morosos, el aviso personal a la clienta que llegó al 86,4 % de su crédito, la lista de clientes al 85 % para el coordinador y los productos vencidos con su total.
