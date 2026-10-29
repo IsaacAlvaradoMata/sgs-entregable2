@@ -197,7 +197,7 @@ Prohibido: `IF NOT EXISTS` en DDL, `BOOLEAN` en columnas, `SELECT` sin `FROM DUA
 - **B4 (bitácoras) completa:** `bd/05_bitacoras.sql` (`SGS_PKG_BITACORA`, 33 triggers `TRG_AUD_*` generados de las columnas del modelo, vistas `SGS_VW_BITACORA` y `SGS_VW_BITACORA_CRITICA`); críticas definidas en `docs/decisiones.md`. Probado: rastro en las 7 áreas, críticas bien marcadas y el `ROLLBACK` deshace el rastro.
 - **B5 (padrón) completa en Docker:** `bd/06_padron.sql` (directorio `SGS_DIR_PADRON` desde SYSDBA, tablas externas `SGS_EXT_DISTELEC` y `SGS_EXT_PADRON` sobre los TXT del TSE, `SGS_PKG_PADRON.cargar` con `MERGE` que nunca borra). Cargados 2179 distritos y 3 762 240 personas; recargar el mismo archivo no cambia nada. Sin job: el enunciado no lo pide. Falta acordar con Andrés la carpeta en las VMs.
 - Instalación en SGSPRI (valores por servidor, orden, verificaciones): `servidores/configuracion/instalacion_bd_sgspri.md`.
-- **B6 (procesos y notificaciones) completa:** `bd/07_procesos.sql` con `SGS_PKG_PROCESOS` (N1 a N5 diarios a las 07:00; P1 inventario y P2 descuentos semanales; P3 premiación cada `PREMIO_FRECUENCIA_MESES` meses; P4 cierre diario a las 00:05 del día anterior) y 9 jobs de `DBMS_SCHEDULER` en hora de Costa Rica. Todos probados a demanda con su correo. Decisiones en `docs/decisiones.md`; N2 en espera de la respuesta del profesor.
+- **B6 (procesos y notificaciones) completa:** `bd/07_procesos.sql` con `SGS_PKG_PROCESOS` (N1 a N5 diarios a las 07:00; P1 inventario y P2 descuentos semanales; P3 premiación cada `PREMIO_FRECUENCIA_MESES` meses; P4 cierre diario a las 00:05 del día anterior) y 9 jobs de `DBMS_SCHEDULER` en hora de Costa Rica. Todos probados a demanda con su correo. Decisiones en `docs/decisiones.md`;
 - **B7 (seguridad) completa:** `bd/08_seguridad.sql`: perfil `SGS_PERFIL_USUARIO`, usuarios por rol (confirmado por el profesor) con `DEFAULT ROLE NONE`, roles `SGS_ROL_*` con clave cifrada en `CLAVE_ROL_*`, `SGS_PKG_SEGURIDAD.asignar_clave_rol`, `SGS_PKG_ROLES.clave_rol` y `SGS_PKG_ACCESO.activar_rol` (derechos del invocador). `asignar_credito` pasó a `SGS_PKG_CREDITO` (en el 04). Probado con los 4 usuarios, bloqueo y reutilización.
 - **Instalación completa en Docker:** `bash bd/local/instalar_docker.sh` (en `.gitignore`: pone las claves de desarrollo, corre 00 a 10 con SQL*Plus y el usuario de cada sección, se detiene en el primer error; logs en `bd/local/instalacion/logs/`). Para SGSPRI se arma uno igual con las claves de producción.
 - **Scripts con muchos bloques PL/SQL se corren con SQL*Plus dentro del contenedor** (`docker exec -i oracle_una sqlplus -s -L "<usuario>/<clave>@//localhost:1521/FREEPDB1" < archivo`); las copias con claves de desarrollo van en `bd/local/` (en `.gitignore`). En 26ai la falta de privilegio sale como `ORA-41900`; en 21c es `ORA-01031`.
@@ -213,13 +213,9 @@ Prohibido: `IF NOT EXISTS` en DDL, `BOOLEAN` en columnas, `SELECT` sin `FROM DUA
 
 **Pendiente de Andrés:** definir `RESP_HORA_DIARIO`; unir las VMs a Tailscale y abrir el listener en la IP `100.x`; zona horaria; wallet del correo y prueba de puertos en las dos VMs; decir si standby/RMAN necesitan alguna tabla. Ver `notas/pendientes.md`.
 
-**Preguntas abiertas al profesor:**
-- ¿El aviso del 85% al coordinador "en cuentas por pagar" es de clientes o de proveedores? (la escala dice "Proveedores con límite de crédito").
-- ¿El 70% del gerente es sobre el límite de cada proveedor o un límite global de CxP?
-- ¿Quién es "el coordinador"?
-- ¿"Cargar automáticamente el padrón" incluye descargarlo o basta cargarlo desde archivo?
-- ¿Cómo se combinan las dos tablas de calificación?
-- ¿Los manuales son cuatro documentos o uno?
+**Documentación del código (2026-10-29):** revisada en todos los scripts; se agregaron 19 comentarios en `03`, `04`, `05` y `09`. Solo son comentarios, así que no se recompiló nada en SGSPRI ni en Docker: el código guardado en esas bases no tiene esos comentarios nuevos, pero se comporta igual.
+
+**Preguntas al profesor:** cerradas con decisiones propias (2026-10-29): N2 con clientes, N3 sobre el límite de cada proveedor, el coordinador es un tipo de destinatario, el padrón se carga desde los archivos del TSE y los manuales son cuatro documentos (uno por rubro de la rúbrica). Ver `guia.md` y `docs/decisiones.md`.
 
 ---
 
