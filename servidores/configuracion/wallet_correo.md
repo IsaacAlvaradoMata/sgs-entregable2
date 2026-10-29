@@ -17,7 +17,7 @@ echo QUIT | timeout 15 openssl s_client -connect smtp.gmail.com:465 2>/dev/null 
 
 ## 2. Crear el wallet
 
-Ruta en desarrollo: `/opt/oracle/oradata/wallet_sgs`. En los servidores se recomienda `/u01/app/oracle/admin/wallet_sgs` (la misma en ambos).
+Ruta: `/opt/oracle/oradata/wallet_sgs`, la misma en desarrollo, en `SGSPRI` y en `SGSSTB`. Así el parámetro `CORREO_WALLET` no cambia entre ambientes ni después de un switchover.
 
 ```bash
 WALLET=/opt/oracle/oradata/wallet_sgs
@@ -43,12 +43,6 @@ ls -l $WALLET
 
 ## 4. Apuntar Oracle al wallet
 
-Si la ruta es distinta a la de desarrollo, como `SGS_ADMIN`:
-
-```sql
-BEGIN
-    SGS_PKG_PARAMETROS.actualizar('CORREO_WALLET', 'file:/u01/app/oracle/admin/wallet_sgs');
-END;
-```
+`bd/03_base_interna.sql` ya deja `CORREO_WALLET` = `file:/opt/oracle/oradata/wallet_sgs`. Solo si se usara otra ruta, como `SGS_ADMIN`: `SGS_PKG_PARAMETROS.actualizar('CORREO_WALLET', 'file:<ruta>')`.
 
 Prueba: `SGS_PKG_CORREO.enviar_a_tipo('DBA', 'Prueba', 'Texto')` y revisar la bandeja de la cuenta del proyecto.

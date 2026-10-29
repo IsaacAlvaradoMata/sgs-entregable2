@@ -187,6 +187,8 @@ INSERT INTO SGS_PARAMETRO (PAR_ID, PAR_CODIGO, PAR_VALOR, PAR_DESCRIPCION)
 VALUES (SEQ_PARAMETRO.NEXTVAL, 'STB_MINUTOS_TRASLADO', '10', 'Minutos entre traslados de informacion al standby');
 INSERT INTO SGS_PARAMETRO (PAR_ID, PAR_CODIGO, PAR_VALOR, PAR_DESCRIPCION)
 VALUES (SEQ_PARAMETRO.NEXTVAL, 'STB_DIAS_BORRADO', '3', 'Dias tras los cuales se borran los archivos ya trasladados y aplicados');
+INSERT INTO SGS_PARAMETRO (PAR_ID, PAR_CODIGO, PAR_VALOR, PAR_DESCRIPCION)
+VALUES (SEQ_PARAMETRO.NEXTVAL, 'RESP_HORA_DIARIO', '1', 'Hora del respaldo diario con RMAN (0 a 23, hora de Costa Rica)');
 
 -- 5. Destinatarios de las notificaciones: alias de la cuenta del proyecto; antes de la defensa se cambian por el correo que indique el profesor
 INSERT INTO SGS_DESTINATARIO (DES_ID, DES_TIPO, DES_NOMBRE, DES_EMAIL)
