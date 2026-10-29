@@ -66,19 +66,19 @@ BEGIN
 END;
 /
 
--- 4. Verificacion: credencial y job de SGS_ADMIN, y la ultima ejecucion del respaldo
+-- 4. Verificacion (vistas ALL_: SYS ve todo y SGS_ADMIN lo suyo): credencial, job y ultima ejecucion del respaldo
 SELECT owner, credential_name, username, enabled
-  FROM dba_credentials
+  FROM all_credentials
  WHERE owner = 'SGS_ADMIN';
 
 SELECT job_name, enabled, state, repeat_interval,
        TO_CHAR(next_run_date, 'YYYY-MM-DD HH24:MI TZR') AS proxima
-  FROM dba_scheduler_jobs
+  FROM all_scheduler_jobs
  WHERE owner = 'SGS_ADMIN'
    AND job_name = 'SGS_JOB_RESPALDO_DIARIO';
 
 SELECT status, error#, TO_CHAR(actual_start_date, 'YYYY-MM-DD HH24:MI:SS') AS inicio, run_duration
-  FROM dba_scheduler_job_run_details
+  FROM all_scheduler_job_run_details
  WHERE owner = 'SGS_ADMIN'
    AND job_name = 'SGS_JOB_RESPALDO_DIARIO'
  ORDER BY log_id DESC
