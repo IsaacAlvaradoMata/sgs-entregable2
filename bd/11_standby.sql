@@ -66,7 +66,81 @@ BEGIN
 END;
 /
 
--- 4. Verificacion (vistas ALL_: SYS ve todo y SGS_ADMIN lo suyo): credencial, job y ultima ejecucion del respaldo
+-- 4. Administracion del standby: cada proceso lee sus parametros al ejecutarse y se los pasa al script de Linux,
+-- asi que cambiar un valor en SGS_PARAMETRO cambia el comportamiento sin tocar codigo.
+-- Cada ejecucion crea un job externo de un solo uso con la credencial, lo corre en la misma sesion y lo borra;
+-- si el script termina con error, el job externo falla (ORA-27369) y el error queda en SGS_BITACORA_ERROR.
+CREATE OR REPLACE PACKAGE SGS_ADMIN.SGS_PKG_STANDBY AS
+    -- Archivo de actualizacion cada STB_MINUTOS_ARCHIVO minutos (ArchiveLagTarget en las dos bases)
+    -- y aviso al DBA si los redo logs no miden STB_MB_ARCHIVO
+    PROCEDURE aplicar_archivo;
+END;
+/
+
+CREATE OR REPLACE PACKAGE BODY SGS_ADMIN.SGS_PKG_STANDBY AS
+
+    -- Ejecuta un script de /home/oracle/scripts como oracle con hasta dos argumentos
+    PROCEDURE ejecutar_script (p_script IN VARCHAR2, p_arg1 IN VARCHAR2, p_arg2 IN VARCHAR2 DEFAULT NULL) IS
+        v_job VARCHAR2(128) := DBMS_SCHEDULER.GENERATE_JOB_NAME('SGS_STB_');
+    BEGIN
+        DBMS_SCHEDULER.CREATE_JOB(
+            job_name            => v_job,
+            job_type            => 'EXECUTABLE',
+            job_action          => '/home/oracle/scripts/' || p_script,
+            number_of_arguments => CASE WHEN p_arg2 IS NULL THEN 1 ELSE 2 END,
+            credential_name     => 'SGS_CRED_ORACLE',
+            enabled             => FALSE);
+        DBMS_SCHEDULER.SET_JOB_ARGUMENT_VALUE(v_job, 1, p_arg1);
+        IF p_arg2 IS NOT NULL THEN
+            DBMS_SCHEDULER.SET_JOB_ARGUMENT_VALUE(v_job, 2, p_arg2);
+        END IF;
+        DBMS_SCHEDULER.RUN_JOB(v_job, use_current_session => TRUE);
+        DBMS_SCHEDULER.DROP_JOB(v_job);
+    EXCEPTION
+        WHEN OTHERS THEN
+            SGS_PKG_ERRORES.registrar('SGS_PKG_STANDBY.' || p_script);
+            BEGIN
+                DBMS_SCHEDULER.DROP_JOB(v_job, force => TRUE);
+            EXCEPTION
+                WHEN OTHERS THEN
+                    NULL;
+            END;
+            RAISE;
+    END;
+
+    PROCEDURE aplicar_archivo IS
+    BEGIN
+        ejecutar_script('standby_archivo.sh',
+                        TO_CHAR(SGS_PKG_PARAMETROS.obtener_numero('STB_MINUTOS_ARCHIVO')),
+                        TO_CHAR(SGS_PKG_PARAMETROS.obtener_numero('STB_MB_ARCHIVO')));
+    END;
+
+END;
+/
+
+-- Archivo de actualizacion: se revisa todos los dias a las 00:10 y a demanda
+-- A demanda: EXEC DBMS_SCHEDULER.RUN_JOB('SGS_ADMIN.SGS_JOB_STB_ARCHIVO', use_current_session => TRUE);
+BEGIN
+    BEGIN
+        DBMS_SCHEDULER.DROP_JOB('SGS_ADMIN.SGS_JOB_STB_ARCHIVO', force => TRUE);
+    EXCEPTION
+        WHEN OTHERS THEN
+            IF SQLCODE <> -27475 THEN
+                RAISE;
+            END IF;
+    END;
+    DBMS_SCHEDULER.CREATE_JOB(
+        job_name        => 'SGS_ADMIN.SGS_JOB_STB_ARCHIVO',
+        job_type        => 'STORED_PROCEDURE',
+        job_action      => 'SGS_ADMIN.SGS_PKG_STANDBY.aplicar_archivo',
+        start_date      => SYSTIMESTAMP AT TIME ZONE 'America/Costa_Rica',
+        repeat_interval => 'FREQ=DAILY;BYHOUR=0;BYMINUTE=10;BYSECOND=0',
+        enabled         => TRUE,
+        comments        => 'Archivo de actualizacion cada STB_MINUTOS_ARCHIVO minutos o STB_MB_ARCHIVO MB');
+END;
+/
+
+-- 5. Verificacion (vistas ALL_: SYS ve todo y SGS_ADMIN lo suyo): credencial, jobs y ultimas ejecuciones
 SELECT owner, credential_name, username, enabled
   FROM all_credentials
  WHERE owner = 'SGS_ADMIN';
@@ -75,7 +149,7 @@ SELECT job_name, enabled, state, repeat_interval,
        TO_CHAR(next_run_date, 'YYYY-MM-DD HH24:MI TZR') AS proxima
   FROM all_scheduler_jobs
  WHERE owner = 'SGS_ADMIN'
-   AND job_name = 'SGS_JOB_RESPALDO_DIARIO';
+   AND job_name IN ('SGS_JOB_RESPALDO_DIARIO', 'SGS_JOB_STB_ARCHIVO');
 
 SELECT status, error#, TO_CHAR(actual_start_date, 'YYYY-MM-DD HH24:MI:SS') AS inicio, run_duration
   FROM all_scheduler_job_run_details
