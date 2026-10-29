@@ -166,7 +166,7 @@ Prohibido: `IF NOT EXISTS` en DDL, `BOOLEAN` en columnas, `SELECT` sin `FROM DUA
 - Análisis del enunciado y rúbrica; comparación de esquemas; arquitectura validada; nombres fijos; repo creado; correo creado.
 - `README.md`, `guia.md`, `docs/decisiones.md`.
 - `bd/00_reinicio_desarrollo.sql` ejecutado: `IALVARADO` y tablespaces del E1 eliminados del Docker.
-- `bd/01_infraestructura.sql` ejecutado y verificado: 3 tablespaces ONLINE con MAXSIZE finito (4G/2G/1G), `SGS_ADMIN` OPEN, 8 privilegios explícitos (CREATE SESSION, TABLE, SEQUENCE, VIEW, MATERIALIZED VIEW, PROCEDURE, TRIGGER, JOB), 0 roles.
+- `bd/01_infraestructura.sql` ejecutado y verificado: 3 tablespaces ONLINE con MAXSIZE finito (4G/2G/1G), `SGS_ADMIN` OPEN, 10 privilegios explícitos (CREATE SESSION, TABLE, SEQUENCE, VIEW, MATERIALIZED VIEW, PROCEDURE, TRIGGER, JOB, EXTERNAL JOB, CREDENTIAL; los dos últimos para el job de respaldo de Andrés), 0 roles.
 
 **Decisión 1 de B1 (confirmada)** — se integra del esquema de Andrés, traducido a convención SGS:
 - Cuentas por cobrar y por pagar con abonos y estado.

@@ -10,10 +10,10 @@ Los scripts de `bd/` se prueban en Docker (Oracle Free 23ai, PDB `FREEPDB1`) esc
 | `01_infraestructura.sql` | `<CLAVE_SGS_ADMIN>` | clave de desarrollo | clave de producción (en `notas/claves.md`) |
 | `01_infraestructura.sql` | Ruta de los datafiles | se toma sola del datafile `SYSTEM` de la PDB | igual |
 | `03_base_interna.sql` | `<LLAVE_CIFRADO>` | llave de desarrollo | llave de producción |
-| `03_base_interna.sql` | Parámetro `CORREO_WALLET` | `file:/opt/oracle/oradata/wallet_sgs` | ruta del wallet en la VM (ver `wallet_correo.md`) |
+| `03_base_interna.sql` | Parámetro `CORREO_WALLET` | `file:/opt/oracle/oradata/wallet_sgs` | igual (misma ruta en `SGSPRI` y `SGSSTB`, ver `wallet_correo.md`) |
 | `03_base_interna.sql` | Parámetro `CORREO_PUERTO` | `465` | el puerto que responda desde la VM |
 | `03_base_interna.sql` | `<CLAVE_CORREO>` | contraseña de aplicación de Gmail | la misma (se guarda cifrada al final del script) |
-| `06_padron.sql` | `<RUTA_PADRON>` | `/opt/oracle/oradata/padron` | carpeta acordada (propuesta `/u01/app/oracle/sgs/padron`) |
+| `06_padron.sql` | `<RUTA_PADRON>` | `/opt/oracle/oradata/padron` | igual (misma carpeta en `SGSPRI` y `SGSSTB`, dueño `oracle`) |
 | `08_seguridad.sql` | `<CLAVE_USUARIO_*>`, `<CLAVE_ROL_*>` | claves de desarrollo | claves de producción (en `notas/claves.md`) |
 
 ## SQL*Plus
@@ -28,7 +28,7 @@ Antes de ejecutar los scripts con SQL*Plus: `export NLS_LANG=AMERICAN_AMERICA.AL
 4. `04_reglas_negocio.sql` y `05_bitacoras.sql` como SGS_ADMIN.
 5. `06_padron.sql`: copiar los archivos del TSE a la carpeta, sección 0 como SYS en `SGSPDB`, el resto como SGS_ADMIN (la última sección carga el padrón; tarda unos minutos).
 6. Los scripts siguientes (07 a 09) en orden.
-7. `10_datos_operaciones.sql` completo (secciones A, B y C).
+7. `10_datos_operaciones.sql` completo (secciones A a E).
 
 `00_reinicio_desarrollo.sql` no se ejecuta en SGSPRI.
 

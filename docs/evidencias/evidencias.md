@@ -50,7 +50,7 @@ SELECT privilege
 
 ![Privilegios](capturas/B0_01_03_privilegios.png)
 
-`SGS_ADMIN` tiene solo los 8 privilegios de sistema necesarios para crear y mantener sus objetos.
+`SGS_ADMIN` tiene solo los privilegios de sistema necesarios para crear y mantener sus objetos: 10 de `01_infraestructura.sql` (incluidos `CREATE EXTERNAL JOB` y `CREATE CREDENTIAL` para el job diario de respaldo) y `CREATE ROLE`, que agrega `08_seguridad.sql` para crear los roles.
 
 ### 4. Roles otorgados
 
@@ -189,7 +189,7 @@ SELECT par_codigo, par_valor, par_es_cifrado, par_descripcion
 
 ![Parámetros](capturas/B2_03_02_parametros.png)
 
-Los valores que el enunciado marca como parametrizados están registrados en `SGS_PARAMETRO`: correo, porcentajes de aviso (como fracción), días, meses, premiación, uso máximo de tablespace y los tiempos del standby. Los packages los leen con `SGS_PKG_PARAMETROS.obtener` y `obtener_numero`; se cambian con `actualizar`, que bloquea la fila con `FOR UPDATE NOWAIT`. Los parámetros cifrados (clave del correo y claves de roles) se agregan con el package de cifrado.
+Los valores que el enunciado marca como parametrizados están registrados en `SGS_PARAMETRO`: correo, porcentajes de aviso (como fracción), días, meses, premiación, uso máximo de tablespace, los tiempos del standby y la hora del respaldo diario. Los packages los leen con `SGS_PKG_PARAMETROS.obtener` y `obtener_numero`; se cambian con `actualizar`, que bloquea la fila con `FOR UPDATE NOWAIT`. Los parámetros cifrados (clave del correo y claves de roles) se agregan con el package de cifrado.
 
 ### 3. Destinatarios de las notificaciones
 

@@ -59,6 +59,9 @@ GRANT CREATE MATERIALIZED VIEW TO SGS_ADMIN;
 GRANT CREATE PROCEDURE         TO SGS_ADMIN;
 GRANT CREATE TRIGGER           TO SGS_ADMIN;
 GRANT CREATE JOB               TO SGS_ADMIN;
+-- Job diario de respaldo: ejecuta el script de RMAN del sistema operativo con una credencial del usuario oracle
+GRANT CREATE EXTERNAL JOB      TO SGS_ADMIN;
+GRANT CREATE CREDENTIAL        TO SGS_ADMIN;
 
 -- 5. Verificacion
 -- Tablespaces en linea con su tamano inicial y su MAXSIZE
