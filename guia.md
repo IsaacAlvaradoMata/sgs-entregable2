@@ -154,7 +154,7 @@ flowchart TD
 ### Por cerrar
 
 - [x] Repositorio creado, ambos con acceso y README en la raíz.
-- [ ] **Lista de parámetros confirmada** (nombres y valores iniciales). En especial los que usa Andrés: tiempo máximo entre redo (5 min), tamaño de redo (50 MB), frecuencia de traslado (10 min), días antes de borrar (3), hora del respaldo diario.
+- [x] **Lista de parámetros confirmada** (nombres y valores iniciales). En especial los que usa Andrés: tiempo máximo entre redo (5 min), tamaño de redo (50 MB), frecuencia de traslado (10 min), días antes de borrar (3), hora del respaldo diario.
 - [x] Cuenta de correo del proyecto creada (remitente de las notificaciones).
 - [ ] Preguntas al profesor enviadas (ver [pendientes](#pendientes-de-confirmar-con-el-profesor)).
 
@@ -341,7 +341,7 @@ Entorno de desarrollo: Oracle Free en Docker (Mac). Entorno oficial: `SGSPRI` (v
 **Implementaciones:**
 - [x] Procedimiento de carga automática del padrón con registro de errores.
 - [x] Enlace cliente ↔ padrón para obtener los datos básicos de la persona.
-- [ ] Ubicación del archivo en el servidor acordada con Andrés.
+- [x] Ubicación del archivo en el servidor acordada con Andrés (`/opt/oracle/oradata/padron` en las dos VMs).
 
 **Cuidados:**
 - Es una carga de millones de registros: tamaño del tablespace y tiempo de carga.
@@ -437,10 +437,10 @@ Todo paso que funcione se anota de inmediato (con capturas) para el manual de in
 **Definir antes de empezar:** recursos por VM (RAM, CPU, disco) según la HP; IPs fijas de la red interna; nombres de host.
 
 **Implementaciones:**
-- [ ] VM `SGSPRI` y VM `SGSSTB` con Oracle Linux, mismos recursos en ambas.
-- [ ] Red interna con IPs fijas entre las VMs + salida a internet.
-- [ ] Nombres de host resolubles entre ellas.
-- [ ] Tailscale en ambas VMs (sin exit node) para que el Mac llegue a ellas.
+- [x] VM `SGSPRI` y VM `SGSSTB` con Oracle Linux, mismos recursos en ambas.
+- [x] Red interna con IPs fijas entre las VMs + salida a internet.
+- [x] Nombres de host resolubles entre ellas.
+- [x] Tailscale en ambas VMs (sin exit node) para que el Mac llegue a ellas.
 
 **Cuidados:** la sincronización principal ↔ standby va por la red interna, **no** por Tailscale.
 
@@ -457,10 +457,10 @@ Todo paso que funcione se anota de inmediato (con capturas) para el manual de in
 **Depende de:** S1
 
 **Implementaciones:**
-- [ ] Oracle 21c Enterprise Edition instalado en ambas VMs, con rutas idénticas.
-- [ ] Base principal (CDB) con la PDB `SGSPDB`.
-- [ ] La standby queda solo con el software (sin crear base).
-- [ ] Conexión desde DBeaver en el Mac hacia `SGSPDB`.
+- [x] Oracle 21c Enterprise Edition instalado en ambas VMs, con rutas idénticas.
+- [x] Base principal (CDB) con la PDB `SGSPDB`.
+- [x] La standby queda solo con el software (sin crear base).
+- [x] Conexión desde DBeaver en el Mac hacia `SGSPDB`.
 
 **Terminado cuando…** el Mac se conecta a `SGSPDB` y la VM standby tiene el software listo.
 
@@ -475,10 +475,10 @@ Todo paso que funcione se anota de inmediato (con capturas) para el manual de in
 **Depende de:** S2
 
 **Implementaciones:**
-- [ ] Principal preparada (archivado, registro forzado, flashback, área de recuperación, parámetros de Data Guard).
-- [ ] Duplicación de la principal hacia la standby.
-- [ ] Aplicación continua de cambios en la standby.
-- [ ] Prueba: un dato insertado en la principal aparece en la standby.
+- [x] Principal preparada (archivado, registro forzado, flashback, área de recuperación, parámetros de Data Guard).
+- [x] Duplicación de la principal hacia la standby.
+- [x] Aplicación continua de cambios en la standby.
+- [x] Prueba: un dato insertado en la principal aparece en la standby.
 
 **Cuidados:** como es 21c, la PDB también tiene que quedar disponible en la standby.
 
@@ -538,8 +538,8 @@ Todo paso que funcione se anota de inmediato (con capturas) para el manual de in
 - [x] Switchover (intercambio planeado de roles) y regreso.
 - [x] Failover (caída simulada de la principal).
 - [x] Reincorporación del servidor caído como nueva standby.
-- [ ] Monitoreo de la sincronización (retraso, archivos recibidos/aplicados).
-- [ ] Procedimiento de cómo reconectar el cliente al nuevo principal.
+- [x] Monitoreo de la sincronización (retraso, archivos recibidos/aplicados). (`SHOW DATABASE` del broker y `servidores/operacion_diaria.md`)
+- [x] Procedimiento de cómo reconectar el cliente al nuevo principal. (`servidores/s6_switchover_failover.md` §2: DBeaver apunta a la IP de Tailscale de la nueva principal)
 
 **Terminado cuando…** cada escenario se ejecutó al menos una vez de punta a punta siguiendo los pasos anotados.
 
@@ -647,90 +647,90 @@ Todo paso que funcione se anota de inmediato (con capturas) para el manual de in
 
 ## Matriz de trazabilidad
 
-Estado: ⬜ pendiente · 🟨 en progreso · ✅ listo
+Estado: ⬜ pendiente · 🟨 en progreso · ✅ listo. La columna «Dónde se demuestra» apunta a la sección de [`docs/evidencias/evidencias.md`](docs/evidencias/evidencias.md) (o al documento de `servidores/`) con la prueba; es la lista de control para C1 y la defensa.
 
 ### Funcionalidades
 
-| Código | Requerimiento | Etapa | Rúbrica | Estado |
-|---|---|---|---|---|
-| F01 | Cuentas por cobrar automáticas | B3 | Act. automática de CxC (4 %) | ⬜ |
-| F02 | Cuentas por pagar automáticas | B3 | Act. automática de CxP (4 %) | ⬜ |
-| F03 | Cambio automático de estado de factura | B3 | Cambio automático del estado (3 %) | ⬜ |
-| F04 | Padrón nacional y adaptación del modelo | B1 + B5 | Integración del padrón (6 %) | ✅ |
-| F05 | Inventario automático en compras y ventas | B3 | Act. automática del inventario (5 %) | ⬜ |
-| F06 | Inventario automático en devoluciones | B3 | Act. automática del inventario (5 %) | ⬜ |
-| F07 | Historial automático de precios | B3 | Historial de precios (3 %) | ⬜ |
-| F08 | Límites al facturar como pendiente | B3 | Validación de límites de crédito (4 %) | ⬜ |
-| F09 | Semanal: por vencer y más de 6 meses | B6 | Próximos a vencer (3 %), antigüedad (3 %) | ✅ |
-| F10 | Tipos de promoción y acciones automáticas | B1 + B3 | Admin. automática de promociones (4 %) | ⬜ |
-| F11 | Descuentos planeados semanales | B6 | Admin. de descuentos programados (3 %) | ✅ |
-| F12 | Top 10 clientes y orden de compra | B6 | Clientes premiados (4 %) | ✅ |
-| F13 | Bitácoras de las 7 áreas | B4 | Bitácora de cambios (4 %) | ✅ |
-| F14 | Notificaciones parametrizadas, clave cifrada | B2 | Notificaciones / cifrado | ⬜ |
-| F15 | Correo directo desde Oracle, sin VPN | B2 + I3 | Notificaciones | ✅ |
+| Código | Requerimiento | Etapa | Rúbrica | Dónde se demuestra | Estado |
+|---|---|---|---|---|---|
+| F01 | Cuentas por cobrar automáticas | B3 | Act. automática de CxC (4 %) | B3 §6 | ✅ |
+| F02 | Cuentas por pagar automáticas | B3 | Act. automática de CxP (4 %) | B3 §6 y §7 | ✅ |
+| F03 | Cambio automático de estado de factura | B3 | Cambio automático del estado (3 %) | B3 §6 (factura cancelada) | ✅ |
+| F04 | Padrón nacional y adaptación del modelo | B1 + B5 | Integración del padrón (6 %) | B3 §1 a §4, B5; carga desde SGSSTB en el switchover | ✅ |
+| F05 | Inventario automático en compras y ventas | B3 | Act. automática del inventario (5 %) | B3 §7 a §9 | ✅ |
+| F06 | Inventario automático en devoluciones | B3 | Act. automática del inventario (5 %) | B3 §7 (devolución al proveedor) y §9 (nota de crédito de venta) | ✅ |
+| F07 | Historial automático de precios | B3 | Historial de precios (3 %) | B3 §5 | ✅ |
+| F08 | Límites al facturar como pendiente | B3 | Validación de límites de crédito (4 %) | B3 §6 (rechazo sobre el límite); rechazos esperados de la instalación | ✅ |
+| F09 | Semanal: por vencer y más de 6 meses | B6 | Próximos a vencer (3 %), antigüedad (3 %) | B6, procesos de negocio programados | ✅ |
+| F10 | Tipos de promoción y acciones automáticas | B1 + B3 | Admin. automática de promociones (4 %) | B3 §9 (acciones calculadas al facturar) | ✅ |
+| F11 | Descuentos planeados semanales | B6 | Admin. de descuentos programados (3 %) | B6, procesos de negocio programados | ✅ |
+| F12 | Top 10 clientes y orden de compra | B6 | Clientes premiados (4 %) | B6 e historial de los procesos (premiaciones) | ✅ |
+| F13 | Bitácoras de las 7 áreas | B4 | Bitácora de cambios (4 %) | B4; pruebas en 21c (`I4_01`) | ✅ |
+| F14 | Notificaciones parametrizadas, clave cifrada | B2 | Notificaciones / cifrado | B2 §2, §3 y §5 | ✅ |
+| F15 | Correo directo desde Oracle, sin VPN | B2 + I3 | Notificaciones | B2 §8; correo desde SGSPRI y desde SGSSTB | ✅ |
 
 ### Seguridad
 
-| Código | Requerimiento | Etapa | Rúbrica | Estado |
-|---|---|---|---|---|
-| SEG1 | Perfiles, roles mínimos, usuarios | B7 | Usuarios, roles, perfiles, privilegios (8 %) | ✅ |
-| SEG2 | Roles con clave cifrada y procedimientos que la asignan | B7 | Contraseñas (4 %), admin. de privilegios (3 %) | ✅ |
+| Código | Requerimiento | Etapa | Rúbrica | Dónde se demuestra | Estado |
+|---|---|---|---|---|---|
+| SEG1 | Perfiles, roles mínimos, usuarios | B7 | Usuarios, roles, perfiles, privilegios (8 %) | B7; pruebas en 21c (`I4_02`, `I4_03`) | ✅ |
+| SEG2 | Roles con clave cifrada y procedimientos que la asignan | B7 | Contraseñas (4 %), admin. de privilegios (3 %) | B7 (claves cifradas, activación del rol, bloqueo y reutilización) | ✅ |
 
 ### Notificaciones
 
-| Código | Requerimiento | Etapa | Rúbrica | Estado |
-|---|---|---|---|---|
-| N1 | Cliente al 85 % de su límite | B6 | Clientes con límite de crédito (2 %) | ✅ |
-| N2 | Lista del 85 % al coordinador (clientes) | B6 | Proveedores con límite de crédito (2 %) | ✅ |
-| N3 | Gerente al 70 % de CxP, un solo correo | B6 | Notificaciones agrupadas (2 %) | ✅ |
-| N4 | Clientes morosos | B6 | Clientes morosos (2 %) | ✅ |
-| N5 | Productos vencidos con total | B6 | Productos vencidos (2 %) | ✅ |
-| N6 | Cierre diario automático | B1 + B6 | Cierre diario automático (4 %) | ✅ |
-| N7 | Tablespaces sobre el 85 % | B8 | Verificación de tablespaces (3 %) | ✅ |
-| N8 | Objetos inválidos | B8 | Verificación de objetos inválidos (2 %) | ✅ |
-| N9 | Índices dañados | B8 | Verificación del estado de índices (2 %) | ✅ |
+| Código | Requerimiento | Etapa | Rúbrica | Dónde se demuestra | Estado |
+|---|---|---|---|---|---|
+| N1 | Cliente al 85 % de su límite | B6 | Clientes con límite de crédito (2 %) | B6; avisos a demanda en SGSPRI (`I4_05`, `I4_06`) | ✅ |
+| N2 | Lista del 85 % al coordinador (clientes) | B6 | Clientes con límite de crédito (2 %), notificaciones agrupadas (2 %) | B6; avisos a demanda | ✅ |
+| N3 | Gerente al 70 % de CxP, un solo correo | B6 | Proveedores con límite de crédito (2 %), notificaciones agrupadas (2 %) | B6; avisos a demanda | ✅ |
+| N4 | Clientes morosos | B6 | Clientes morosos (2 %) | B6; avisos a demanda | ✅ |
+| N5 | Productos vencidos con total | B6 | Productos vencidos (2 %) | B6; avisos a demanda | ✅ |
+| N6 | Cierre diario automático | B1 + B6 | Cierre diario automático (4 %) | B6 e historial de los procesos (cierres) | ✅ |
+| N7 | Tablespaces sobre el 85 % | B8 | Verificación de tablespaces (3 %) | B8 | ✅ |
+| N8 | Objetos inválidos | B8 | Verificación de objetos inválidos (2 %) | B8 | ✅ |
+| N9 | Índices dañados | B8 | Verificación del estado de índices (2 %) | B8 | ✅ |
 
 ### Standby
 
-| Código | Requerimiento | Etapa | Rúbrica | Estado |
-|---|---|---|---|---|
-| SB1 | Dos servidores distintos | S1 + S2 | Implementación y configuración (20 %) | ✅ |
-| SB2 | Redo cada 5 min o 50 MB, parametrizado | S4 + I2 | Admin., sincronización y monitoreo (5 %) | ✅ |
-| SB3 | Traslado cada 10 min, parametrizado y a demanda | S4 + I2 | Admin., sincronización y monitoreo (5 %) | ✅ |
-| SB4 | Oracle 21c en Linux | S2 | Implementación y configuración (20 %) | ✅ |
-| SB5 | Borrado a los 3 días en ambos, parametrizado | S4 + I2 | Admin., sincronización y monitoreo (5 %) | ✅ |
-| SB6 | Respaldo diario al standby y a demanda | S5 | Estrategia de respaldo (5 %) | ✅ |
+| Código | Requerimiento | Etapa | Rúbrica | Dónde se demuestra | Estado |
+|---|---|---|---|---|---|
+| SB1 | Dos servidores distintos | S1 + S2 | Implementación y configuración (20 %) | `servidores/s1_sgspri.md`, `s1_sgsstb.md` | ✅ |
+| SB2 | Redo cada 5 min o 50 MB, parametrizado | S4 + I2 | Admin., sincronización y monitoreo (5 %) | `servidores/s4_standby.md` | ✅ |
+| SB3 | Traslado cada 10 min, parametrizado y a demanda | S4 + I2 | Admin., sincronización y monitoreo (5 %) | `servidores/s4_standby.md` | ✅ |
+| SB4 | Oracle 21c en Linux | S2 | Implementación y configuración (20 %) | `servidores/s2_sgspri.md`, `s3_dataguard.md` | ✅ |
+| SB5 | Borrado a los 3 días en ambos, parametrizado | S4 + I2 | Admin., sincronización y monitoreo (5 %) | `servidores/s4_standby.md` | ✅ |
+| SB6 | Respaldo diario al standby y a demanda | S5 | Estrategia de respaldo (5 %) | `servidores/s5_rman.md` §8 y §9; respaldo desde SGSSTB en el switchover | ✅ |
 
 ### Requerimientos de base de datos
 
-| Código | Requerimiento | Etapa | Rúbrica | Estado |
-|---|---|---|---|---|
-| RB1 | Arquitectura en packages | Transversal | Arquitectura (8 %) | ⬜ |
-| RB2 | Commit, rollback, savepoint | Transversal | Manejo transaccional (2,5 %) | ⬜ |
-| RB3 | Manejo de excepciones | Transversal | Excepciones (2,5 %), bitácora de errores (3 %) | ⬜ |
-| RB4 | Auditoría con triggers | B4 | Triggers (2,5 %), auditoría (5 % / 3 %) | ✅ |
-| RB5 | Todo con `DBMS_SCHEDULER` | Transversal | Automatizaciones (5 %), procesos programados (5 %) | ⬜ |
-| RB6 | Password profile, roles mínimos, privilegios | B7 | Seguridad (5 %) | ✅ |
-| RB7 | `DBMS_CRYPTO` | B2 | Seguridad / contraseñas | ⬜ |
-| RB8 | `EXPLAIN PLAN` | B8 | Proc/func almacenadas | ✅ |
-| RB9 | Vistas materializadas (2) | B8 | Proc/func almacenadas | ✅ |
-| RB10 | Parametrización en tablas | B2 + transversal | Varios | ⬜ |
-| RB11 | Concurrencia | B3 | Proc/func almacenadas | ⬜ |
-| RB12 | Integridad por package o trigger | Transversal | Triggers | ⬜ |
-| RB13 | Package de monitoreo | B8 | Monitoreo (5 %), sesiones (3 %) | ✅ |
-| RB14 | Failover, switchover, recuperación, sincronización | S3 + S6 | Recuperación, failover y switchover (5 %) | ⬜ |
-| RB15 | RMAN: full, incremental, restore, recovery | S5 | Estrategia de respaldo (5 %) | ⬜ |
+| Código | Requerimiento | Etapa | Rúbrica | Dónde se demuestra | Estado |
+|---|---|---|---|---|---|
+| RB1 | Arquitectura en packages | Transversal | Arquitectura (8 %) | 17 packages válidos (instalación en SGSPRI, `I1_02`) | ✅ |
+| RB2 | Commit, rollback, savepoint | Transversal | Manejo transaccional (2,5 %) | B3 §2, §7 y §8 (`SAVEPOINT` y `ROLLBACK TO SAVEPOINT`); B4 (el `ROLLBACK` deshace el rastro) | ✅ |
+| RB3 | Manejo de excepciones | Transversal | Excepciones (2,5 %), bitácora de errores (3 %) | B2 §1; rechazos esperados de la instalación (`I0_bitacora_errores`) | ✅ |
+| RB4 | Auditoría con triggers | B4 | Triggers (2,5 %), auditoría (5 % / 3 %) | B4; pruebas en 21c (`I4_01`) | ✅ |
+| RB5 | Todo con `DBMS_SCHEDULER` | Transversal | Automatizaciones (5 %), procesos programados (5 %) | 19 jobs (`I4_04`, `I4_10`); jobs en la nueva principal (`I4_13`) | ✅ |
+| RB6 | Password profile, roles mínimos, privilegios | B7 | Seguridad (5 %) | B0 §3 y §4; B7 | ✅ |
+| RB7 | `DBMS_CRYPTO` | B2 | Seguridad / contraseñas | B2 §4 y §5; B7 (claves de roles) | ✅ |
+| RB8 | `EXPLAIN PLAN` | B8 | Proc/func almacenadas | B8; `docs/optimizacion.md` | ✅ |
+| RB9 | Vistas materializadas (2) | B8 | Proc/func almacenadas | B8 | ✅ |
+| RB10 | Parametrización en tablas | B2 + transversal | Varios | B2 §2 (`SGS_PARAMETRO`); cambio de parámetros del standby en `servidores/s4_standby.md` | ✅ |
+| RB11 | Concurrencia | B3 | Proc/func almacenadas | B3 §10 | ✅ |
+| RB12 | Integridad por package o trigger | Transversal | Triggers | B3 §2 a §4 y §8 (validaciones por trigger y package) | ✅ |
+| RB13 | Package de monitoreo | B8 | Monitoreo (5 %), sesiones (3 %) | B8 | ✅ |
+| RB14 | Failover, switchover, recuperación, sincronización | S3 + S6 | Recuperación, failover y switchover (5 %) | `servidores/s3_dataguard.md`, `s6_switchover_failover.md`; switchover con el sistema completo (`I4_07` a `I4_18`) | ✅ |
+| RB15 | RMAN: full, incremental, restore, recovery | S5 | Estrategia de respaldo (5 %) | `servidores/s5_rman.md` | ✅ |
 
 ### Notas generales y del entregable
 
-| Código | Requerimiento | Etapa | Rúbrica | Estado |
-|---|---|---|---|---|
-| NG1 | Manual paso a paso con conceptos y solución de cada requerimiento | C2 | Manual de instalación (3 %) | ⬜ |
-| NG2 | Solución y manual ante acciones problemáticas en la standby | S7 + C2 | Manual del standby (2 %) | ⬜ |
-| NG3 | Implementación funcional presentada en vivo | C1 + C3 | Defensa (10 %) | ⬜ |
-| NG4 | Documentación interna del código | Transversal | Documentación del código (3 %) | ⬜ |
-| NG5 | Modelo relacional recalificado | B1 | Modelo relacional | ⬜ |
-| NG6 | Correo externo definido antes de la defensa | C3 | Notificaciones | ⬜ |
+| Código | Requerimiento | Etapa | Rúbrica | Dónde se demuestra | Estado |
+|---|---|---|---|---|---|
+| NG1 | Manual paso a paso con conceptos y solución de cada requerimiento | C2 | Manual de instalación (3 %) | Manual de instalación y despliegue | ⬜ |
+| NG2 | Solución y manual ante acciones problemáticas en la standby | S7 + C2 | Manual del standby (2 %) | `servidores/s7_situaciones.md` (Andrés) y manual del standby | 🟨 |
+| NG3 | Implementación funcional presentada en vivo | C1 + C3 | Defensa (10 %) | C1 y ensayo | ⬜ |
+| NG4 | Documentación interna del código | Transversal | Documentación del código (3 %) | Comentarios en los scripts `bd/` y `servidores/scripts/` (falta la revisión final) | 🟨 |
+| NG5 | Modelo relacional recalificado | B1 | Modelo relacional | B1; `docs/modelo/` (diagrama y diccionario de datos) | ✅ |
+| NG6 | Correo externo definido antes de la defensa | C3 | Notificaciones | Cambiar `SGS_DESTINATARIO` antes de la defensa | ⬜ |
 
 ---
 
