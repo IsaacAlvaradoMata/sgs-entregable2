@@ -34,7 +34,7 @@ Qué falta y quién lo tiene. Se actualiza al avanzar; el detalle de cada etapa 
 - [x] S3: Data Guard (`SGSSTB` como standby física de `SGSPRI`).
 - [x] Rutina de arranque y apagado probada (2026-10-27): [`servidores/operacion_diaria.md`](../servidores/operacion_diaria.md).
 - [x] Hora sincronizada con `chronyd` en los dos servidores.
-- [ ] S4: administración parametrizada del standby (necesita la tabla de parámetros de Isaac, I2).
+- [x] S4: administración parametrizada del standby: archivo cada `STB_MINUTOS_ARCHIVO` min (y aviso si los redo no miden `STB_MB_ARCHIVO`), traslado cada `STB_MINUTOS_TRASLADO` min y a demanda, borrado a los `STB_DIAS_BORRADO` días en los dos servidores. Jobs `SGS_JOB_STB_*` en `bd/11_standby.sql`. Ver [`servidores/s4_standby.md`](../servidores/s4_standby.md).
 - [x] S5: RMAN configurado; full, incremental, restore y recovery probados; copia a `SGSSTB`; script a demanda (`servidores/scripts/respaldo_rman.sh`). Ver [`servidores/s5_rman.md`](../servidores/s5_rman.md).
 - [x] S5: job diario `SGS_JOB_RESPALDO_DIARIO` (de `SGS_ADMIN`, con la credencial `SGS_CRED_ORACLE`) a la hora de `RESP_HORA_DIARIO` (1:00 a. m.), probado a demanda; `respaldo_rman.sh` instalado en las dos VMs y solo respalda la PRIMARY. Script oficial `bd/11_standby.sql`. Ver [`servidores/s5_rman.md`](../servidores/s5_rman.md) §8 y §9.
 - [ ] Borrar el tablespace de prueba `ts_prueba_rman` (y su tabla) de `SGSPDB` cuando ya no se necesite.

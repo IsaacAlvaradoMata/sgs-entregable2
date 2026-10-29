@@ -495,11 +495,11 @@ Todo paso que funcione se anota de inmediato (con capturas) para el manual de in
 **Depende de:** S3, I2
 
 **Implementaciones:**
-- [ ] Archivo de actualización cada 5 minutos o 50 MB (parametrizado), sin intervención del DBA.
-- [ ] Traslado a la standby cada 10 minutos (parametrizado).
-- [ ] Traslado **a demanda** para la revisión.
-- [ ] Borrado de archivos ya trasladados (principal) y ya aplicados (standby) con más de 3 días (parametrizado).
-- [ ] Todo con `DBMS_SCHEDULER`.
+- [x] Archivo de actualización cada 5 minutos o 50 MB (parametrizado), sin intervención del DBA.
+- [x] Traslado a la standby cada 10 minutos (parametrizado).
+- [x] Traslado **a demanda** para la revisión.
+- [x] Borrado de archivos ya trasladados (principal) y ya aplicados (standby) con más de 3 días (parametrizado).
+- [x] Todo con `DBMS_SCHEDULER`.
 
 **Cuidados:** nunca borrar archivos que la standby aún no aplicó.
 
@@ -516,11 +516,11 @@ Todo paso que funcione se anota de inmediato (con capturas) para el manual de in
 **Depende de:** S3, I2
 
 **Implementaciones:**
-- [ ] Backup full.
-- [ ] Backup incremental.
-- [ ] Respaldo diario automático (`DBMS_SCHEDULER`) copiado al standby.
-- [ ] Respaldo **a demanda** para la revisión.
-- [ ] Práctica de restore y recovery (por ejemplo, pérdida simulada de un archivo).
+- [x] Backup full.
+- [x] Backup incremental.
+- [x] Respaldo diario automático (`DBMS_SCHEDULER`) copiado al standby.
+- [x] Respaldo **a demanda** para la revisión.
+- [x] Práctica de restore y recovery (por ejemplo, pérdida simulada de un archivo).
 
 **Terminado cuando…** existe un respaldo diario en ambos servidores y una recuperación probada de punta a punta.
 
@@ -535,9 +535,9 @@ Todo paso que funcione se anota de inmediato (con capturas) para el manual de in
 **Depende de:** S5
 
 **Implementaciones:**
-- [ ] Switchover (intercambio planeado de roles) y regreso.
-- [ ] Failover (caída simulada de la principal).
-- [ ] Reincorporación del servidor caído como nueva standby.
+- [x] Switchover (intercambio planeado de roles) y regreso.
+- [x] Failover (caída simulada de la principal).
+- [x] Reincorporación del servidor caído como nueva standby.
 - [ ] Monitoreo de la sincronización (retraso, archivos recibidos/aplicados).
 - [ ] Procedimiento de cómo reconectar el cliente al nuevo principal.
 
@@ -580,7 +580,7 @@ Todo paso que funcione se anota de inmediato (con capturas) para el manual de in
 **Depende de:** B2, S3 · **Desbloquea:** S4, S5
 
 - [x] Los parámetros del standby y del respaldo existen en la tabla de parámetros con los nombres acordados (`STB_*` y `RESP_HORA_DIARIO`, instalados en `SGSPRI`).
-- [ ] Los procesos de Andrés leen esos valores.
+- [x] Los procesos de Andrés leen esos valores.
 
 ### I3 — Correo desde el servidor
 
@@ -694,12 +694,12 @@ Estado: ⬜ pendiente · 🟨 en progreso · ✅ listo
 
 | Código | Requerimiento | Etapa | Rúbrica | Estado |
 |---|---|---|---|---|
-| SB1 | Dos servidores distintos | S1 + S2 | Implementación y configuración (20 %) | ⬜ |
-| SB2 | Redo cada 5 min o 50 MB, parametrizado | S4 + I2 | Admin., sincronización y monitoreo (5 %) | ⬜ |
-| SB3 | Traslado cada 10 min, parametrizado y a demanda | S4 + I2 | Admin., sincronización y monitoreo (5 %) | ⬜ |
-| SB4 | Oracle 21c en Linux | S2 | Implementación y configuración (20 %) | ⬜ |
-| SB5 | Borrado a los 3 días en ambos, parametrizado | S4 + I2 | Admin., sincronización y monitoreo (5 %) | ⬜ |
-| SB6 | Respaldo diario al standby y a demanda | S5 | Estrategia de respaldo (5 %) | ⬜ |
+| SB1 | Dos servidores distintos | S1 + S2 | Implementación y configuración (20 %) | ✅ |
+| SB2 | Redo cada 5 min o 50 MB, parametrizado | S4 + I2 | Admin., sincronización y monitoreo (5 %) | ✅ |
+| SB3 | Traslado cada 10 min, parametrizado y a demanda | S4 + I2 | Admin., sincronización y monitoreo (5 %) | ✅ |
+| SB4 | Oracle 21c en Linux | S2 | Implementación y configuración (20 %) | ✅ |
+| SB5 | Borrado a los 3 días en ambos, parametrizado | S4 + I2 | Admin., sincronización y monitoreo (5 %) | ✅ |
+| SB6 | Respaldo diario al standby y a demanda | S5 | Estrategia de respaldo (5 %) | ✅ |
 
 ### Requerimientos de base de datos
 

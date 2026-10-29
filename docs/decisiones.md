@@ -329,3 +329,16 @@ Pasos detallados en [`servidores/s1_sgspri.md`](../servidores/s1_sgspri.md).
 | Reincorporación | `REINSTATE DATABASE` con flashback (sin recrear la standby) |
 | Nombres en comandos del broker | Entre comillas y en mayúscula (`'SGSSTB'`, `'SGSPRI'`): sin comillas el failover da `ORA-16600` |
 | Roles normales | `SGSPRI` principal, `SGSSTB` standby; tras cualquier prueba se regresa con switchover |
+
+### S4 — Administración parametrizada del standby
+
+**Procesos del standby** · 2026-10-28
+
+| Elemento | Decisión |
+|---|---|
+| Dónde viven | Jobs de `SGS_ADMIN` en `bd/11_standby.sql`; cada job lee su parámetro al ejecutarse y se lo pasa a un script de Linux que corre como `oracle` con la credencial `SGS_CRED_ORACLE` |
+| Scripts | Instalados igual en las dos VMs; solo actúan si su base es la PRIMARY; la otra base se toca por SSH |
+| `STB_MINUTOS_ARCHIVO` | Propiedad `ArchiveLagTarget` del broker en las dos bases (job diario 00:10 y a demanda) |
+| `STB_MB_ARCHIVO` | Se cumple con redo logs de 50 MB; si el parámetro no coincide, aviso por correo al DBA (no se rehacen los redo logs automáticamente) |
+| `STB_MINUTOS_TRASLADO` | Job cada N minutos con `ARCHIVE LOG CURRENT`; se reprograma solo si cambia el parámetro |
+| `STB_DIAS_BORRADO` | RMAN `DELETE ARCHIVELOG ... COMPLETED BEFORE 'SYSDATE-N'` en las dos bases (job diario 00:20); `ARCHIVELOG DELETION POLICY TO APPLIED ON ALL STANDBY` en las dos |
