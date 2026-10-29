@@ -37,16 +37,8 @@ Qué falta y quién lo tiene. Se actualiza al avanzar; el detalle de cada etapa 
 - [x] S4: administración parametrizada del standby: archivo cada `STB_MINUTOS_ARCHIVO` min (y aviso si los redo no miden `STB_MB_ARCHIVO`), traslado cada `STB_MINUTOS_TRASLADO` min y a demanda, borrado a los `STB_DIAS_BORRADO` días en los dos servidores. Jobs `SGS_JOB_STB_*` en `bd/11_standby.sql`. Ver [`servidores/s4_standby.md`](../servidores/s4_standby.md).
 - [x] S5: RMAN configurado; full, incremental, restore y recovery probados; copia a `SGSSTB`; script a demanda (`servidores/scripts/respaldo_rman.sh`). Ver [`servidores/s5_rman.md`](../servidores/s5_rman.md).
 - [x] S5: job diario `SGS_JOB_RESPALDO_DIARIO` (de `SGS_ADMIN`, con la credencial `SGS_CRED_ORACLE`) a la hora de `RESP_HORA_DIARIO` (1:00 a. m.), probado a demanda; `respaldo_rman.sh` instalado en las dos VMs y solo respalda la PRIMARY. Script oficial `bd/11_standby.sql`. Ver [`servidores/s5_rman.md`](../servidores/s5_rman.md) §8 y §9.
-- [ ] Borrar el tablespace de prueba `ts_prueba_rman` (y su tabla) de `SGSPDB` cuando termine S7.
+- [ ] Borrar los objetos de prueba de `SGSPDB`: tablespaces `ts_prueba_rman` y `ts_prueba_s7`, tablas `system.prueba_dg` y `system.prueba_s7_*` (nolog, dano, ts, fra, carga).
 - [x] S6: switchover, failover y reincorporación probados con el broker `sgs_dg`: [`servidores/s6_switchover_failover.md`](../servidores/s6_switchover_failover.md).
-- [ ] S7: situaciones problemáticas en la standby, probadas en las VMs, en `servidores/s7_situaciones.md` (capturas en `servidores/capturas/s7_situaciones/`). Casos, en orden:
-  - [ ] NOLOGGING con FORCE LOGGING.
-  - [ ] Tablespace o datafile nuevo.
-  - [ ] Standby apagada y el gap.
-  - [ ] Redo faltante.
-  - [ ] FRA llena.
-  - [ ] Clave de SYS.
-  - [ ] Lag en una carga masiva.
+- [x] S7: situaciones problemáticas en la standby, probadas en las VMs (NOLOGGING, datafile nuevo, standby apagada, redo faltante, FRA llena, clave de SYS, carga masiva): [`servidores/s7_situaciones.md`](../servidores/s7_situaciones.md).
 - [ ] Después de S7: datos o capturas de los servidores que pida Isaac para los manuales (por PR); leer el guion y los manuales y avisar si algo no calza.
 - [ ] Al final, con Isaac: C1 (prueba de punta a punta en los servidores, Andrés maneja la HP), ensayo de la defensa (incluido el plan B de red: hotspot + Tailscale) y, el día de la defensa, encender las VMs con tiempo y revisar `SHOW CONFIGURATION` en `SUCCESS`.
-- [ ] Borrar la tabla de prueba `system.prueba_dg` de `SGSPDB` cuando termine S7.
