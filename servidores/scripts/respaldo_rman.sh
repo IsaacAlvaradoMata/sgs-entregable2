@@ -1,23 +1,40 @@
 #!/bin/bash
 # ================================================================
 # respaldo_rman.sh
-# SGS - Entregable #2 - Respaldo de SGSPRI con RMAN y copia a SGSSTB
+# SGS - Entregable #2 - Respaldo de la base principal con RMAN y
+# copia al otro servidor
 #
 # Uso:  respaldo_rman.sh [0|1]
 #   0 = backup full (incremental nivel 0)
 #   1 = backup incremental nivel 1
 #   Sin argumento: nivel 0 los domingos, nivel 1 los demás días.
 #
-# Se ejecuta como el usuario oracle en SGSPRI, a demanda o desde
-# un job de DBMS_SCHEDULER. Deja un log por ejecución en
-# /home/oracle/logs y termina con código 0 si todo salió bien.
+# Se ejecuta como el usuario oracle, a demanda o desde el job
+# SGS_JOB_RESPALDO_DIARIO. Está instalado igual en SGSPRI y SGSSTB:
+# detecta en qué servidor corre y solo respalda si esa base es la
+# PRIMARY (después de un switchover respalda la nueva principal).
+# Deja un log por ejecución en /home/oracle/logs.
+#
+# Códigos de salida:
+#   0 = respaldo y copia OK
+#   1 = error de RMAN
+#   2 = nivel inválido
+#   3 = error al copiar al otro servidor
+#   4 = la base de este servidor no es PRIMARY (no se respalda)
+#   5 = servidor desconocido o base no disponible
 # ================================================================
 
 # Variables de Oracle (un job del scheduler no carga .bash_profile)
 export ORACLE_BASE=/opt/oracle
 export ORACLE_HOME=/opt/oracle/product/21c/dbhome_1
-export ORACLE_SID=SGSPRI
 export PATH=$ORACLE_HOME/bin:/usr/bin:/bin
+
+# Servidor actual y el otro servidor (destino de la copia)
+case "$(hostname -s)" in
+    sgspri) export ORACLE_SID=SGSPRI; OTRO=sgsstb ;;
+    sgsstb) export ORACLE_SID=SGSSTB; OTRO=sgspri ;;
+    *)      echo "Servidor desconocido: $(hostname -s)"; exit 5 ;;
+esac
 
 # Nivel del respaldo
 if [ -n "$1" ]; then
@@ -32,15 +49,38 @@ if [ "$NIVEL" != "0" ] && [ "$NIVEL" != "1" ]; then
     exit 2
 fi
 
-ORIGEN=/opt/oracle/fast_recovery_area/SGSPRI/
-DESTINO=oracle@sgsstb:/opt/oracle/respaldos_sgspri/
 LOG_DIR=/home/oracle/logs
 LOG=$LOG_DIR/respaldo_$(date +%Y%m%d_%H%M%S)_L$NIVEL.log
 mkdir -p "$LOG_DIR"
 
-echo "=== Respaldo nivel $NIVEL - inicio $(date) ===" >> "$LOG"
+echo "=== Respaldo nivel $NIVEL en $ORACLE_SID - inicio $(date) ===" >> "$LOG"
 
-# 1. Respaldo con RMAN y limpieza de respaldos que ya no hacen falta
+# 1. Solo se respalda la base principal
+ROL=$(sqlplus -s / as sysdba <<SQL
+SET HEADING OFF FEEDBACK OFF PAGESIZE 0
+SELECT database_role FROM v\$database;
+EXIT;
+SQL
+)
+ROL=$(echo "$ROL" | tr -d '[:space:]')
+echo "Rol de $ORACLE_SID: $ROL" >> "$LOG"
+if [ "$ROL" != "PRIMARY" ]; then
+    case "$ROL" in
+        PHYSICALSTANDBY)
+            echo "=== $ORACLE_SID es standby: no se respalda - $(date) ===" >> "$LOG"
+            echo "$ORACLE_SID no es la base principal: no se respalda (ver $LOG)"
+            exit 4 ;;
+        *)
+            echo "=== No se pudo leer el rol de $ORACLE_SID - $(date) ===" >> "$LOG"
+            echo "No se pudo leer el rol de $ORACLE_SID (ver $LOG)"
+            exit 5 ;;
+    esac
+fi
+
+ORIGEN=/opt/oracle/fast_recovery_area/$ORACLE_SID/
+DESTINO=oracle@$OTRO:/opt/oracle/respaldos_$(echo "$ORACLE_SID" | tr 'A-Z' 'a-z')/
+
+# 2. Respaldo con RMAN y limpieza de respaldos que ya no hacen falta
 #    según la política de retención (REDUNDANCY 1)
 rman target / >> "$LOG" 2>&1 <<RMAN
 BACKUP INCREMENTAL LEVEL $NIVEL DATABASE TAG 'SGS_DIARIO_L$NIVEL' PLUS ARCHIVELOG;
@@ -53,15 +93,16 @@ if [ $? -ne 0 ]; then
     exit 1
 fi
 
-# 2. Copia al standby (solo respaldos y archivos de redo; se excluyen
-#    el control file vivo, los logs de flashback y los redo en línea)
+# 3. Copia al otro servidor (solo respaldos y archivos de redo; se
+#    excluyen el control file vivo, los logs de flashback y los redo
+#    en línea)
 rsync -a --delete-excluded \
       --exclude='control*.ctl' --exclude='flashback/' --exclude='onlinelog/' \
       "$ORIGEN" "$DESTINO" >> "$LOG" 2>&1
 if [ $? -ne 0 ]; then
-    echo "=== ERROR al copiar a SGSSTB - $(date) ===" >> "$LOG"
+    echo "=== ERROR al copiar a $OTRO - $(date) ===" >> "$LOG"
     exit 3
 fi
 
-echo "=== Respaldo nivel $NIVEL - fin OK $(date) ===" >> "$LOG"
+echo "=== Respaldo nivel $NIVEL en $ORACLE_SID - fin OK $(date) ===" >> "$LOG"
 exit 0

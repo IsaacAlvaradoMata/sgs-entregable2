@@ -157,17 +157,65 @@ En `SGSSTB` quedan `archivelog`, `autobackup`, `backupset` y las carpetas de las
 
 ## 8. Script de respaldo (a demanda y para el job diario)
 
-[`scripts/respaldo_rman.sh`](scripts/respaldo_rman.sh) junta todo en un paso: backup con RMAN (nivel 0 los domingos, nivel 1 los demás días, o el nivel indicado), `CROSSCHECK` y `DELETE OBSOLETE` según la retención, y copia a `SGSSTB` con `rsync`. Deja un log por ejecución en `/home/oracle/logs` y devuelve `0` si todo salió bien (`1` error de RMAN, `2` nivel inválido, `3` error al copiar). Define las variables de Oracle porque un job del scheduler no carga `.bash_profile`.
+[`scripts/respaldo_rman.sh`](scripts/respaldo_rman.sh) junta todo en un paso: backup con RMAN (nivel 0 los domingos, nivel 1 los demás días, o el nivel indicado), `CROSSCHECK` y `DELETE OBSOLETE` según la retención, y copia al otro servidor con `rsync`. Deja un log por ejecución en `/home/oracle/logs`. Define las variables de Oracle porque un job del scheduler no carga `.bash_profile`.
 
-Instalación en `SGSPRI` (como `oracle`): crear `~/scripts/respaldo_rman.sh` con el contenido del archivo del repo y `chmod +x ~/scripts/respaldo_rman.sh`.
+Está instalado **igual en los dos servidores** (`/home/oracle/scripts/respaldo_rman.sh`): detecta en cuál corre (`hostname`), pregunta el rol de su base y **solo respalda si es la PRIMARY**. Así, después de un switchover respalda la nueva principal y copia al otro servidor (`/opt/oracle/respaldos_sgspri` o `/opt/oracle/respaldos_sgsstb`).
+
+| Código de salida | Significado |
+|---|---|
+| `0` | Respaldo y copia OK |
+| `1` | Error de RMAN |
+| `2` | Nivel inválido |
+| `3` | Error al copiar al otro servidor |
+| `4` | La base de este servidor no es PRIMARY: no se respalda |
+| `5` | Servidor desconocido o base no disponible |
+
+Instalación (como `oracle`, en `SGSPRI` y en `SGSSTB`):
+
+```
+mkdir -p ~/scripts
+curl -fsSL -o ~/scripts/respaldo_rman.sh https://raw.githubusercontent.com/IsaacAlvaradoMata/sgs-entregable2/main/servidores/scripts/respaldo_rman.sh
+chmod +x ~/scripts/respaldo_rman.sh
+```
+
+**Prueba en la standby** (`SGSSTB`): `~/scripts/respaldo_rman.sh 1; echo "Resultado: $?"` → `SGSSTB no es la base principal: no se respalda` y `Resultado: 4`.
+
+**Ejecución a mano en la principal** (`SGSPRI`):
+
+```
+~/scripts/respaldo_rman.sh 1; echo "Resultado: $?"                       # Resultado: 0
+grep -E "Rol de|fin OK" $(ls -t ~/logs/respaldo_*_L1.log | head -1)     # Rol de SGSPRI: PRIMARY ... fin OK
+ssh oracle@sgsstb "ls -lt /opt/oracle/respaldos_sgspri/backupset/"      # carpeta con la fecha del día
+```
+
+En la primera prueba (2026-10-28), `DELETE OBSOLETE` borró 14 objetos que la retención ya no necesita: archivos de redo del 26-oct (ya aplicados en la standby), autobackups viejos del control file y el respaldo `SGS_PRUEBA_TS`, reemplazado por la copia nueva del datafile 13 que hizo el incremental (RMAN hace nivel 0 de un archivo que no tiene nivel 0 previo).
+
+## 9. Job diario de respaldo (`SGS_JOB_RESPALDO_DIARIO`)
+
+El script [`bd/11_standby.sql`](../bd/11_standby.sql) crea, a nombre de `SGS_ADMIN`:
+
+- La credencial `SGS_CRED_ORACLE` con el usuario `oracle` de Linux. La clave se pide al ejecutar (`ACCEPT ... HIDE` con `SET VERIFY OFF`), no se muestra y no queda en el repo.
+- El job `SGS_JOB_RESPALDO_DIARIO`, de tipo `EXECUTABLE`, que ejecuta `/home/oracle/scripts/respaldo_rman.sh` con esa credencial. La hora sale del parámetro `RESP_HORA_DIARIO` (`1` → `FREQ=DAILY;BYHOUR=1;BYMINUTE=0;BYSECOND=0`, hora de Costa Rica). Si el parámetro cambia, se vuelve a ejecutar la sección 3 del script.
+
+Se ejecuta en `SGSPRI` como SYS dentro de la PDB (o como `SGS_ADMIN`):
+
+```
+sqlplus / as sysdba
+ALTER SESSION SET CONTAINER = SGSPDB;
+@/home/oracle/scripts/11_standby.sql      -- pide la clave de Linux de oracle
+```
+
+Resultado: credencial `SGS_ADMIN.SGS_CRED_ORACLE` `TRUE`; job `TRUE` / `SCHEDULED`, próxima ejecución `01:00 AMERICA/COSTA_RICA`.
 
 **Ejecución a demanda** (la que pide el enunciado para la revisión):
 
 ```
-~/scripts/respaldo_rman.sh 1; echo "Resultado: $?"     # Resultado: 0
-tail -20 ~/logs/respaldo_*_L1.log                        # ... fin OK
+EXEC DBMS_SCHEDULER.RUN_JOB('SGS_ADMIN.SGS_JOB_RESPALDO_DIARIO', use_current_session => TRUE);
+SELECT status, error#, run_duration, additional_info
+  FROM dba_scheduler_job_run_details
+ WHERE job_name = 'SGS_JOB_RESPALDO_DIARIO'
+ ORDER BY log_id DESC FETCH FIRST 1 ROWS ONLY;
+-- SUCCEEDED  0  +000 00:00:15  ... USERNAME="oracle"
 ```
 
-En la prueba (2026-10-28), `DELETE OBSOLETE` borró 14 objetos que la retención ya no necesita: archivos de redo del 26-oct (ya aplicados en la standby), autobackups viejos del control file y el respaldo `SGS_PRUEBA_TS`, reemplazado por la copia nueva del datafile 13 que hizo el incremental (RMAN hace nivel 0 de un archivo que no tiene nivel 0 previo).
-
-**Pendiente:** job diario con `DBMS_SCHEDULER` que ejecute este script (`RESP_HORA_DIARIO` en la tabla de parámetros de Isaac; ver `notas/pendientes.md`).
+El log del script confirma la ejecución (`Rol de SGSPRI: PRIMARY` y `fin OK`). Los jobs no corren en la standby (está en solo lectura); después de un switchover corren en la nueva principal, y el script respalda esa base.
