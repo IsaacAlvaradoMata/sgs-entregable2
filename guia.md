@@ -595,7 +595,7 @@ Todo paso que funcione se anota de inmediato (con capturas) para el manual de in
 
 - [x] Todo el carril B corre en `SGSPRI`.
 - [x] El standby replica todo, incluidos los objetos y datos nuevos.
-- [ ] Los jobs funcionan en la principal y, después de un switchover, en la nueva principal.
+- [x] Los jobs funcionan en la principal y, después de un switchover, en la nueva principal (probado 2026-10-29 con los 19 jobs, el correo, una compra y el padrón).
 
 ---
 

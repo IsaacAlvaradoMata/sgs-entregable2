@@ -939,3 +939,51 @@ Los 5 jobs de avisos ejecutados a demanda con `DBMS_SCHEDULER.RUN_JOB` (como los
 ![Correos de los avisos](capturas/I4_06_correos_avisos.png)
 
 Cada aviso llegó por correo desde `SGSPRI`: proveedores al 70 % para el gerente, clientes morosos, el aviso personal a la clienta que llegó al 86,4 % de su crédito, la lista de clientes al 85 % para el coordinador y los productos vencidos con su total.
+
+# Switchover con el sistema completo
+
+Con todo instalado (esquema, 19 jobs, respaldo y administración del standby), los roles se intercambiaron con el broker para comprobar que el sistema completo sigue funcionando con `SGSSTB` como principal, y después se regresó a los roles originales.
+
+![Antes del switchover](capturas/I4_07_antes_switchover.png)
+
+Estado inicial: `SGSPRI` principal en lectura y escritura con los 19 jobs de `SGS_ADMIN` habilitados.
+
+![Switchover a SGSSTB](capturas/I4_08_switchover_a_sgsstb.jpeg)
+
+![SGSSTB como principal](capturas/I4_09_configuracion_sgsstb_primary.jpeg)
+
+El broker cambió los roles en unos 30 segundos y la configuración quedó en `SUCCESS`, con `SGSSTB` como principal y `SGSPRI` como standby.
+
+![SGSSTB principal](capturas/I4_10_sgsstb_principal.png)
+
+`SGSSTB` abre en lectura y escritura con los mismos 19 jobs habilitados: los jobs viajan con la base y el scheduler los ejecuta en la nueva principal sin recrearlos.
+
+![Correo desde SGSSTB](capturas/I4_11_correo_desde_sgsstb.png)
+
+El correo sale también desde `SGSSTB`, con su propio wallet en la misma ruta: no hubo que cambiar ningún parámetro.
+
+![Compra en SGSSTB](capturas/I4_12_operacion_en_sgsstb.png)
+
+Una compra registrada con `SGS_PKG_COMPRAS` en la nueva principal, con su rastro en la bitácora.
+
+![Jobs en SGSSTB](capturas/I4_13_jobs_en_sgsstb.png)
+
+Los avisos, la revisión de tablespaces, el respaldo diario (que ahora respalda `SGSSTB` y copia a `SGSPRI`) y el traslado al standby corren a demanda en la nueva principal y terminan en `SUCCEEDED`.
+
+![Correos desde SGSSTB](capturas/I4_14_correos_desde_sgsstb.png)
+
+Los cinco avisos llegaron desde `SGSSTB`.
+
+![Padrón desde SGSSTB](capturas/I4_15_padron_desde_sgsstb.png)
+
+La carga del padrón también funciona desde `SGSSTB`, con los archivos del TSE en su propia carpeta: como el archivo es el mismo, no cambia ninguna fila y el total sigue en 3 762 248 personas.
+
+![La compra llega a SGSPRI](capturas/I4_16_compra_llega_a_sgspri.png)
+
+Con los roles invertidos, la compra hecha en `SGSSTB` llega a `SGSPRI`, que ahora es la standby: la sincronización funciona en los dos sentidos.
+
+![Regreso a SGSPRI](capturas/I4_17_switchover_regreso_sgspri.jpeg)
+
+![Roles originales](capturas/I4_18_configuracion_roles_originales.jpeg)
+
+El segundo switchover devuelve los roles originales en unos 35 segundos y la configuración queda en `SUCCESS`. En `SGSPRI` los 19 jobs siguen programados y sin fallos, listos para su próxima ejecución.
