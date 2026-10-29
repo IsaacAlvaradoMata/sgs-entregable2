@@ -554,9 +554,9 @@ Todo paso que funcione se anota de inmediato (con capturas) para el manual de in
 **Depende de:** S6
 
 **Implementaciones:**
-- [ ] Identificar casos (operaciones sin registro, nuevos tablespaces/datafiles, reinicio de la standby, archivos faltantes, etc.).
-- [ ] Probar al menos los más probables, incluida la carga del padrón (coordinar con B5).
-- [ ] Documentar síntoma, causa y solución de cada uno.
+- [x] Identificar casos (operaciones sin registro, nuevos tablespaces/datafiles, reinicio de la standby, archivos faltantes, etc.).
+- [x] Probar al menos los más probables, incluida la carga del padrón (coordinar con B5).
+- [x] Documentar síntoma, causa y solución de cada uno.
 
 **Terminado cuando…** cada caso tiene su solución probada y escrita.
 
