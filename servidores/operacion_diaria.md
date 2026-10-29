@@ -45,6 +45,8 @@ Justo después de `lsnrctl start`, los servicios estáticos aparecen con `status
 
 ## Apagar (primero la standby, después la principal)
 
+> Antes de suspender o apagar la HP, apagar siempre las VMs con esta rutina. Si la HP se suspende con las VMs encendidas, sus relojes se atrasan (pasó el 2026-10-28: unos 54 minutos); chronyd ya está configurado con `makestep 1 -1` para corregirlo de golpe al volver (ver [`s1_sgspri.md`](s1_sgspri.md) §8).
+
 1. **Standby** (normalmente `SGSSTB`; como `oracle`, `sqlplus / as sysdba`):
    ```
    SHUTDOWN IMMEDIATE;

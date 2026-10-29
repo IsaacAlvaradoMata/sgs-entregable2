@@ -123,3 +123,16 @@ timedatectl
 # System clock synchronized: yes
 # NTP service: active
 ```
+
+**Corrección de golpe (2026-10-29).** Al suspender la HP con las VMs encendidas, los relojes quedaron atrasados unos 54 minutos (`chronyc tracking`: `3242 seconds slow` en `SGSPRI`, `3190` en `SGSSTB`), y por defecto chronyd corrige grandes desfases muy despacio. Los jobs corren según esa hora, así que se corrigió de golpe y se configuró para que lo haga solo siempre que el desfase pase de 1 segundo. Como `root`, en cada VM:
+
+```
+chronyc makestep                                              # 200 OK; System time 0.000000000
+sed -i 's/^makestep .*/makestep 1 -1/' /etc/chrony.conf
+grep makestep /etc/chrony.conf                                # makestep 1 -1
+systemctl restart chronyd
+timedatectl                                                   # hora real; System clock synchronized: yes (tarda ~1 min)
+chronyc tracking                                              # System time en fracciones de segundo
+```
+
+Capturas en [`capturas/operacion/`](capturas/operacion/) (08 a 15). Antes de suspender o apagar la HP se apagan las VMs con la rutina de [`operacion_diaria.md`](operacion_diaria.md).
