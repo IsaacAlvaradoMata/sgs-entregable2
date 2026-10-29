@@ -39,7 +39,7 @@ Desde que existe el broker y se hacen switchovers, **el rol de cada servidor pue
    ```
    El **broker arranca solo** la aplicación de cambios; puede tardar hasta un minuto en pasar de `READ ONLY` a `READ ONLY WITH APPLY`. Si no pasa, desde `dgmgrl sys@SGSPRI`: `EDIT DATABASE SGSSTB SET STATE='APPLY-ON';` (con el broker activo no se usa `RECOVER MANAGED STANDBY DATABASE`).
 
-5. Revisar la configuración: `dgmgrl sys@SGSPRI` → `SHOW CONFIGURATION;` → `SUCCESS`.
+5. Revisar la configuración: `dgmgrl sys@SGSPRI` → `SHOW CONFIGURATION;` → `SUCCESS`. Si la standby aparece `(disabled)` con `ORA-16906: The member was shutdown`, habilitarla: `ENABLE DATABASE 'SGSSTB';` → `Enabled.` y `SHOW CONFIGURATION;` vuelve a `SUCCESS` (ver [`s7_situaciones.md`](s7_situaciones.md) §3).
 
 Justo después de `lsnrctl start`, los servicios estáticos aparecen con `status UNKNOWN`; es normal.
 
