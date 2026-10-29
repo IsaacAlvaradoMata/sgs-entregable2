@@ -5,6 +5,7 @@
 # y aplicados (parámetro STB_DIAS_BORRADO)
 #
 # Uso:  standby_borrado.sh <dias>
+#   <dias> admite decimales para las pruebas (0.02 = unos 30 minutos).
 #
 # Borra con RMAN los archivos de redo de más de <dias> días en la
 # principal y en la standby (en la standby por SSH, porque los jobs
@@ -36,8 +37,8 @@ case "$(hostname -s)" in
 esac
 
 DIAS=$1
-if ! [[ "$DIAS" =~ ^[0-9]+$ ]]; then
-    echo "Uso: standby_borrado.sh <dias> (entero, 0 o más)"
+if ! [[ "$DIAS" =~ ^[0-9]+([.][0-9]+)?$ ]]; then
+    echo "Uso: standby_borrado.sh <dias> (número, 0 o más; admite decimales)"
     exit 2
 fi
 
