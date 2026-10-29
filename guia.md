@@ -570,8 +570,8 @@ Todo paso que funcione se anota de inmediato (con capturas) para el manual de in
 
 **Depende de:** B1, S2 · **Qué se hace:** ejecutar los scripts de B1 en `SGSPDB` del servidor oficial.
 
-- [ ] Script de infraestructura y modelo ejecutado en `SGSPRI` sin errores.
-- [ ] Diferencias entre Oracle Free y 21c identificadas y corregidas.
+- [x] Script de infraestructura y modelo ejecutado en `SGSPRI` sin errores (los 01 a 10 completos, 2026-10-28).
+- [x] Diferencias entre Oracle Free y 21c identificadas y corregidas (los scripts corrieron en 21c sin cambios).
 
 **Regla:** a partir de aquí, cada etapa del carril B que se termina se ejecuta también en `SGSPRI`. No se deja la integración para el final.
 
@@ -579,22 +579,22 @@ Todo paso que funcione se anota de inmediato (con capturas) para el manual de in
 
 **Depende de:** B2, S3 · **Desbloquea:** S4, S5
 
-- [ ] Los parámetros del standby y del respaldo existen en la tabla de parámetros con los nombres acordados.
+- [x] Los parámetros del standby y del respaldo existen en la tabla de parámetros con los nombres acordados (`STB_*` y `RESP_HORA_DIARIO`, instalados en `SGSPRI`).
 - [ ] Los procesos de Andrés leen esos valores.
 
 ### I3 — Correo desde el servidor
 
 **Depende de:** B2, S2
 
-- [ ] Configuración de red y seguridad del correo hecha en `SGSPRI`.
-- [ ] Un correo enviado desde `SGSPRI` llega a una bandeja externa, sin pasar por VPN.
+- [x] Configuración de red y seguridad del correo hecha en `SGSPRI` (wallet y puerto 465 en las dos VMs).
+- [x] Un correo enviado desde `SGSPRI` llega a una bandeja externa, sin pasar por VPN.
 
 ### I4 — Integración completa
 
 **Depende de:** B7, B8, S6, I1, I3
 
-- [ ] Todo el carril B corre en `SGSPRI`.
-- [ ] El standby replica todo, incluidos los objetos y datos nuevos.
+- [x] Todo el carril B corre en `SGSPRI`.
+- [x] El standby replica todo, incluidos los objetos y datos nuevos.
 - [ ] Los jobs funcionan en la principal y, después de un switchover, en la nueva principal.
 
 ---
@@ -667,7 +667,7 @@ Estado: ⬜ pendiente · 🟨 en progreso · ✅ listo
 | F12 | Top 10 clientes y orden de compra | B6 | Clientes premiados (4 %) | ✅ |
 | F13 | Bitácoras de las 7 áreas | B4 | Bitácora de cambios (4 %) | ✅ |
 | F14 | Notificaciones parametrizadas, clave cifrada | B2 | Notificaciones / cifrado | ⬜ |
-| F15 | Correo directo desde Oracle, sin VPN | B2 + I3 | Notificaciones | ⬜ |
+| F15 | Correo directo desde Oracle, sin VPN | B2 + I3 | Notificaciones | ✅ |
 
 ### Seguridad
 

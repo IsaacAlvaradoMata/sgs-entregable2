@@ -24,7 +24,7 @@ Qué falta y quién lo tiene. Se actualiza al avanzar; el detalle de cada etapa 
 
 - [x] Crear la base en `SGSPRI` con `dbca`.
 - [x] Anotar en `docs/decisiones.md` la decisión `DB_NAME = SGS`.
-- [ ] Avisar a Isaac que `SGSPDB` ya existe en `SGSPRI` (punto I1).
+- [x] Avisar a Isaac que `SGSPDB` ya existe en `SGSPRI` (punto I1).
 - [x] I1, preparación de las VMs (puerto de Gmail, wallet, carpeta del padrón, parámetros) en `SGSPRI` y `SGSSTB`: [`servidores/i1_preparacion_vms.md`](../servidores/i1_preparacion_vms.md).
 - [ ] Antes de la defensa: cambiar las contraseñas de `SYS`, `SYSTEM` y `PDBADMIN` por unas fuertes.
 - [x] Tailscale en ambas VMs (sin exit node): [`servidores/tailscale.md`](../servidores/tailscale.md). `SGSPRI` = `100.76.209.30`, `SGSSTB` = `100.69.133.78`.
@@ -39,7 +39,7 @@ Qué falta y quién lo tiene. Se actualiza al avanzar; el detalle de cada etapa 
 - [ ] S5: job diario `SGS_JOB_RESPALDO_DIARIO` (en `SGSPDB`, dueño `SGS_ADMIN`, como los jobs de Isaac) que ejecute `respaldo_rman.sh`. Hora decidida: `RESP_HORA_DIARIO` = `1` (1:00 a. m.); si a esa hora las VMs están apagadas, ese día no hay respaldo automático y se corre a demanda. Necesita:
   - [x] Isaac agrega en `bd/03_base_interna.sql` la fila `RESP_HORA_DIARIO` = `'1'` ("Hora del respaldo diario con RMAN").
   - [x] Isaac agrega en `bd/01_infraestructura.sql`: `GRANT CREATE EXTERNAL JOB TO SGS_ADMIN;` y `GRANT CREATE CREDENTIAL TO SGS_ADMIN;`.
-  - [ ] I1 hecho (esquema de Isaac instalado en `SGSPDB` de `SGSPRI`).
+  - [x] I1 hecho (esquema de Isaac instalado en `SGSPDB` de `SGSPRI`, 2026-10-28).
   - [ ] Credencial con el usuario Linux `oracle` (la contraseña no va al repo); el job revisa que la base sea `SGSPRI` en rol PRIMARY antes de respaldar.
 - [ ] Borrar el tablespace de prueba `ts_prueba_rman` (y su tabla) de `SGSPDB` cuando ya no se necesite.
 - [x] S6: switchover, failover y reincorporación probados con el broker `sgs_dg`: [`servidores/s6_switchover_failover.md`](../servidores/s6_switchover_failover.md).
