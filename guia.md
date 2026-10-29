@@ -614,9 +614,9 @@ Todo paso que funcione se anota de inmediato (con capturas) para el manual de in
 **Depende de:** C1
 
 - [x] Documentación interna del código revisada (2026-10-29).
-- [ ] Manual de instalación y despliegue.
-- [ ] Manual de administración del standby.
-- [ ] Manual técnico de administración y mantenimiento.
+- [x] Manual de instalación y despliegue (`docs/manuales/SGS_manual_instalacion.docx`).
+- [x] Manual de administración del standby (`docs/manuales/SGS_manual_standby.docx`).
+- [x] Manual técnico de administración y mantenimiento (`docs/manuales/SGS_manual_tecnico.docx`).
 - [x] Diagrama relacional y diccionario finales (`docs/modelo/`).
 
 ### C3 — Defensa
@@ -640,6 +640,8 @@ Todo paso que funcione se anota de inmediato (con capturas) para el manual de in
 | Manual de administración del standby | 2 % | Operación diaria, sincronización, monitoreo, respaldos, switchover/failover, cómo actuar ante situaciones problemáticas | Andrés |
 | Manual técnico de administración y mantenimiento | 2 % | Parámetros, jobs y su ejecución a demanda, usuarios y roles, alertas de monitoreo, bitácoras, resultados de `EXPLAIN PLAN` | Isaac (principalmente) |
 | Diagrama y diccionario actualizados | (modelo recalificado) | Modelo final completo | Isaac |
+
+Estado (2026-10-29): los tres manuales y el diccionario están en `docs/manuales/` y `docs/modelo/`, en Word, generados de su fuente en Markdown con `docs/manuales/md_a_docx.js` y `docs/modelo/generar_diccionario.js`. La documentación del código son los comentarios de los scripts.
 
 > Si la implementación falla, **el manual también se penaliza**: solo se documentan pasos confirmados.
 
@@ -725,8 +727,8 @@ Estado: ⬜ pendiente · 🟨 en progreso · ✅ listo. La columna «Dónde se d
 
 | Código | Requerimiento | Etapa | Rúbrica | Dónde se demuestra | Estado |
 |---|---|---|---|---|---|
-| NG1 | Manual paso a paso con conceptos y solución de cada requerimiento | C2 | Manual de instalación (3 %) | Manual de instalación y despliegue | ⬜ |
-| NG2 | Solución y manual ante acciones problemáticas en la standby | S7 + C2 | Manual del standby (2 %) | `servidores/s7_situaciones.md` (Andrés) y manual del standby | 🟨 |
+| NG1 | Manual paso a paso con conceptos y solución de cada requerimiento | C2 | Manual de instalación (3 %) | `docs/manuales/SGS_manual_instalacion.docx` | ✅ |
+| NG2 | Solución y manual ante acciones problemáticas en la standby | S7 + C2 | Manual del standby (2 %) | `servidores/s7_situaciones.md` y `docs/manuales/SGS_manual_standby.docx` | ✅ |
 | NG3 | Implementación funcional presentada en vivo | C1 + C3 | Defensa (10 %) | C1 y ensayo | ⬜ |
 | NG4 | Documentación interna del código | Transversal | Documentación del código (3 %) | Comentarios en los scripts `bd/` y `servidores/scripts/` (revisados el 2026-10-29) | ✅ |
 | NG5 | Modelo relacional recalificado | B1 | Modelo relacional | B1; `docs/modelo/` (diagrama y diccionario de datos) | ✅ |
