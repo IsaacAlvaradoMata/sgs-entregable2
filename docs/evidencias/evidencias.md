@@ -875,3 +875,41 @@ Después de instalar: 57 tablas, todas con 5 registros o más; 16 packages váli
 ![Bitácora de errores](capturas/I0_bitacora_errores.png)
 
 Los datos de prueba incluyen seis operaciones que el sistema debe rechazar; cada rechazo queda en la bitácora de errores con el programa que lo detectó y su mensaje: venta a crédito sobre el límite, traslado sin existencia suficiente, cédula fuera del padrón, proveedor inexistente, límite de crédito menor a la deuda y venta en la bodega central.
+
+# Instalación en SGSPRI
+
+El esquema se instaló en `SGSPDB` del servidor principal con los mismos scripts oficiales (`01` a `10`), desde el Mac por Tailscale, con un script de terminal que pone las claves de producción, revisa antes de empezar que la base sea `SGSPRI` en rol `PRIMARY` y que el esquema no exista, ejecuta cada parte con el usuario que corresponde (SYS o SGS_ADMIN) y se detiene ante cualquier error. El `00` no se ejecuta en el servidor.
+
+![Instalación en SGSPRI](capturas/I1_01_instalacion_sgspri.png)
+
+Las 15 partes terminaron sin errores en 4 minutos, incluida la carga de los 3,7 millones de personas del padrón desde la carpeta del servidor.
+
+![Verificación general en SGSPRI](capturas/I1_02_verificacion_general.png)
+
+El resultado en Oracle 21c es el mismo que en desarrollo: 57 tablas con 5 registros o más, 16 packages válidos, 50 triggers, 4 vistas y 2 vistas materializadas, ningún objeto inválido, 15 jobs, el padrón completo, las 5 claves cifradas, 5 premiaciones y 5 cierres, los 6 rechazos esperados en la bitácora de errores y la hora de la base en Costa Rica (`-06:00`).
+
+## Correo desde SGSPRI
+
+```sql
+BEGIN
+    SGS_PKG_CORREO.enviar_a_tipo('DBA', 'Prueba SGS: correo enviado desde SGSPRI',
+        'Hola, este correo lo envió Oracle 21c desde el servidor principal SGSPRI, directo por SMTP sobre TLS, sin VPN.' || CHR(13) || CHR(10)
+        || 'Prueba de caracteres: tildes áéíóú, eñe ñ, colones ₡100.000.');
+END;
+```
+
+![Correo desde SGSPRI](capturas/I3_01_correo_desde_sgspri.png)
+
+El correo sale de Oracle 21c en `SGSPRI` por el puerto 465 con el wallet del servidor, sin VPN (Tailscale no tiene exit node: el tráfico a internet sale por la tarjeta NAT de la VM). Llega a los dos destinatarios del tipo DBA en un solo envío, con tildes, ñ y el símbolo de colón correctos.
+
+## Esquema replicado en SGSSTB
+
+En la standby no se ejecutó ningún script: todo llegó por el redo.
+
+![Standby replicada](capturas/I1_03_standby_replicado.png)
+
+`SGSSTB` sigue como standby física en solo lectura con aplicación en tiempo real y tiene lo mismo que `SGSPRI`: 61 tablas de `SGS_ADMIN` (las 57 del modelo, las 2 externas del padrón y las 2 de las vistas materializadas), los mismos 389 objetos válidos, el padrón completo y las facturas. Los datafiles de los tres tablespaces del proyecto se crearon solos en `/opt/oracle/oradata/SGSSTB/` gracias a `STANDBY_FILE_MANAGEMENT=AUTO` y la conversión de rutas.
+
+![Broker tras la instalación](capturas/I1_04_broker_tras_instalacion.jpeg)
+
+Después de la instalación, incluida la carga del padrón, el broker muestra a `SGSSTB` al día: retraso de transporte y de aplicación en 0 segundos, consulta en tiempo real activa y estado `SUCCESS`.
